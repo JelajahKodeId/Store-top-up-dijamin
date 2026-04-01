@@ -1,11 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
+@source '../**/*.jsx';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    /* Define primary font */
+    --font-sans: 'Outfit', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Define Gray Web Theme for Game Store */
+    --color-primary-50: oklch(98% 0.002 264);
+    --color-primary-100: oklch(96% 0.005 264);
+    --color-primary-200: oklch(92% 0.01 264);
+    --color-primary-300: oklch(86% 0.02 264);
+    --color-primary-400: oklch(74% 0.03 264);
+    --color-primary-500: oklch(62% 0.03 264);
+    --color-primary-600: oklch(50% 0.03 264);
+    --color-primary-700: oklch(38% 0.03 264);
+    --color-primary-800: oklch(26% 0.02 264);
+    --color-primary-900: oklch(14% 0.02 264);
+    --color-primary-950: oklch(8% 0.01 264);
+
+    --color-accent: oklch(80% 0.2 60); /* A dynamic yellowish-orange accent typical for game stores */
 }
