@@ -1,29 +1,178 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
-@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Oswald:wght@400;500;600;700&display=swap');
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
-@source '../**/*.jsx';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-    /* Define primary font */
-    --font-sans: 'Outfit', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+/* ════════════════════════════════════════════════════════════════════════════
+   BASE STYLES
+   ════════════════════════════════════════════════════════════════════════════ */
+@layer base {
 
-    /* Define Gray Web Theme for Game Store */
-    --color-primary-50: oklch(98% 0.002 264);
-    --color-primary-100: oklch(96% 0.005 264);
-    --color-primary-200: oklch(92% 0.01 264);
-    --color-primary-300: oklch(86% 0.02 264);
-    --color-primary-400: oklch(74% 0.03 264);
-    --color-primary-500: oklch(62% 0.03 264);
-    --color-primary-600: oklch(50% 0.03 264);
-    --color-primary-700: oklch(38% 0.03 264);
-    --color-primary-800: oklch(26% 0.02 264);
-    --color-primary-900: oklch(14% 0.02 264);
-    --color-primary-950: oklch(8% 0.01 264);
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+        font-style: normal !important;
+    }
 
-    --color-accent: oklch(80% 0.2 60); /* A dynamic yellowish-orange accent typical for game stores */
+    html,
+    body {
+        @apply font-sans antialiased;
+        background-color: theme('colors.admin-bg');
+        color: theme('colors.store-body');
+        scroll-behavior: smooth;
+        overflow-x: hidden;
+    }
+
+    ::selection {
+        background-color: rgba(250, 204, 21, .2);
+        color: theme('colors.store-charcoal');
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-bold tracking-tight;
+        color: theme('colors.store-charcoal');
+        font-style: normal;
+    }
+
+    p {
+        @apply font-medium leading-relaxed;
+        color: theme('colors.store-muted');
+    }
+
+    /* Custom Transitions */
+    .transition-lux {
+        @apply transition-all duration-300 ease-in-out;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY
+   ════════════════════════════════════════════════════════════════════════════ */
+@layer components {
+
+    .t-hero {
+        @apply font-black leading-none uppercase;
+        font-size: clamp(3rem, 10vw, 8rem);
+        color: theme('colors.store-charcoal');
+    }
+
+    .t-h1 {
+        @apply leading-none font-bebas uppercase;
+        font-size: clamp(2.5rem, 8vw, 5.5rem);
+    }
+
+    .t-h2 {
+        @apply font-bebas uppercase tracking-tight;
+        font-size: clamp(1.75rem, 5vw, 3rem);
+    }
+
+    .t-h3 {
+        @apply font-oswald uppercase tracking-wider;
+        font-size: 1.125rem;
+    }
+
+    .t-body {
+        @apply text-base font-medium leading-relaxed;
+        color: theme('colors.store-body');
+    }
+
+    .t-muted {
+        @apply text-sm font-medium;
+        color: theme('colors.store-muted');
+    }
+
+    .t-label {
+        @apply text-[11px] font-bold uppercase tracking-widest;
+        color: theme('colors.store-subtle');
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════════
+   LAYOUT & CARDS
+   ════════════════════════════════════════════════════════════════════════════ */
+
+    .section-container {
+        @apply container mx-auto px-6 lg:px-8;
+    }
+
+    .store-card {
+        @apply bg-white rounded-xl border border-store-border shadow-soft transition-lux;
+    }
+
+    .store-card-lux {
+        @apply bg-white rounded-2xl border border-white shadow-lux transition-lux;
+    }
+
+    .store-card-dark {
+        @apply bg-store-charcoal rounded-xl border border-store-border-dark shadow-lux transition-lux;
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════════
+   ADMIN SPECIFIC
+   ════════════════════════════════════════════════════════════════════════════ */
+
+    .admin-sidebar-item {
+        @apply flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-lux text-store-subtle hover:text-white hover:bg-admin-sidebar-hover;
+    }
+
+    .admin-sidebar-item.active {
+        @apply text-white bg-admin-sidebar-hover shadow-soft;
+        border-left: 3px solid theme('colors.admin-accent');
+    }
+
+    .admin-sidebar-item.collapsed {
+        @apply justify-center px-0 w-10 h-10 mx-auto;
+    }
+
+    .admin-content-card {
+        @apply bg-white rounded-2xl border border-store-border shadow-soft overflow-hidden;
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════════
+   TABLES
+   ════════════════════════════════════════════════════════════════════════════ */
+
+    .admin-table-container {
+        @apply overflow-x-auto rounded-xl border border-store-border bg-white;
+    }
+
+    .admin-table {
+        @apply w-full text-left border-collapse;
+    }
+
+    .admin-table thead th {
+        @apply px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-store-muted bg-gray-50 border-b border-store-border;
+    }
+
+    .admin-table tbody td {
+        @apply px-6 py-4 text-sm font-medium text-store-body border-b border-gray-50;
+    }
+
+    .admin-table tbody tr:hover td {
+        @apply bg-gray-50/50;
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════════
+   BADGES
+   ════════════════════════════════════════════════════════════════════════════ */
+
+    .admin-badge {
+        @apply px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider;
+    }
+}
+
+/* Utilities */
+@layer utilities {
+    .bg-grid {
+        background-image:
+            linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+        background-size: 24px 24px;
+    }
 }
