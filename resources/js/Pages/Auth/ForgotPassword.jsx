@@ -1,9 +1,7 @@
-import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, useForm, Link } from '@inertiajs/react';
-import Input from '@/Components/ui/Input';
-import Button from '@/Components/ui/Button';
-import Card from '@/Components/ui/Card';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLogo from '@/Components/shared/AppLogo';
+import { AppIcons } from '@/Components/shared/AppIcon';
+import Spinner from '@/Components/ui/Spinner';
 
 export default function ForgotPassword({ status }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -16,74 +14,93 @@ export default function ForgotPassword({ status }) {
     };
 
     return (
-        <div className="min-h-screen bg-store-surface flex flex-col md:flex-row">
-            <Head title="Lupa Kata Sandi" />
+        <div className="min-h-screen bg-store-dark flex font-sans relative overflow-hidden">
+            <Head title="Pulihkan Akses — Mall Store" />
 
-            {/* Left Column: Branding (Reduced version of Login/Register) */}
-            <div className="hidden md:flex md:w-1/3 lg:w-2/5 bg-store-dark relative overflow-hidden flex-col p-12">
-                <div className="absolute inset-0 bg-grid opacity-10" />
-                <div className="relative z-10 flex flex-col h-full">
-                    <Link href="/">
-                        <AppLogo theme="dark" className="h-8 w-auto mb-20" />
-                    </Link>
+            {/* ── Decorative Background ── */}
+            <div className="fixed inset-0 bg-grid opacity-[0.03] pointer-events-none" />
+            <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-store-accent/10 rounded-full blur-[120px] pointer-events-none" />
 
-                    <div className="mt-auto">
-                        <h2 className="text-3xl font-black text-white leading-tight mb-4">
-                            Pulihkan Akun Anda
-                        </h2>
-                        <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                            Kami di sini untuk membantu Anda kembali ke permainan. Masukkan email Anda untuk memulai proses pemulihan.
-                        </p>
+            {/* ── Left Panel (branding) ── */}
+            <div className="hidden lg:flex flex-1 flex-col justify-between p-16 relative z-10">
+                <AppLogo theme="light" size="lg" href="/" />
+
+                <div className="max-w-xl">
+                    <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8">
+                        <AppIcons.lock size={14} className="text-store-accent" />
+                        <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Security Protocol 404</span>
                     </div>
+                    <h1 className="text-6xl font-black text-white leading-[0.9] mb-6 font-bebas uppercase tracking-tighter text-glow-accent">
+                        Lost your<br />
+                        <span className="text-gradient-accent">Credentials?</span>
+                    </h1>
+                    <p className="text-store-subtle text-lg leading-relaxed max-w-md font-medium">
+                        Tenang, gamer. Kami di sini untuk membantu Anda kembali ke arena. Masukkan email Anda untuk memulai proses sinkronisasi ulang.
+                    </p>
+                </div>
+
+                <div className="flex items-center gap-4 text-white/20 uppercase tracking-widest font-black text-[10px]">
+                    <AppIcons.shield size={16} />
+                    Secured by Mall Store Identity
                 </div>
             </div>
 
-            {/* Right Column: Form */}
-            <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
-                <div className="w-full max-w-sm">
-                    <div className="md:hidden flex justify-center mb-10">
-                        <Link href="/">
-                            <AppLogo theme="light" className="h-8 w-auto" />
-                        </Link>
+            {/* ── Right Panel (form) ── */}
+            <div className="flex-1 flex items-center justify-center p-6 lg:p-12 relative z-10 bg-store-dark/40 backdrop-blur-sm border-l border-white/5">
+                <div className="w-full max-w-md space-y-10">
+                    <div className="lg:hidden mb-12 flex justify-center">
+                        <AppLogo size="lg" href="/" theme="light" />
                     </div>
 
-                    <div className="mb-10">
-                        <h1 className="text-2xl font-black text-store-dark mb-2">Lupa Kata Sandi?</h1>
-                        <p className="text-sm text-store-muted leading-relaxed">
-                            Beri tahu kami alamat email Anda dan kami akan mengirimkan tautan reset kata sandi melalui email.
-                        </p>
+                    <div>
+                        <h2 className="text-4xl font-black text-white font-bebas uppercase tracking-tight mb-2">Sinkronisasi Email</h2>
+                        <p className="text-sm text-store-subtle font-medium uppercase tracking-wider">Kami akan mengirimkan link pemulihan</p>
                     </div>
 
                     {status && (
-                        <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-xl">
-                            <p className="text-sm font-bold text-green-700 leading-relaxed">
-                                {status}
-                            </p>
+                        <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-2xl text-sm font-bold text-green-400 flex items-center gap-3">
+                            <AppIcons.success_circle size={18} />
+                            {status}
                         </div>
                     )}
 
-                    <form onSubmit={submit} className="space-y-6">
-                        <Input
-                            id="email"
-                            type="email"
-                            name="email"
-                            label="Alamat Email"
-                            value={data.email}
-                            placeholder="Masukkan email terdaftar"
-                            autoFocus
-                            onChange={(e) => setData('email', e.target.value)}
-                            error={errors.email}
-                        />
-
-                        <div className="pt-2">
-                            <Button className="w-full" disabled={processing} type="submit">
-                                Kirim Tautan Reset
-                            </Button>
+                    <form onSubmit={submit} className="space-y-8">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block px-1">Email Gamer</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/20 group-focus-within:text-store-accent transition-colors">
+                                    <AppIcons.mail size={18} strokeWidth={2.5} />
+                                </div>
+                                <input
+                                    type="email"
+                                    value={data.email}
+                                    onChange={(e) => setData('email', e.target.value)}
+                                    className={`w-full bg-white/5 border-2 ${errors.email ? 'border-red-500/50' : 'border-white/5'} focus:border-store-accent rounded-2xl py-4 pl-12 pr-4 text-white font-bold placeholder:text-white/10 transition-all outline-none`}
+                                    placeholder="MASUKKAN EMAIL TERDAFTAR"
+                                    autoFocus
+                                />
+                            </div>
+                            {errors.email && <p className="px-1 text-[10px] font-black text-red-400 uppercase italic tracking-wider">{errors.email}</p>}
                         </div>
 
-                        <div className="text-center pt-8 border-t border-store-border">
-                            <Link href={route('login')} className="text-xs font-bold text-store-subtle hover:text-admin-accent transition-colors">
-                                ← Kembali ke halaman Masuk
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="w-full bg-store-accent hover:bg-white text-store-dark font-black uppercase tracking-widest py-5 rounded-2xl transition-all duration-300 shadow-accent-glow flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {processing ? (
+                                <><Spinner size="sm" color="dark" /> Mengirim Data...</>
+                            ) : (
+                                <>
+                                    Kirim Tautan Pemulihan
+                                    <AppIcons.arrowRight size={18} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
+                        </button>
+
+                        <div className="pt-8 border-t border-white/5 text-center">
+                            <Link href={route('login')} className="text-[10px] font-black text-white/40 uppercase tracking-widest hover:text-store-accent transition-colors flex items-center justify-center gap-2">
+                                <AppIcons.back size={14} /> Kembali ke Halaman Masuk
                             </Link>
                         </div>
                     </form>

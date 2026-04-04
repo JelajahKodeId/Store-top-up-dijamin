@@ -19,14 +19,14 @@
     html,
     body {
         @apply font-sans antialiased;
-        background-color: theme('colors.admin-bg');
-        color: theme('colors.store-body');
+        background-color: theme('colors.store-charcoal');
+        color: theme('colors.store-subtle');
         scroll-behavior: smooth;
         overflow-x: hidden;
     }
 
     ::selection {
-        background-color: rgba(250, 204, 21, .2);
+        background-color: rgba(250, 204, 21, .3);
         color: theme('colors.store-charcoal');
     }
 
@@ -37,7 +37,7 @@
     h5,
     h6 {
         @apply font-bold tracking-tight;
-        color: theme('colors.store-charcoal');
+        color: theme('colors.white');
         font-style: normal;
     }
 
@@ -171,9 +171,29 @@
 @layer utilities {
     .bg-grid {
         background-image:
-            linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
         background-size: 24px 24px;
+    }
+
+    .bg-glass {
+        @apply bg-white/10 backdrop-blur-md border border-white/10;
+    }
+
+    .bg-glass-dark {
+        @apply bg-store-dark/80 backdrop-blur-xl border border-white/5;
+    }
+
+    .text-glow-accent {
+        text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+    }
+
+    .text-gradient-accent {
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-store-accent to-store-accent-dark;
+    }
+
+    .text-gradient-purple {
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-fuchsia-500;
     }
 
     .scrollbar-hide::-webkit-scrollbar {
@@ -183,5 +203,32 @@
     .scrollbar-hide {
         -ms-overflow-style: none;
         scrollbar-width: none;
+    }
+
+    .card-gaming {
+        @apply bg-store-charcoal-light/50 backdrop-blur-sm border border-white/5 rounded-xl;
+    }
+
+    .banner-card {
+        @apply rounded-none;
+    }
+
+    /* ── Guest Section Typography ── */
+    .section-heading {
+        @apply font-bebas font-black text-white uppercase tracking-tight leading-none;
+        font-size: clamp(2.5rem, 5vw, 3.75rem);
+    }
+
+    .section-subtext {
+        @apply text-base text-store-subtle font-medium leading-relaxed;
+    }
+
+    .label-chip {
+        @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.2em];
+    }
+
+    /* ── Banner gradient overlay ── */
+    .banner-gradient {
+        background: linear-gradient(to top, rgba(18, 18, 18, 0.95) 0%, rgba(18, 18, 18, 0.4) 50%, rgba(18, 18, 18, 0.05) 100%);
     }
 }

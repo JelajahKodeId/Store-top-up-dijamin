@@ -9,6 +9,7 @@ export default function Card({ children, variant = 'default', className = '', ..
         flat: 'bg-store-surface-2 rounded-2xl border border-store-border',
         ghost: 'rounded-2xl',
         dark: 'store-card-dark',
+        game: 'card-gaming',
     };
 
     const base = variants[variant] ?? variants.default;

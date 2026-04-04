@@ -44,7 +44,10 @@ import {
     HelpCircle,
     Key,
     Save,
-    CheckSquare
+    CheckSquare,
+    Activity,
+    Boxes,
+    HelpCircle as Help
 } from 'lucide-react';
 
 /**
@@ -112,6 +115,13 @@ export const AppIcons = {
     // Others
     lock: Lock,
     arrowRight: ArrowRight,
+
+    // Guest Expansion Additions
+    zap: Zap,
+    speed: Zap,          // Alias
+    activity: Activity,
+    boxes: Boxes,
+    help: Help,
 };
 
 /**
