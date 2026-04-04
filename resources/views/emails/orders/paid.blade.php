@@ -1,59 +1,48 @@
 @extends('emails.layout')
 
-@section('header_badge', 'Pembayaran Dikonfirmasi')
+@section('header_badge', 'Pembayaran Berhasil')
 
 @section('content')
-    <div class="greeting">Pembayaran Berhasil! ✅</div>
+    <div class="greeting">Halo, {{ $order->customer_name }}! 👋</div>
     <p class="message-text">
-        Halo <strong>{{ $order->getCustomerName() }}</strong>,<br>
-        pembayaran untuk pesanan Anda telah kami terima dan <strong>sedang diproses</strong>.
+        Pembayaran untuk pesanan <strong>#{{ $order->invoice_code }}</strong> telah kami terima.<br>
+        Tim kami akan segera memproses pengiriman key produk Anda.
     </p>
 
     <span class="status-badge badge-paid">✅ Pembayaran Diterima</span>
 
     <div class="order-card">
-        <div class="order-card-title">📦 Ringkasan Pesanan</div>
+        <div class="order-card-title">📦 Detail Pesanan</div>
 
         <div class="detail-row">
-            <span class="detail-label">ID Transaksi</span>
-            <span class="detail-value trx-id">{{ $order->trx_id }}</span>
+            <span class="detail-label">Invoice</span>
+            <span class="detail-value trx-id">{{ $order->invoice_code }}</span>
         </div>
         <div class="detail-row">
-            <span class="detail-label">Produk</span>
-            <span class="detail-value">{{ $order->product?->name ?? '-' }}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">ID Akun</span>
-            <span class="detail-value">{{ $order->target_id }}{{ $order->zone_id ? " / {$order->zone_id}" : '' }}</span>
+            <span class="detail-label">Item</span>
+            <span class="detail-value">
+                @foreach($order->items as $item)
+                    {{ $item->product_name }} - {{ $item->duration_name }}{{ !$loop->last ? ', ' : '' }}
+                @endforeach
+            </span>
         </div>
         <div class="detail-row">
             <span class="detail-label">Metode Bayar</span>
-            <span class="detail-value">{{ $order->paymentMethod?->name ?? '-' }}</span>
+            <span class="detail-value uppercase">{{ $order->payment_method }}</span>
         </div>
         <div class="detail-row">
             <span class="detail-label">Total Bayar</span>
             <span class="detail-value highlight">Rp {{ number_format($order->total_price, 0, ',', '.') }}</span>
         </div>
-        @if($order->reference)
-        <div class="detail-row">
-            <span class="detail-label">Referensi PG</span>
-            <span class="detail-value trx-id">{{ $order->reference }}</span>
-        </div>
-        @endif
-        <div class="detail-row">
-            <span class="detail-label">Waktu Bayar</span>
-            <span class="detail-value">{{ $order->updated_at->format('d M Y, H:i') }} WIB</span>
-        </div>
     </div>
 
-    <div class="alert-box alert-info">
-        ℹ️ <strong>Tim kami sedang memproses top-up Anda.</strong><br>
-        Proses biasanya selesai dalam <strong>1–15 menit</strong>.
-        Anda akan mendapat email konfirmasi setelah top-up berhasil dikirimkan.
+    <div class="alert-box alert-success">
+        🚀 <strong>Sabar ya!</strong> Produk Anda sedang dalam proses pengambilan dari stok sistem.
+        Kami akan mengirimkan notifikasi baru saat key sudah siap.
     </div>
 
     <div class="center">
-        <a href="{{ config('app.url') }}/orders/{{ $order->trx_id }}" class="btn-cta">
+        <a href="{{ config('app.url') }}/orders/{{ $order->invoice_code }}" class="btn-cta">
             Cek Status Pesanan →
         </a>
     </div>

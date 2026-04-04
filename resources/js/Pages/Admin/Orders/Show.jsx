@@ -5,18 +5,22 @@ import Button from '@/Components/ui/Button';
 import { AppIcons } from '@/Components/shared/AppIcon';
 
 export default function OrderShow({ order }) {
+    // order is wrapped in 'data' by JsonResource if sent as new OrderResource($order)
+    const o = order.data || order;
+
     const { data, setData, put, processing } = useForm({
-        status: order.status,
-        note: order.note || '',
+        status: o.status,
+        note: o.note || '',
     });
 
     const submitStatus = (e) => {
         e.preventDefault();
-        put(route('admin.orders.update', order.id));
+        put(route('admin.orders.update', o.id));
     };
 
     const BackIcon = AppIcons.chevronLeft;
-    const CheckIcon = AppIcons.plus; // Placeholder for check
+    const KeyIcon = AppIcons.key || AppIcons.plus;
+    const InfoIcon = AppIcons.info;
 
     const getStatusVariant = (status) => {
         switch (status) {
@@ -32,9 +36,9 @@ export default function OrderShow({ order }) {
     return (
         <AdminLayout
             title="Detail Pesanan"
-            subtitle={`Informasi Lengkap Transaksi: ${order.trx_id}`}
+            subtitle={`Informasi Lengkap Transaksi: ${o.invoice_code}`}
         >
-            <Head title={`Order Detail - ${order.trx_id}`} />
+            <Head title={`Order Detail - ${o.invoice_code}`} />
 
             <div className="mb-8 flex items-center justify-between">
                 <Link
@@ -44,105 +48,111 @@ export default function OrderShow({ order }) {
                     <BackIcon size={14} /> Daftar Pesanan
                 </Link>
 
-                <Badge variant={getStatusVariant(order.status)} className="px-6 py-2 text-[10px] uppercase">
-                    {order.status}
+                <Badge variant={getStatusVariant(o.status)} className="px-6 py-2 text-[10px] uppercase tracking-widest font-black">
+                    {o.status}
                 </Badge>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    {/* Order Details Card */}
+                    {/* Order Items Grid */}
                     <div className="admin-content-card">
-                        <div className="px-8 py-6 border-b border-store-border flex items-center justify-between">
-                            <h3 className="text-base font-black text-store-charcoal uppercase tracking-tight">Rincian Transaksi</h3>
-                            <span className="text-[10px] font-bold text-store-subtle uppercase tracking-[0.2em]">{order.created_at}</span>
+                        <div className="px-8 py-6 border-b border-store-border flex items-center justify-between bg-admin-bg/50">
+                            <h3 className="text-sm font-black text-store-charcoal uppercase tracking-widest">Produk dalam Pesanan</h3>
+                            <span className="text-[10px] font-bold text-store-subtle uppercase tracking-[0.2em]">{o.created_at}</span>
                         </div>
 
                         <div className="p-8 space-y-6">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                <div>
-                                    <span className="text-[10px] font-bold text-store-subtle uppercase tracking-wider block mb-2">Produk / Paket</span>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-admin-bg flex items-center justify-center border border-store-border">
-                                            <AppIcons.categories size={18} className="text-store-muted" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-black text-store-charcoal">{order.product?.name || 'Produk Dihapus'}</span>
-                                            <span className="text-[10px] font-bold text-store-subtle uppercase tracking-tight">{order.product?.sku || '-'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <span className="text-[10px] font-bold text-store-subtle uppercase tracking-wider block mb-2">Target Pelanggan</span>
-                                    <div className="p-3 bg-admin-bg rounded-xl border border-store-border flex items-center justify-between">
-                                        <span className="text-sm font-black text-store-charcoal">{order.target_id}</span>
-                                        {order.zone_id && <Badge variant="gray" className="text-[9px]">{order.zone_id}</Badge>}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {Object.keys(order.extra_data || {}).length > 0 && (
-                                <div className="mt-6 pt-6 border-t border-store-border border-dashed">
-                                    <span className="text-[10px] font-bold text-store-subtle uppercase tracking-wider block mb-4">Informasi Detail (Extra Data)</span>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                        {Object.entries(order.extra_data).map(([key, value]) => (
-                                            <div key={key} className="flex flex-col p-3 bg-admin-bg rounded-xl border border-store-border">
-                                                <span className="text-[8px] font-black text-store-subtle uppercase tracking-widest mb-1">{key.replace('_', ' ')}</span>
-                                                <span className="text-xs font-black text-store-charcoal truncate">{value}</span>
+                            {o.items.map((item) => (
+                                <div key={item.id} className="p-6 bg-admin-bg rounded-2xl border border-store-border space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-store-border shadow-sm">
+                                                <AppIcons.categories size={18} className="text-store-muted" />
                                             </div>
-                                        ))}
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-black text-store-charcoal">{item.product_name}</span>
+                                                <span className="text-[10px] font-bold text-store-subtle uppercase tracking-tight">{item.duration_name}</span>
+                                            </div>
+                                        </div>
+                                        <span className="text-sm font-black text-store-charcoal">{item.price_formatted}</span>
                                     </div>
-                                </div>
-                            )}
 
-                            <hr className="border-store-border border-dashed" />
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                <div>
-                                    <span className="text-[10px] font-bold text-store-subtle uppercase tracking-wider block mb-2">Metode Pembayaran</span>
-                                    <div className="flex items-center gap-3">
-                                        {order.payment_method?.image_url && (
-                                            <img src={order.payment_method.image_url} alt="" className="h-6 object-contain" />
-                                        )}
-                                        <span className="text-sm font-black text-store-charcoal">{order.payment_method?.name || 'Manual'}</span>
-                                    </div>
+                                    {/* Digital Keys */}
+                                    {item.keys && item.keys.length > 0 && (
+                                        <div className="pt-4 border-t border-store-border border-dashed">
+                                            <span className="text-[10px] font-black text-store-subtle uppercase tracking-widest block mb-3">Lisensi / Key Digital</span>
+                                            <div className="space-y-2">
+                                                {item.keys.map((key, idx) => (
+                                                    <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-store-border group">
+                                                        <KeyIcon size={14} className="text-store-accent" />
+                                                        <code className="text-xs font-bold text-store-charcoal font-mono flex-1">{key.key_content}</code>
+                                                        <Badge variant="charcoal" className="text-[8px] opacity-0 group-hover:opacity-100 transition-opacity">Ready</Badge>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-
-                                <div>
-                                    <span className="text-[10px] font-bold text-store-subtle uppercase tracking-wider block mb-2">Referensi Gateway</span>
-                                    <span className="text-sm font-black text-store-muted font-mono">{order.reference || '-'}</span>
-                                </div>
-                            </div>
+                            ))}
                         </div>
 
                         <div className="px-8 py-6 bg-admin-bg border-t border-store-border flex items-center justify-between">
                             <span className="text-sm font-black text-store-charcoal uppercase tracking-tight">Total Pembayaran</span>
-                            <span className="text-xl font-black text-store-accent">{order.total_price_formatted}</span>
+                            <span className="text-xl font-black text-store-accent">{o.total_price_formatted}</span>
                         </div>
                     </div>
 
-                    {/* Customer Info Card */}
-                    <div className="admin-content-card p-8">
-                        <h3 className="text-base font-black text-store-charcoal uppercase tracking-tight mb-6">Informasi Pelanggan</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-store-muted">
-                                    <AppIcons.users size={18} />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-store-subtle uppercase tracking-wider">Nama</span>
-                                    <span className="text-sm font-black text-store-charcoal">{order.customer_name || 'Guest'}</span>
-                                </div>
+                    {/* Customer & Field Values Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Field Values */}
+                        <div className="admin-content-card p-8">
+                            <h3 className="text-xs font-black text-store-charcoal uppercase tracking-widest mb-6 border-b border-store-border pb-4">Data Tujuan (ID/Account)</h3>
+                            <div className="space-y-4">
+                                {o.field_values.length > 0 ? o.field_values.map((fv) => (
+                                    <div key={fv.id} className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-store-subtle uppercase tracking-wider mb-1">{fv.field_name}</span>
+                                        <span className="text-sm font-black text-store-charcoal">{fv.field_value}</span>
+                                    </div>
+                                )) : (
+                                    <p className="text-xs text-store-subtle italic">Tidak ada data tambahan.</p>
+                                )}
                             </div>
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-store-muted">
-                                    <AppIcons.mail size={18} />
+                        </div>
+
+                        {/* Customer Info */}
+                        <div className="admin-content-card p-8">
+                            <h3 className="text-xs font-black text-store-charcoal uppercase tracking-widest mb-6 border-b border-store-border pb-4">Informasi Pembeli</h3>
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-store-muted">
+                                        <AppIcons.users size={14} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight">Nama</span>
+                                        <span className="text-xs font-black text-store-charcoal">{o.customer_name || 'Guest'}</span>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-store-subtle uppercase tracking-wider">Email Notifikasi</span>
-                                    <span className="text-sm font-black text-store-charcoal">{order.customer_email}</span>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-store-muted">
+                                        <AppIcons.mail size={14} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight">Email</span>
+                                        <span className="text-xs font-black text-store-charcoal">{o.customer_email}</span>
+                                    </div>
                                 </div>
+                                {o.customer_phone && (
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-store-muted">
+                                            <AppIcons.phone size={14} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight">WhatsApp / HP</span>
+                                            <span className="text-xs font-black text-store-charcoal">{o.customer_phone}</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -150,15 +160,15 @@ export default function OrderShow({ order }) {
 
                 <div className="space-y-8">
                     {/* Status Management */}
-                    <div className="admin-content-card p-8 bg-store-charcoal text-white">
-                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-store-muted mb-6">Kelola Status</h3>
+                    <div className="admin-content-card p-8 bg-store-charcoal text-white shadow-xl shadow-store-accent/5">
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-store-muted mb-6">Update Status</h3>
                         <form onSubmit={submitStatus} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-store-muted uppercase tracking-widest">Update Status Manual</label>
+                                <label className="text-[10px] font-bold text-store-muted uppercase tracking-widest">Status Pesanan</label>
                                 <select
                                     value={data.status}
                                     onChange={e => setData('status', e.target.value)}
-                                    className="w-full bg-store-charcoal-light border border-store-border-dark rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-store-accent transition-all"
+                                    className="w-full bg-store-charcoal-light border border-store-border-dark rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-store-accent transition-all cursor-pointer"
                                 >
                                     <option value="unpaid">Belum Bayar (Unpaid)</option>
                                     <option value="paid">Dibayar (Paid)</option>
@@ -169,38 +179,37 @@ export default function OrderShow({ order }) {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-store-muted uppercase tracking-widest">Catatan Admin</label>
+                                <label className="text-[10px] font-bold text-store-muted uppercase tracking-widest">Catatan (Optional)</label>
                                 <textarea
                                     value={data.note}
                                     onChange={e => setData('note', e.target.value)}
-                                    className="w-full bg-store-charcoal-light border border-store-border-dark rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-store-accent transition-all min-h-[100px]"
-                                    placeholder="Alasan pembatalan, bukti sukses, dll..."
+                                    className="w-full bg-store-charcoal-light border border-store-border-dark rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-store-accent transition-all min-h-[100px] resize-none"
+                                    placeholder="Alasan pembatalan atau catatan sukses..."
                                 />
                             </div>
 
                             <Button
                                 type="submit"
                                 variant="accent"
-                                className="w-full py-4 text-xs tracking-widest font-black"
+                                className="w-full py-4 text-[10px] tracking-[0.2em] font-black uppercase"
                                 loading={processing}
                             >
-                                UPDATE STATUS PESANAN
+                                Simpan Perubahan
                             </Button>
                         </form>
                     </div>
 
-                    {/* Note Card */}
-                    <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-3xl">
-                        <div className="flex gap-4">
-                            <div className="p-3 bg-white rounded-xl shadow-soft text-indigo-600 shrink-0">
-                                <AppIcons.info size={20} />
+                    {/* Payment Info Card */}
+                    <div className="admin-content-card p-8 space-y-6">
+                        <h3 className="text-xs font-black text-store-charcoal uppercase tracking-widest">Metode Pembayaran</h3>
+                        <div className="p-4 bg-admin-bg rounded-2xl border border-store-border flex items-center justify-between">
+                            <div className="flex flex-col">
+                                <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight">Channel</span>
+                                <span className="text-xs font-black text-store-charcoal">{o.payment_method?.name || 'Manual'}</span>
                             </div>
-                            <div>
-                                <h5 className="text-xs font-black text-indigo-900 uppercase tracking-tight mb-1">Informasi Gateway</h5>
-                                <p className="text-[11px] text-indigo-700 font-medium leading-relaxed">
-                                    Status 'Success' akan tercatat secara otomatis jika integrasi Payment Gateway aktif. Gunakan update manual hanya untuk keperluan darurat.
-                                </p>
-                            </div>
+                            {o.payment_method?.image_url && (
+                                <img src={o.payment_method.image_url} alt="" className="h-4 object-contain grayscale opacity-50" />
+                            )}
                         </div>
                     </div>
                 </div>

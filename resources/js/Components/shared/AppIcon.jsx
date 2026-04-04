@@ -41,7 +41,10 @@ import {
     Camera,
     Play,
     Shield,
-    HelpCircle
+    HelpCircle,
+    Key,
+    Save,
+    CheckSquare
 } from 'lucide-react';
 
 /**
@@ -76,6 +79,10 @@ export const AppIcons = {
     edit: Edit,
     delete: Trash2,
     view: Eye,
+    save: Save,
+    key: Key,
+    check: CheckSquare,
+    back: ChevronLeft,
 
     // Stats & Business
     revenue: Banknote,

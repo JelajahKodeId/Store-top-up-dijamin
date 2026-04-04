@@ -4,20 +4,18 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use App\Models\Category;
-use App\Services\Admin\ProductService;
 use App\Http\Requests\Admin\ProductRequest;
 use App\Http\Resources\Admin\ProductResource;
-use App\Http\Resources\Admin\CategoryResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
     protected $productService;
 
-    public function __construct(ProductService $productService)
+    public function __construct(\App\Services\Admin\ProductService $productService)
     {
         $this->productService = $productService;
     }
@@ -27,28 +25,33 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        Gate::authorize('viewAny', Product::class);
+        \Illuminate\Support\Facades\Gate::authorize('viewAny', Product::class);
+        $query = Product::with(['durations', 'fields'])->latest();
 
-        $products = $this->productService->getPaginatedProducts($request->all());
-        $categories = Category::active()->get();
+        if ($request->search) {
+            $query->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('slug', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        $products = $query->paginate(15)->withQueryString();
 
         return Inertia::render('Admin/Products/Index', [
             'products' => ProductResource::collection($products),
-            'categories' => CategoryResource::collection($categories),
-            'filters' => $request->only(['search', 'category_id', 'active']),
+            'filters' => $request->only(['search', 'status']),
         ]);
     }
 
     /**
-     * Display the specified resource.
+     * Show the form for creating a new resource.
      */
-    public function show(Product $product)
+    public function create()
     {
-        Gate::authorize('view', $product);
-
-        return Inertia::render('Admin/Products/Show', [
-            'product' => new ProductResource($product->load(['category', 'category.products'])),
-        ]);
+        \Illuminate\Support\Facades\Gate::authorize('create', Product::class);
+        return Inertia::render('Admin/Products/Create');
     }
 
     /**
@@ -56,11 +59,22 @@ class ProductController extends Controller
      */
     public function store(ProductRequest $request)
     {
-        Gate::authorize('create', Product::class);
-
+        \Illuminate\Support\Facades\Gate::authorize('create', Product::class);
+        
         $this->productService->createProduct($request->validated());
 
         return back()->with('success', 'Produk berhasil ditambahkan.');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Product $product)
+    {
+        \Illuminate\Support\Facades\Gate::authorize('view', $product);
+        return Inertia::render('Admin/Products/Show', [
+            'product' => new ProductResource($product->load(['durations', 'fields'])),
+        ]);
     }
 
     /**
@@ -68,7 +82,7 @@ class ProductController extends Controller
      */
     public function update(ProductRequest $request, Product $product)
     {
-        Gate::authorize('update', $product);
+        \Illuminate\Support\Facades\Gate::authorize('update', $product);
 
         $this->productService->updateProduct($product, $request->validated());
 
@@ -80,8 +94,8 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        Gate::authorize('delete', $product);
-
+        \Illuminate\Support\Facades\Gate::authorize('delete', $product);
+        
         try {
             $this->productService->deleteProduct($product);
             return back()->with('success', 'Produk berhasil dihapus.');

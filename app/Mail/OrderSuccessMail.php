@@ -16,13 +16,13 @@ class OrderSuccessMail extends Mailable implements ShouldQueue
 
     public function __construct(public Order $order)
     {
-        $this->order->loadMissing(['product', 'paymentMethod', 'user']);
+        $this->order->loadMissing(['items.orderKeys', 'fieldValues']);
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "🎉 Top-up #{$this->order->trx_id} Berhasil!",
+            subject: "💎 Key Berhasil Terkirim - Pesanan #{$this->order->invoice_code}",
         );
     }
 

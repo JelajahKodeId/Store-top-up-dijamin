@@ -1,20 +1,46 @@
-import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
+import { Head, router, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import AdminTable from '@/Components/ui/AdminTable';
+import Button from '@/Components/ui/Button';
 import Badge from '@/Components/ui/Badge';
+import Modal from '@/Components/ui/Modal';
+import { Select } from '@/Components/ui/Input';
 import { AppIcons } from '@/Components/shared/AppIcon';
-import { Link } from '@inertiajs/react';
 
 export default function OrderIndex({ orders, filters }) {
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+
+    const { data, setData, put, processing, reset } = useForm({
+        status: '',
+    });
+
     const handleSearch = (val) => {
         router.get(route('admin.orders.index'), { ...filters, search: val }, { preserveState: true, replace: true });
     };
 
-    const handleStatusFilter = (status) => {
-        router.get(route('admin.orders.index'), { ...filters, status: status }, { preserveState: true });
+    const handleFilter = (key, val) => {
+        router.get(route('admin.orders.index'), { ...filters, [key]: val }, { preserveState: true });
     };
 
-    const getStatusColor = (status) => {
+    const openStatusModal = (order) => {
+        setSelectedOrder(order);
+        setData('status', order.status);
+        setIsStatusModalOpen(true);
+    };
+
+    const updateStatus = (e) => {
+        e.preventDefault();
+        put(route('admin.orders.update', selectedOrder.id), {
+            onSuccess: () => {
+                setIsStatusModalOpen(false);
+                reset();
+            },
+        });
+    };
+
+    const getStatusVariant = (status) => {
         switch (status) {
             case 'success': return 'accent';
             case 'paid': return 'indigo';
@@ -25,26 +51,22 @@ export default function OrderIndex({ orders, filters }) {
         }
     };
 
-    const EyeIcon = AppIcons.view;
-    const UserIcon = AppIcons.users;
-    const CartIcon = AppIcons.orders;
-
     return (
         <AdminLayout
-            title="Manajemen Pesanan"
-            subtitle="Pantau dan kelola seluruh transaksi pelanggan"
+            title="Daftar Pesanan"
+            subtitle="Kelola dan pantau transaksi pelanggan"
         >
             <Head title="Manajemen Pesanan" />
 
             <AdminTable
-                title="Daftar Transaksi"
-                subtitle={`${orders.meta.total} Total Pesanan`}
+                title="Semua Transaksi"
+                subtitle={`${orders.meta.total} Total Transaksi`}
                 onSearch={handleSearch}
                 pagination={orders.meta}
                 actions={
                     <select
                         value={filters.status || ''}
-                        onChange={(e) => handleStatusFilter(e.target.value)}
+                        onChange={(e) => handleFilter('status', e.target.value)}
                         className="bg-admin-bg border-1.5 border-store-border rounded-xl px-4 py-2.5 text-xs font-bold text-store-charcoal outline-none focus:border-store-charcoal transition-all"
                     >
                         <option value="">Semua Status</option>
@@ -56,51 +78,92 @@ export default function OrderIndex({ orders, filters }) {
                     </select>
                 }
                 headers={[
-                    { label: 'Transaksi', className: 'w-[30%]' },
-                    { label: 'Pelanggan', className: 'w-[25%]' },
-                    { label: 'Total', className: 'w-[20%]' },
-                    { label: 'Status', className: 'w-[15%]' },
-                    { label: 'Aksi', className: 'w-[10%] text-right' }
+                    { label: 'Invoice', className: 'w-[30%] sm:w-[20%]' },
+                    { label: 'Pelanggan', className: 'hidden md:table-cell w-[25%]' },
+                    { label: 'Total', className: 'w-[20%] sm:w-[15%]' },
+                    { label: 'Status', className: 'w-[20%] sm:w-[15%]' },
+                    { label: 'Aksi', className: 'w-[30%] sm:w-[25%] text-right' }
                 ]}
             >
                 {orders.data.map((order) => (
                     <tr key={order.id}>
                         <td>
                             <div className="flex flex-col">
-                                <span className="font-black text-store-charcoal text-sm">{order.trx_id}</span>
+                                <span className="font-black text-store-charcoal text-sm">{order.invoice_code}</span>
                                 <span className="text-[10px] text-store-subtle uppercase font-bold tracking-widest">{order.created_at}</span>
                             </div>
                         </td>
-                        <td>
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-admin-bg flex items-center justify-center text-store-muted border border-store-border flex-shrink-0">
-                                    <UserIcon size={14} />
-                                </div>
-                                <div className="flex flex-col truncate">
-                                    <span className="font-bold text-store-charcoal text-xs truncate">{order.customer_name || 'Guest'}</span>
-                                    <span className="text-[10px] text-store-subtle font-medium truncate">{order.customer_email}</span>
-                                </div>
+                        <td className="hidden md:table-cell">
+                            <div className="flex flex-col">
+                                <span className="font-black text-store-charcoal text-sm truncate">{order.customer_name || 'Guest'}</span>
+                                <span className="text-[10px] text-store-subtle font-bold truncate">{order.customer_email}</span>
                             </div>
                         </td>
                         <td>
-                            <span className="font-black text-store-charcoal text-sm">{order.total_price_formatted}</span>
+                            <span className="text-sm font-black text-store-charcoal">{order.total_price_formatted}</span>
                         </td>
                         <td>
-                            <Badge variant={getStatusColor(order.status)} className="uppercase text-[9px] tracking-widest px-3">
+                            <Badge variant={getStatusVariant(order.status)} className="w-fit">
                                 {order.status}
                             </Badge>
                         </td>
                         <td className="text-right">
-                            <Link
-                                href={route('admin.orders.show', order.id)}
-                                className="p-2 inline-flex rounded-lg bg-admin-bg text-store-muted hover:text-store-charcoal hover:bg-store-border transition-all"
-                            >
-                                <EyeIcon size={16} />
-                            </Link>
+                            <div className="flex items-center justify-end gap-2">
+                                <button
+                                    onClick={() => openStatusModal(order)}
+                                    className="px-3 py-1.5 rounded-lg bg-store-accent/10 text-store-accent hover:bg-store-accent hover:text-white text-[10px] font-black uppercase tracking-tight transition-all"
+                                >
+                                    Status
+                                </button>
+                                <button
+                                    onClick={() => router.get(route('admin.orders.show', order.id))}
+                                    className="p-2 rounded-lg bg-admin-bg text-store-muted hover:text-store-charcoal hover:bg-store-border transition-all"
+                                >
+                                    <AppIcons.view size={16} />
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 ))}
             </AdminTable>
+
+            {/* Quick Status Update Modal */}
+            <Modal
+                show={isStatusModalOpen}
+                onClose={() => setIsStatusModalOpen(false)}
+                title="Update Status Pesanan"
+                onSubmit={updateStatus}
+                footer={
+                    <div className="flex justify-end gap-3 font-sans">
+                        <Button variant="ghost" type="button" onClick={() => setIsStatusModalOpen(false)}>Batal</Button>
+                        <Button variant="dark" onClick={updateStatus} loading={processing}>Simpan Status</Button>
+                    </div>
+                }
+            >
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="p-5 bg-admin-bg rounded-2xl border border-store-border flex items-center justify-between">
+                        <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-bold text-store-subtle uppercase tracking-widest leading-none font-sans">Invoice</span>
+                            <span className="text-sm font-black text-store-charcoal leading-tight font-sans">{selectedOrder?.invoice_code}</span>
+                        </div>
+                        <Badge variant={getStatusVariant(selectedOrder?.status)} className="px-3 py-1 text-[10px] uppercase font-sans">
+                            {selectedOrder?.status}
+                        </Badge>
+                    </div>
+
+                    <Select
+                        label="Pilih Status Baru"
+                        value={data.status}
+                        onChange={e => setData('status', e.target.value)}
+                    >
+                        <option value="unpaid">Belum Bayar (Unpaid)</option>
+                        <option value="paid">Dibayar (Paid)</option>
+                        <option value="success">Berhasil (Success)</option>
+                        <option value="failed">Gagal (Failed)</option>
+                        <option value="canceled">Dibatalkan (Canceled)</option>
+                    </Select>
+                </div>
+            </Modal>
         </AdminLayout>
     );
 }

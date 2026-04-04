@@ -16,13 +16,13 @@ class OrderCreatedMail extends Mailable implements ShouldQueue
 
     public function __construct(public Order $order)
     {
-        $this->order->loadMissing(['product', 'paymentMethod', 'user']);
+        $this->order->loadMissing(['items', 'fieldValues']);
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "📋 Pesanan #{$this->order->trx_id} Menunggu Pembayaran",
+            subject: "📋 Pesanan #{$this->order->invoice_code} Menunggu Pembayaran",
         );
     }
 

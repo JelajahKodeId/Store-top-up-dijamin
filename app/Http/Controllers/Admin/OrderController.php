@@ -42,7 +42,7 @@ class OrderController extends Controller
         Gate::authorize('view', $order);
 
         return Inertia::render('Admin/Orders/Show', [
-            'order' => new OrderResource($order->load(['user', 'product.category', 'paymentMethod'])),
+            'order' => new OrderResource($order->load(['items.orderKeys', 'fieldValues', 'voucher', 'payment'])),
         ]);
     }
 
@@ -58,8 +58,12 @@ class OrderController extends Controller
             'note' => 'nullable|string|max:500',
         ]);
 
-        $this->orderService->updateStatus($order, $request->status, $request->note);
-
-        return back()->with('success', 'Status pesanan berhasil diperbarui.');
+        try {
+            $this->orderService->updateStatus($order, $request->status, $request->note);
+            return back()->with('success', 'Status pesanan berhasil diperbarui.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Order status update failed: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memperbarui status pesanan: ' . $e->getMessage());
+        }
     }
 }

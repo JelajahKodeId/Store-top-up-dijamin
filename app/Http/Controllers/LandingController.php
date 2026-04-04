@@ -15,12 +15,12 @@ class LandingController extends Controller
     ) {}
 
     /**
-     * Display the landing page with categories.
+     * Display the landing page with products.
      */
     public function index(): Response
     {
         return Inertia::render('Guest/Home', [
-            'categories' => $this->catalogService->getActiveCategories(),
+            'products' => $this->catalogService->getActiveProducts(),
         ]);
     }
 }

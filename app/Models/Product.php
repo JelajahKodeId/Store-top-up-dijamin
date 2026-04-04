@@ -3,42 +3,35 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
     protected $fillable = [
-        'category_id',
         'name',
-        'sku',
-        'price',
-        'discount_price',
-        'is_active',
-        'is_available'
+        'slug',
+        'description',
+        'image',
+        'status',
     ];
 
-    public function category()
+    public function durations(): HasMany
     {
-        return $this->belongsTo(Category::class);
+        return $this->hasMany(ProductDuration::class);
     }
 
-    public function orders()
+    public function fields(): HasMany
     {
-        return $this->hasMany(Order::class);
+        return $this->hasMany(ProductField::class);
     }
 
-    /**
-     * Scope a query to only include active products.
-     */
+    public function keys(): HasMany
+    {
+        return $this->hasMany(ProductKey::class);
+    }
+
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope a query to only include available products.
-     */
-    public function scopeAvailable($query)
-    {
-        return $query->where('is_available', true);
+        return $query->where('status', 'active');
     }
 }

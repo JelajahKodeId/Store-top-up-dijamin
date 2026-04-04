@@ -22,15 +22,15 @@ class DashboardController extends Controller
                 : 0,
         ];
 
-        $recentOrders = \App\Models\Order::with(['product', 'user'])
+        $recentOrders = \App\Models\Order::with(['items'])
             ->latest()
             ->take(8)
             ->get()
             ->map(function ($order) {
                 return [
-                    'id' => $order->trx_id,
-                    'product' => $order->product?->name ?? 'Produk Dihapus',
-                    'customer' => $order->getCustomerName(),
+                    'id' => $order->invoice_code,
+                    'product' => $order->items->first()?->product_name ?? 'Produk Dihapus',
+                    'customer' => $order->customer_name,
                     'amount' => 'Rp ' . number_format($order->total_price, 0, ',', '.'),
                     'status' => $order->status,
                 ];

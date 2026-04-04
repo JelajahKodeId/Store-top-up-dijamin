@@ -17,12 +17,7 @@ const navItems = [
         section: 'Katalog',
         items: [
             {
-                label: 'Game & Kategori',
-                route: 'admin.categories.index',
-                icon: 'categories',
-            },
-            {
-                label: 'Produk / Paket',
+                label: 'Produk & Paket',
                 route: 'admin.products.index',
                 icon: 'products',
             },
@@ -39,20 +34,30 @@ const navItems = [
         ],
     },
     {
-        section: 'Pengaturan',
+        section: 'Promosi',
         items: [
             {
-                label: 'Metode Pembayaran',
-                route: 'admin.payment-methods.index',
-                icon: 'payments',
+                label: 'Voucher',
+                route: 'admin.vouchers.index',
+                icon: 'vouchers',
             },
             {
-                label: 'Banner',
+                label: 'Banner Promo',
                 route: 'admin.banners.index',
                 icon: 'banners',
             },
+        ],
+    },
+    {
+        section: 'Pengaturan',
+        items: [
             {
-                label: 'Pengguna',
+                label: 'Pengaturan Situs',
+                route: 'admin.settings.index',
+                icon: 'settings',
+            },
+            {
+                label: 'Manajemen Pengguna',
                 route: 'admin.users.index',
                 icon: 'users',
             },
@@ -69,7 +74,7 @@ function safePath(routeName) {
 }
 
 export default function Sidebar({ isCollapsed, onClose, isMobile }) {
-    const BrandIcon = AppIcons.categories;
+    const BrandIcon = AppIcons.dashboard;
     const CloseIcon = AppIcons.close;
     const LogoutIcon = AppIcons.logout;
 

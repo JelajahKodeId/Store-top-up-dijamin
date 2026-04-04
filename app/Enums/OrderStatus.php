@@ -4,20 +4,30 @@ namespace App\Enums;
 
 enum OrderStatus: string
 {
-    case PENDING = 'pending';
-    case PROCESSING = 'processing';
-    case COMPLETED = 'completed';
+    case UNPAID = 'unpaid';
+    case PAID = 'paid';
+    case SUCCESS = 'success';
     case FAILED = 'failed';
-    case REFUNDED = 'refunded';
+    case CANCELED = 'canceled';
 
     public function label(): string
     {
         return match($this) {
-            self::PENDING => 'Menunggu Pembayaran',
-            self::PROCESSING => 'Sedang Diproses',
-            self::COMPLETED => 'Selesai',
+            self::UNPAID => 'Menunggu Pembayaran',
+            self::PAID => 'Sudah Dibayar',
+            self::SUCCESS => 'Selesai',
             self::FAILED => 'Gagal',
-            self::REFUNDED => 'Dikembalikan',
+            self::CANCELED => 'Dibatalkan',
+        };
+    }
+
+    public function color(): string
+    {
+        return match($this) {
+            self::UNPAID => 'warning',
+            self::PAID => 'info',
+            self::SUCCESS => 'success',
+            self::FAILED, self::CANCELED => 'danger',
         };
     }
 }

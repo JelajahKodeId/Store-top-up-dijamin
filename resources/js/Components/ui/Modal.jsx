@@ -6,12 +6,16 @@ import { X } from 'lucide-react';
  * Modal — Accessible lux modal using Headless UI
  */
 export default function Modal({
-    show,
-    onClose,
+    show = false,
+    onClose = () => { },
     title,
     children,
     maxWidth = 'lg',
-    closeable = true
+    closeable = true,
+    footer,
+    headerExtra,
+    padding = true,
+    onSubmit
 }) {
     const maxWidthClass = {
         sm: 'sm:max-w-sm',
@@ -19,6 +23,9 @@ export default function Modal({
         lg: 'sm:max-w-lg',
         xl: 'sm:max-w-xl',
         '2xl': 'sm:max-w-2xl',
+        '3xl': 'sm:max-w-3xl',
+        '4xl': 'sm:max-w-4xl',
+        '5xl': 'sm:max-w-5xl',
     }[maxWidth];
 
     const close = () => {
@@ -32,7 +39,7 @@ export default function Modal({
             <Dialog
                 as="div"
                 id="modal"
-                className="fixed inset-0 flex overflow-y-auto px-4 py-6 sm:px-0 items-center z-[100] transform transition-all"
+                className="fixed inset-0 flex overflow-y-auto px-4 py-8 sm:px-0 items-center justify-center z-[100] transform transition-all"
                 onClose={close}
             >
                 <Transition.Child
@@ -57,28 +64,47 @@ export default function Modal({
                     leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 >
                     <Dialog.Panel
-                        className={`mb-6 bg-white rounded-3xl overflow-hidden shadow-lux border border-white transform transition-all sm:w-full sm:mx-auto ${maxWidthClass}`}
+                        as={onSubmit ? 'form' : 'div'}
+                        onSubmit={onSubmit}
+                        className={`w-full max-h-[90vh] bg-white rounded-3xl overflow-hidden shadow-lux border border-white transform transition-all sm:mx-auto flex flex-col ${maxWidthClass}`}
                     >
                         {/* Header */}
                         {(title || closeable) && (
-                            <div className="px-8 py-6 border-b border-store-border flex items-center justify-between">
-                                <Dialog.Title className="text-lg font-black text-store-charcoal uppercase tracking-tight">
-                                    {title}
-                                </Dialog.Title>
-                                {closeable && (
-                                    <button
-                                        onClick={close}
-                                        className="p-2 rounded-xl hover:bg-admin-bg text-store-muted hover:text-store-charcoal transition-all"
-                                    >
-                                        <X size={20} />
-                                    </button>
+                            <div className="flex-none border-b border-store-border bg-white z-10 font-sans">
+                                <div className="px-6 sm:px-8 py-5 sm:py-6 flex items-center justify-between">
+                                    <Dialog.Title className="text-base sm:text-lg font-black text-store-charcoal uppercase tracking-tight font-sans">
+                                        {title}
+                                    </Dialog.Title>
+                                    {closeable && (
+                                        <button
+                                            onClick={close}
+                                            className="p-2 rounded-xl hover:bg-admin-bg text-store-muted hover:text-store-charcoal transition-all"
+                                        >
+                                            <X size={20} />
+                                        </button>
+                                    )}
+                                </div>
+                                {headerExtra && (
+                                    <div className="w-full">
+                                        {headerExtra}
+                                    </div>
                                 )}
                             </div>
                         )}
 
-                        <div className="p-8">
-                            {children}
+                        {/* Content Area - Scrollable */}
+                        <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide flex flex-col">
+                            <div className={padding ? 'p-6 sm:p-8' : ''}>
+                                {children}
+                            </div>
                         </div>
+
+                        {/* Footer - Fixed */}
+                        {footer && (
+                            <div className="flex-none border-t border-store-border bg-admin-bg/50 px-6 sm:px-8 py-5 sm:py-6 z-10 font-sans">
+                                {footer}
+                            </div>
+                        )}
                     </Dialog.Panel>
                 </Transition.Child>
             </Dialog>

@@ -132,10 +132,10 @@ export default function UserIndex({ users, filters }) {
                     </>
                 }
                 headers={[
-                    { label: 'Pengguna', className: 'w-[40%]' },
-                    { label: 'Kontak', className: 'w-[30%]' },
-                    { label: 'Role', className: 'w-[15%]' },
-                    { label: 'Aksi', className: 'w-[15%] text-right' }
+                    { label: 'Pengguna', className: 'w-[50%] lg:w-[40%]' },
+                    { label: 'Kontak', className: 'hidden md:table-cell w-[30%]' },
+                    { label: 'Role', className: 'w-[20%] lg:w-[15%]' },
+                    { label: 'Aksi', className: 'w-[30%] lg:w-[15%] text-right' }
                 ]}
             >
                 {users.data.map((user) => (
@@ -151,7 +151,7 @@ export default function UserIndex({ users, filters }) {
                                 </div>
                             </div>
                         </td>
-                        <td>
+                        <td className="hidden md:table-cell">
                             <div className="flex flex-col gap-1">
                                 <span className="text-xs font-bold text-store-charcoal">{user.email}</span>
                                 <span className="text-[10px] font-bold text-store-subtle">{user.phone_number || '-'}</span>
@@ -195,48 +195,62 @@ export default function UserIndex({ users, filters }) {
             </AdminTable>
 
             {/* Create Modal */}
-            <Modal show={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Tambah Pengguna Baru">
-                <form onSubmit={submitCreate} className="space-y-6">
-                    <Input label="Nama Lengkap" value={data.name} onChange={e => setData('name', e.target.value)} error={errors.name} placeholder="Contoh: John Doe" icon="users" />
-                    <Input label="Email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} error={errors.email} placeholder="john@example.com" icon="mail" />
-                    <Input label="Nomor HP" value={data.phone_number} onChange={e => setData('phone_number', e.target.value)} error={errors.phone_number} placeholder="0812..." icon="phone" />
-                    <Select label="Role Akses" value={data.role} onChange={e => setData('role', e.target.value)} error={errors.role} icon="shield">
+            <Modal
+                show={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                title="Tambah Pengguna Baru"
+                onSubmit={submitCreate}
+                footer={
+                    <div className="flex justify-end gap-3 font-sans">
+                        <Button variant="ghost" onClick={() => setIsCreateModalOpen(false)}>Batal</Button>
+                        <Button variant="dark" onClick={submitCreate} loading={processing}>Simpan User</Button>
+                    </div>
+                }
+            >
+                <div className="space-y-6">
+                    <Input label="Nama Lengkap" value={data.name} onChange={e => setData('name', e.target.value)} error={errors.name} placeholder="Contoh: John Doe" />
+                    <Input label="Email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} error={errors.email} placeholder="john@example.com" />
+                    <Input label="Nomor HP" value={data.phone_number} onChange={e => setData('phone_number', e.target.value)} error={errors.phone_number} placeholder="62812..." />
+                    <Select label="Role Akses" value={data.role} onChange={e => setData('role', e.target.value)} error={errors.role}>
                         <option value="member">Member</option>
                         <option value="admin">Admin</option>
                     </Select>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input label="Password" type="password" value={data.password} onChange={e => setData('password', e.target.value)} error={errors.password} icon="lock" />
-                        <Input label="Konfirmasi" type="password" value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value)} icon="lock" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input label="Password" type="password" value={data.password} onChange={e => setData('password', e.target.value)} error={errors.password} />
+                        <Input label="Konfirmasi" type="password" value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value)} />
                     </div>
-                    <div className="flex justify-end gap-3 mt-8">
-                        <Button variant="ghost" onClick={() => setIsCreateModalOpen(false)}>Batal</Button>
-                        <Button variant="dark" loading={processing}>Simpan User</Button>
-                    </div>
-                </form>
+                </div>
             </Modal>
 
             {/* Edit Modal */}
-            <Modal show={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Profil Pengguna">
-                <form onSubmit={submitEdit} className="space-y-6">
-                    <Input label="Nama Lengkap" value={data.name} onChange={e => setData('name', e.target.value)} error={errors.name} icon="users" />
-                    <Input label="Email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} error={errors.email} icon="mail" />
-                    <Input label="Nomor HP" value={data.phone_number} onChange={e => setData('phone_number', e.target.value)} error={errors.phone_number} icon="phone" />
-                    <Select label="Role Akses" value={data.role} onChange={e => setData('role', e.target.value)} error={errors.role} icon="shield">
+            <Modal
+                show={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                title="Edit Profil Pengguna"
+                onSubmit={submitEdit}
+                footer={
+                    <div className="flex justify-end gap-3 font-sans">
+                        <Button variant="ghost" onClick={() => setIsEditModalOpen(false)}>Batal</Button>
+                        <Button variant="dark" onClick={submitEdit} loading={processing}>Simpan Perubahan</Button>
+                    </div>
+                }
+            >
+                <div className="space-y-6">
+                    <Input label="Nama Lengkap" value={data.name} onChange={e => setData('name', e.target.value)} error={errors.name} />
+                    <Input label="Email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} error={errors.email} />
+                    <Input label="Nomor HP" value={data.phone_number} onChange={e => setData('phone_number', e.target.value)} error={errors.phone_number} />
+                    <Select label="Role Akses" value={data.role} onChange={e => setData('role', e.target.value)} error={errors.role}>
                         <option value="member">Member</option>
                         <option value="admin">Admin</option>
                     </Select>
-                    <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                        <p className="text-[10px] font-bold text-store-subtle uppercase mb-3">Kosongkan jika tidak ingin ganti password</p>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Input label="Password Baru" type="password" value={data.password} onChange={e => setData('password', e.target.value)} error={errors.password} icon="lock" />
-                            <Input label="Konfirmasi" type="password" value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value)} icon="lock" />
+                    <div className="p-5 bg-admin-bg rounded-2xl border border-dashed border-store-border">
+                        <p className="text-[10px] font-black text-store-subtle uppercase tracking-widest mb-4">Ubah Password (Optional)</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input label="Password Baru" type="password" value={data.password} onChange={e => setData('password', e.target.value)} error={errors.password} />
+                            <Input label="Konfirmasi" type="password" value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value)} />
                         </div>
                     </div>
-                    <div className="flex justify-end gap-3 mt-8">
-                        <Button variant="ghost" onClick={() => setIsEditModalOpen(false)}>Batal</Button>
-                        <Button variant="dark" loading={processing}>Simpan Perubahan</Button>
-                    </div>
-                </form>
+                </div>
             </Modal>
 
             <DeleteConfirmModal
