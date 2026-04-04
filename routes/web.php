@@ -9,8 +9,9 @@ use App\Http\Controllers\LandingController;
 use App\Http\Controllers\DashboardController;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
-Route::get('/catalog', [LandingController::class, 'index'])->name('catalog');
-Route::get('/products/{slug}', [LandingController::class, 'index'])->name('products.show.public');
+Route::get('/catalog', [LandingController::class, 'catalog'])->name('catalog');
+Route::get('/products/{slug}', [LandingController::class, 'show'])->name('products.show.public');
+Route::get('/track-invoice', [LandingController::class, 'trackInvoice'])->name('track-invoice');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])
