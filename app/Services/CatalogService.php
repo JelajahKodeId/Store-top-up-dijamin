@@ -2,39 +2,30 @@
 
 namespace App\Services;
 
-use App\Contracts\ICategoryRepository;
-use App\Contracts\IProductRepository;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Collection;
 
 class CatalogService
 {
-    public function __construct(
-        protected ICategoryRepository $categoryRepo,
-        protected IProductRepository $productRepo
-    ) {}
-
     /**
-     * Get all active categories for landing page
+     * Get all active products for landing page
      */
-    public function getActiveCategories(): Collection
+    public function getActiveProducts(): Collection
     {
-        return $this->categoryRepo->allActive();
+        return Product::where('status', 'active')
+            ->with(['durations' => fn($q) => $q->where('is_active', true)])
+            ->latest()
+            ->get();
     }
 
     /**
-     * Get a game category with its available products
+     * Get product details by slug
      */
-    public function getGameDetails(string $slug): array
+    public function getProductDetails(string $slug): ?Product
     {
-        $category = $this->categoryRepo->findBySlug($slug);
-        
-        if (!$category) {
-            return [];
-        }
-
-        return [
-            'category' => $category,
-            'products' => $this->productRepo->getByCategory($category->id)
-        ];
+        return Product::where('slug', $slug)
+            ->where('status', 'active')
+            ->with(['durations' => fn($q) => $q->where('is_active', true), 'fields'])
+            ->first();
     }
 }

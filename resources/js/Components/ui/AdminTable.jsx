@@ -23,23 +23,23 @@ export default function AdminTable({
         <div className="admin-content-card border-none">
             {/* Header section */}
             {(title || onSearch || actions) && (
-                <div className="px-8 py-7 border-b border-store-border flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="px-6 sm:px-8 py-5 sm:py-7 border-b border-store-border flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="min-w-0">
                         {title && (
-                            <h3 className="text-base font-black text-store-charcoal uppercase tracking-tight">
+                            <h3 className="text-sm sm:text-base font-black text-store-charcoal uppercase tracking-tight">
                                 {title}
                             </h3>
                         )}
                         {subtitle && (
-                            <p className="text-[11px] font-bold text-store-subtle uppercase tracking-widest mt-1.5">
+                            <p className="text-[10px] sm:text-[11px] font-bold text-store-subtle uppercase tracking-widest mt-1 sm:mt-1.5">
                                 {subtitle}
                             </p>
                         )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                         {onSearch && (
-                            <div className="relative group min-w-[240px]">
+                            <div className="relative group w-full sm:min-w-[240px]">
                                 <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-store-muted group-focus-within:text-store-charcoal transition-colors" size={16} strokeWidth={2.5} />
                                 <input
                                     type="text"

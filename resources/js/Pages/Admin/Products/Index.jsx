@@ -1,47 +1,50 @@
-import { useState } from 'react';
-import { Head, router, useForm, Link } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import AdminTable from '@/Components/ui/AdminTable';
 import Button from '@/Components/ui/Button';
 import Badge from '@/Components/ui/Badge';
 import Modal from '@/Components/ui/Modal';
-import Input, { Select } from '@/Components/ui/Input';
+import Input, { Select, Textarea } from '@/Components/ui/Input';
 import DeleteConfirmModal from '@/Components/ui/DeleteConfirmModal';
 import { AppIcons } from '@/Components/shared/AppIcon';
 
-export default function ProductIndex({ products, categories, filters }) {
+export default function ProductIndex({ products, filters }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [processingDelete, setProcessingDelete] = useState(false);
+    const [activeTab, setActiveTab] = useState('basic'); // 'basic', 'fields', 'durations'
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
-        category_id: '',
         name: '',
-        sku: '',
-        price: '',
-        discount_price: '',
-        is_active: true,
-        is_available: true,
+        slug: '',
+        description: '',
+        image: '',
+        status: 'active',
+        fields: [],
+        durations: [{ name: '', duration_days: '', price: '', is_active: true }],
     });
 
     const openCreateModal = () => {
         reset();
         clearErrors();
+        setActiveTab('basic');
         setIsCreateModalOpen(true);
     };
 
     const openEditModal = (product) => {
         setSelectedProduct(product);
+        setActiveTab('basic');
         setData({
-            category_id: product.category_id,
             name: product.name,
-            sku: product.sku,
-            price: product.price,
-            discount_price: product.discount_price || '',
-            is_active: product.is_active,
-            is_available: product.is_available,
+            slug: product.slug,
+            description: product.description || '',
+            image: product.image || '',
+            status: product.status,
+            fields: product.fields || [],
+            durations: product.durations || [],
         });
         clearErrors();
         setIsEditModalOpen(true);
@@ -92,50 +95,64 @@ export default function ProductIndex({ products, categories, filters }) {
         router.get(route('admin.products.index'), { ...filters, [key]: val }, { preserveState: true });
     };
 
-    const PlusIcon = AppIcons.plus;
-    const EditIcon = AppIcons.edit;
-    const TrashIcon = AppIcons.delete;
-    const TagIcon = AppIcons.categories;
+    // Auto-generate slug from name (for create modal)
+    useEffect(() => {
+        if (isCreateModalOpen && data.name) {
+            setData('slug', data.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''));
+        }
+    }, [data.name]);
+
+    // Dynamic Fields Logic
+    const addField = () => setData('fields', [...data.fields, { name: '', label: '', type: 'text', placeholder: '', is_required: true, sort_order: data.fields.length + 1 }]);
+    const removeField = (idx) => {
+        const f = [...data.fields]; f.splice(idx, 1); setData('fields', f);
+    };
+    const updateField = (idx, k, v) => {
+        const f = [...data.fields]; f[idx][k] = v; setData('fields', f);
+    };
+
+    // Durations Logic
+    const addDuration = () => setData('durations', [...data.durations, { name: '', duration_days: '', price: '', is_active: true }]);
+    const removeDuration = (idx) => {
+        const d = [...data.durations]; d.splice(idx, 1); setData('durations', d);
+    };
+    const updateDuration = (idx, k, v) => {
+        const d = [...data.durations]; d[idx][k] = v; setData('durations', d);
+    };
 
     return (
         <AdminLayout
             title="Manajemen Produk"
-            subtitle="Atur ketersediaan dan harga paket top-up Anda"
+            subtitle="Atur ketersediaan, field dinamis, dan durasi"
         >
             <Head title="Manajemen Produk" />
 
             <AdminTable
-                title="Daftar Produk / Paket"
+                title="Daftar Produk"
                 subtitle={`${products.meta.total} Total Produk`}
                 onSearch={handleSearch}
                 pagination={products.meta}
                 actions={
                     <>
                         <select
-                            value={filters.category_id || ''}
-                            onChange={(e) => handleFilter('category_id', e.target.value)}
+                            value={filters.status || ''}
+                            onChange={(e) => handleFilter('status', e.target.value)}
                             className="bg-admin-bg border-1.5 border-store-border rounded-xl px-4 py-2.5 text-xs font-bold text-store-charcoal outline-none focus:border-store-charcoal transition-all"
                         >
-                            <option value="">Semua Kategori</option>
-                            {categories.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
+                            <option value="">Semua Status</option>
+                            <option value="active">Aktif</option>
+                            <option value="inactive">Draft</option>
                         </select>
 
-                        <Button
-                            variant="dark"
-                            size="md"
-                            onClick={openCreateModal}
-                            icon={PlusIcon}
-                        >
+                        <Button variant="dark" size="md" onClick={openCreateModal} icon={AppIcons.plus}>
                             Tambah Produk
                         </Button>
                     </>
                 }
                 headers={[
-                    { label: 'Produk & SKU', className: 'w-[35%]' },
-                    { label: 'Kategori', className: 'w-[15%]' },
-                    { label: 'Harga', className: 'w-[20%]' },
+                    { label: 'Produk', className: 'w-[40%]' },
+                    { label: 'Varian', className: 'w-[15%]' },
+                    { label: 'Stok Key', className: 'w-[15%]' },
                     { label: 'Status', className: 'w-[15%]' },
                     { label: 'Aksi', className: 'w-[15%] text-right' }
                 ]}
@@ -145,38 +162,29 @@ export default function ProductIndex({ products, categories, filters }) {
                         <td>
                             <div className="flex flex-col">
                                 <span className="font-black text-store-charcoal text-sm">{product.name}</span>
-                                <span className="text-[10px] text-store-subtle uppercase font-bold tracking-widest">{product.sku}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-md bg-admin-bg flex items-center justify-center text-store-muted border border-store-border">
-                                    <TagIcon size={12} />
-                                </div>
-                                <span className="text-xs font-bold text-store-charcoal">{product.category?.name}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div className="flex flex-col">
-                                {product.discount_price ? (
-                                    <>
-                                        <span className="text-sm font-black text-green-600">{product.discount_price_formatted}</span>
-                                        <span className="text-[10px] font-bold text-store-subtle line-through opacity-60">{product.price_formatted}</span>
-                                    </>
-                                ) : (
-                                    <span className="text-sm font-black text-store-charcoal">{product.price_formatted}</span>
-                                )}
+                                <span className="text-[10px] text-store-subtle uppercase font-bold tracking-widest">{product.slug}</span>
                             </div>
                         </td>
                         <td>
                             <div className="flex flex-col gap-1">
-                                <Badge variant={product.is_active ? 'accent' : 'gray'} className="w-fit">
-                                    {product.is_active ? 'Aktif' : 'Draft'}
-                                </Badge>
-                                <Badge variant={product.is_available ? 'charcoal' : 'gray'} className="w-fit">
-                                    {product.is_available ? 'Tersedia' : 'Habis'}
-                                </Badge>
+                                <span className="text-xs font-bold text-store-charcoal">{product.durations.length} Durasi</span>
+                                <span className="text-[10px] text-store-subtle font-bold uppercase tracking-tight">{product.fields.length} Fields</span>
                             </div>
+                        </td>
+                        <td>
+                            <div className="flex items-center gap-2">
+                                <Badge variant={product.keys_count > 0 ? 'charcoal' : 'gray'} className="w-fit">
+                                    {product.keys_count} Ready
+                                </Badge>
+                                <Link href={route('admin.products.keys.index', product.id)} className="p-1.5 rounded-lg bg-store-accent/10 text-store-accent hover:bg-store-accent hover:text-white transition-all" title="Manage Keys">
+                                    <AppIcons.key size={12} />
+                                </Link>
+                            </div>
+                        </td>
+                        <td>
+                            <Badge variant={product.status === 'active' ? 'accent' : 'gray'} className="w-fit">
+                                {product.status === 'active' ? 'Aktif' : 'Draft'}
+                            </Badge>
                         </td>
                         <td className="text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -190,13 +198,13 @@ export default function ProductIndex({ products, categories, filters }) {
                                     onClick={() => openEditModal(product)}
                                     className="p-2 rounded-lg bg-admin-bg text-store-muted hover:text-store-charcoal hover:bg-store-border transition-all"
                                 >
-                                    <EditIcon size={16} />
+                                    <AppIcons.edit size={16} />
                                 </button>
                                 <button
                                     onClick={() => openDeleteModal(product)}
                                     className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-all"
                                 >
-                                    <TrashIcon size={16} />
+                                    <AppIcons.delete size={16} />
                                 </button>
                             </div>
                         </td>
@@ -204,85 +212,183 @@ export default function ProductIndex({ products, categories, filters }) {
                 ))}
             </AdminTable>
 
-            {/* Create Modal */}
-            <Modal show={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Tambah Produk Baru">
-                <form onSubmit={submitCreate} className="space-y-6">
-                    <Select
-                        label="Kategori"
-                        value={data.category_id}
-                        onChange={e => setData('category_id', e.target.value)}
-                        error={errors.category_id}
-                        icon="categories"
-                    >
-                        <option value="">Pilih Kategori</option>
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+            {/* Create/Edit Modal */}
+            <Modal
+                show={isCreateModalOpen || isEditModalOpen}
+                onClose={() => { setIsCreateModalOpen(false); setIsEditModalOpen(false); }}
+                title={isEditModalOpen ? 'Edit Produk Digital' : 'Tambah Produk Baru'}
+                maxWidth="5xl"
+                padding={false}
+                onSubmit={isEditModalOpen ? submitEdit : submitCreate}
+                headerExtra={
+                    <div className="flex items-center gap-1 sm:gap-2 px-6 sm:px-8 border-t border-store-border overflow-x-auto scrollbar-hide py-3 sm:py-4 bg-admin-bg/30">
+                        {[
+                            { id: 'basic', label: 'Info Dasar', icon: AppIcons.dashboard },
+                            { id: 'fields', label: 'Input Data', icon: AppIcons.plus },
+                            { id: 'durations', label: 'Harga & Varian', icon: AppIcons.categories }
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap font-sans ${activeTab === tab.id
+                                    ? 'bg-store-charcoal text-white shadow-soft'
+                                    : 'text-store-muted hover:bg-store-border hover:text-store-charcoal'
+                                    }`}
+                            >
+                                <tab.icon size={14} />
+                                <span className={activeTab === tab.id ? 'block' : 'hidden sm:block'}>{tab.label}</span>
+                            </button>
                         ))}
-                    </Select>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input label="Nama Produk" value={data.name} onChange={e => setData('name', e.target.value)} error={errors.name} placeholder="Contoh: 86 Diamonds" />
-                        <Input label="SKU / Kode" value={data.sku} onChange={e => setData('sku', e.target.value)} error={errors.sku} placeholder="ML-86D" />
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input label="Harga Normal" type="number" value={data.price} onChange={e => setData('price', e.target.value)} error={errors.price} placeholder="20000" />
-                        <Input label="Harga Diskon (Opsional)" type="number" value={data.discount_price} onChange={e => setData('discount_price', e.target.value)} error={errors.discount_price} placeholder="18500" />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="flex items-center gap-3 p-4 bg-admin-bg rounded-xl border border-store-border">
-                            <input type="checkbox" id="is_active" checked={data.is_active} onChange={e => setData('is_active', e.target.checked)} className="w-5 h-5 rounded-md text-store-charcoal" />
-                            <label htmlFor="is_active" className="text-[10px] font-black text-store-charcoal uppercase tracking-tight cursor-pointer">Tampilkan Produk</label>
+                }
+                footer={
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="hidden sm:flex flex-col">
+                            <span className="text-[9px] font-black text-store-subtle uppercase tracking-widest leading-none font-sans">Drafting</span>
+                            <span className="text-xs font-black text-store-charcoal uppercase tracking-tighter leading-normal font-sans">{data.name || 'Produk Tanpa Nama'}</span>
                         </div>
-                        <div className="flex items-center gap-3 p-4 bg-admin-bg rounded-xl border border-store-border">
-                            <input type="checkbox" id="is_available" checked={data.is_available} onChange={e => setData('is_available', e.target.checked)} className="w-5 h-5 rounded-md text-store-charcoal" />
-                            <label htmlFor="is_available" className="text-[10px] font-black text-store-charcoal uppercase tracking-tight cursor-pointer">Stok Tersedia</label>
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <Button variant="ghost" type="button" className="flex-1 sm:flex-initial" onClick={() => { setIsCreateModalOpen(false); setIsEditModalOpen(false); }}>Batal</Button>
+                            <Button variant="dark" onClick={isEditModalOpen ? submitEdit : submitCreate} loading={processing} className="flex-1 sm:flex-initial">{isEditModalOpen ? 'Simpan Perubahan' : 'Buat Produk'}</Button>
                         </div>
                     </div>
-
-                    <div className="flex justify-end gap-3 mt-8">
-                        <Button variant="ghost" onClick={() => setIsCreateModalOpen(false)}>Batal</Button>
-                        <Button variant="dark" loading={processing}>Simpan Produk</Button>
-                    </div>
-                </form>
-            </Modal>
-
-            {/* Edit Modal */}
-            <Modal show={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Produk / Paket">
-                <form onSubmit={submitEdit} className="space-y-6">
-                    <Select label="Kategori" value={data.category_id} onChange={e => setData('category_id', e.target.value)} error={errors.category_id} icon="categories">
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                    </Select>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input label="Nama Produk" value={data.name} onChange={e => setData('name', e.target.value)} error={errors.name} />
-                        <Input label="SKU / Kode" value={data.sku} onChange={e => setData('sku', e.target.value)} error={errors.sku} />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input label="Harga Normal" type="number" value={data.price} onChange={e => setData('price', e.target.value)} error={errors.price} />
-                        <Input label="Harga Diskon" type="number" value={data.discount_price} onChange={e => setData('discount_price', e.target.value)} error={errors.discount_price} />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="flex items-center gap-3 p-4 bg-admin-bg rounded-xl border border-store-border">
-                            <input type="checkbox" id="edit_is_active" checked={data.is_active} onChange={e => setData('is_active', e.target.checked)} className="w-5 h-5 rounded-md text-store-charcoal" />
-                            <label htmlFor="edit_is_active" className="text-[10px] font-black text-store-charcoal uppercase tracking-tight cursor-pointer">Tampilkan Produk</label>
+                }
+            >
+                <div className="flex flex-col h-full">
+                    {activeTab === 'basic' && (
+                        <div className="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="space-y-6">
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black text-store-charcoal uppercase tracking-widest border-b border-store-border pb-3">Informasi Utama</h4>
+                                    <Input label="Nama Produk" value={data.name} onChange={e => setData('name', e.target.value)} error={errors.name} placeholder="Contoh: Mobile Legends" />
+                                    <Input label="Slug (URL)" value={data.slug} onChange={e => setData('slug', e.target.value)} error={errors.slug} />
+                                    <Textarea label="Deskripsi" value={data.description} onChange={e => setData('description', e.target.value)} error={errors.description} rows={4} />
+                                </div>
+                            </div>
+                            <div className="space-y-6">
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black text-store-charcoal uppercase tracking-widest border-b border-store-border pb-3">Status & Brand</h4>
+                                    <Input label="URL Gambar / Ikon" value={data.image} onChange={e => setData('image', e.target.value)} error={errors.image} placeholder="https://..." />
+                                    <Select label="Status Produk" value={data.status} onChange={e => setData('status', e.target.value)} error={errors.status}>
+                                        <option value="active">Aktif (Tampil di Toko)</option>
+                                        <option value="inactive">Draft (Sembunyikan)</option>
+                                    </Select>
+                                    <div className="p-4 bg-admin-bg rounded-2xl border border-store-border border-dashed text-center">
+                                        <p className="text-[10px] font-bold text-store-subtle uppercase tracking-tight">Ketik Nama untuk auto-slug</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-3 p-4 bg-admin-bg rounded-xl border border-store-border">
-                            <input type="checkbox" id="edit_is_available" checked={data.is_available} onChange={e => setData('is_available', e.target.checked)} className="w-5 h-5 rounded-md text-store-charcoal" />
-                            <label htmlFor="edit_is_available" className="text-[10px] font-black text-store-charcoal uppercase tracking-tight cursor-pointer">Stok Tersedia</label>
-                        </div>
-                    </div>
+                    )}
 
-                    <div className="flex justify-end gap-3 mt-8">
-                        <Button variant="ghost" onClick={() => setIsEditModalOpen(false)}>Batal</Button>
-                        <Button variant="dark" loading={processing}>Simpan Perubahan</Button>
-                    </div>
-                </form>
+                    {activeTab === 'fields' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
+                            <div className="sticky top-0 z-20 bg-white border-b border-store-border px-6 sm:px-8 py-4 sm:py-5 flex items-center justify-between shadow-sm">
+                                <div>
+                                    <h4 className="text-[10px] font-black text-store-charcoal uppercase tracking-widest">Kustom Field Input</h4>
+                                    <p className="text-[9px] font-bold text-store-subtle uppercase mt-1">Data pembeli (misal: ID)</p>
+                                </div>
+                                <Button type="button" variant="dark" size="sm" onClick={addField} icon={AppIcons.plus}>Tambah Field</Button>
+                            </div>
+                            <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {data.fields.map((field, idx) => (
+                                    <div key={idx} className="p-5 bg-white rounded-2xl border border-store-border relative group shadow-sm hover:shadow-md transition-all">
+                                        <button type="button" onClick={() => removeField(idx)} className="absolute top-3 right-3 text-red-500 p-2 hover:bg-red-50 rounded-lg transition-all">
+                                            <AppIcons.delete size={16} />
+                                        </button>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 border-b border-admin-bg pb-3 mr-8">
+                                                <div className="w-6 h-6 rounded-lg bg-store-charcoal text-white flex items-center justify-center text-[10px] font-black">{idx + 1}</div>
+                                                <span className="text-[10px] font-black text-store-charcoal uppercase tracking-wider">Field {idx + 1}</span>
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <Input label="Label (Tampil ke User)" value={field.label} onChange={e => updateField(idx, 'label', e.target.value)} placeholder="Contoh: Masukkan User ID" />
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <Select label="Tipe Input" value={field.type} onChange={e => updateField(idx, 'type', e.target.value)}>
+                                                        <option value="text">Teks Bebas</option>
+                                                        <option value="number">Hanya Angka</option>
+                                                    </Select>
+                                                    <div className="space-y-2">
+                                                        <label className="text-[9px] font-bold text-store-subtle uppercase tracking-widest block">Wajib Isi?</label>
+                                                        <div className="flex items-center h-10 gap-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={field.is_required}
+                                                                onChange={e => updateField(idx, 'is_required', e.target.checked)}
+                                                                className="w-5 h-5 rounded-md text-store-charcoal border-store-border"
+                                                            />
+                                                            <span className="text-[10px] font-black text-store-charcoal uppercase italic">Wajib</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {data.fields.length === 0 && (
+                                    <div className="col-span-full py-12 text-center border-2 border-dashed border-store-border rounded-3xl bg-admin-bg/30">
+                                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mx-auto mb-3 shadow-soft">
+                                            <AppIcons.plus className="text-store-muted" size={20} />
+                                        </div>
+                                        <p className="text-[10px] font-black text-store-subtle uppercase tracking-[0.2em]">Belum ada field tambahan</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'durations' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
+                            <div className="sticky top-0 z-20 bg-white border-b border-store-border px-6 sm:px-8 py-4 sm:py-5 flex items-center justify-between shadow-sm">
+                                <div>
+                                    <h4 className="text-[10px] font-black text-store-charcoal uppercase tracking-widest">Daftar Varian & Harga</h4>
+                                    <p className="text-[9px] font-bold text-store-subtle uppercase mt-1">Denominasi produk & harga</p>
+                                </div>
+                                <Button type="button" variant="dark" size="sm" onClick={addDuration} icon={AppIcons.plus}>Tambah Varian</Button>
+                            </div>
+                            <div className="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                {data.durations.map((dur, idx) => (
+                                    <div key={idx} className="p-5 bg-white rounded-2xl border border-store-border relative group shadow-sm hover:shadow-md transition-all">
+                                        <button type="button" onClick={() => removeDuration(idx)} className="absolute top-3 right-3 text-red-500 p-2 hover:bg-red-50 rounded-lg transition-all">
+                                            <AppIcons.delete size={16} />
+                                        </button>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 border-b border-admin-bg pb-3 mr-8">
+                                                <div className="w-6 h-6 rounded-lg bg-store-accent text-white flex items-center justify-center text-xs font-black">
+                                                    <AppIcons.success size={12} />
+                                                </div>
+                                                <span className="text-[10px] font-black text-store-charcoal uppercase tracking-wider">Varian {idx + 1}</span>
+                                            </div>
+                                            <Input label="Nama Denom / Paket" value={dur.name} onChange={e => updateDuration(idx, 'name', e.target.value)} placeholder="Contoh: 86 Diamonds" />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Input label="Masa Aktif (Hari)" type="number" value={dur.duration_days} onChange={e => updateDuration(idx, 'duration_days', e.target.value)} placeholder="0" />
+                                                <Input label="Harga Jual (Rp)" type="number" value={dur.price} onChange={e => updateDuration(idx, 'price', e.target.value)} placeholder="50000" />
+                                            </div>
+                                            <div className="flex items-center gap-2 pt-2">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={dur.is_active}
+                                                    onChange={e => updateDuration(idx, 'is_active', e.target.checked)}
+                                                    className="w-4 h-4 rounded text-store-charcoal border-store-border"
+                                                />
+                                                <span className="text-[10px] font-black text-store-charcoal uppercase italic">Varian Aktif</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {data.durations.length === 0 && (
+                                    <div className="col-span-full py-12 text-center border-2 border-dashed border-store-border rounded-3xl bg-admin-bg/30">
+                                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mx-auto mb-3 shadow-soft">
+                                            <AppIcons.categories className="text-store-muted" size={20} />
+                                        </div>
+                                        <p className="text-[10px] font-black text-store-subtle uppercase tracking-[0.2em]">Belum ada varian produk</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </Modal>
 
             <DeleteConfirmModal
@@ -291,7 +397,7 @@ export default function ProductIndex({ products, categories, filters }) {
                 onConfirm={confirmDelete}
                 processing={processingDelete}
                 title="Hapus Produk"
-                message={`Apakah Anda yakin ingin menghapus produk "${selectedProduct?.name}"? Data transaksi yang berkaitan mungkin akan terpengaruh.`}
+                message={`Apakah Anda yakin ingin menghapus produk "${selectedProduct?.name}"? Data penjualan yang berkaitan mungkin akan terpengaruh.`}
             />
         </AdminLayout>
     );

@@ -54,9 +54,13 @@ class UserController extends Controller
     {
         Gate::authorize('update', User::class);
 
-        $this->userService->createUser($request->validated());
-
-        return back()->with('success', 'Pengguna berhasil ditambahkan.');
+        try {
+            $this->userService->createUser($request->validated());
+            return back()->with('success', 'Pengguna berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('User store failed: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menambahkan pengguna: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -66,9 +70,13 @@ class UserController extends Controller
     {
         Gate::authorize('update', $user);
 
-        $this->userService->updateUser($user, $request->validated());
-
-        return back()->with('success', 'Data pengguna berhasil diperbarui.');
+        try {
+            $this->userService->updateUser($user, $request->validated());
+            return back()->with('success', 'Data pengguna berhasil diperbarui.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('User update failed: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memperbarui pengguna: ' . $e->getMessage());
+        }
     }
 
     /**

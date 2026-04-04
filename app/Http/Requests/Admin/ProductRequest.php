@@ -17,21 +17,37 @@ class ProductRequest extends FormRequest
         $id = $this->route('product')?->id;
 
         return [
-            'category_id' => ['required', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:50', Rule::unique('products', 'sku')->ignore($id)],
-            'price' => ['required', 'numeric', 'min:0'],
-            'discount_price' => ['nullable', 'numeric', 'min:0', 'lt:price'],
-            'is_active' => ['nullable', 'boolean'],
-            'is_available' => ['nullable', 'boolean'],
+            'slug' => ['required', 'string', 'max:255', Rule::unique('products', 'slug')->ignore($id)],
+            'description' => ['nullable', 'string'],
+            'image' => ['nullable', 'string'],
+            'status' => ['required', Rule::in(['active', 'inactive'])],
+            
+            // Fields validation
+            'fields' => ['nullable', 'array'],
+            'fields.*.id' => ['nullable', 'exists:product_fields,id'],
+            'fields.*.name' => ['required', 'string', 'max:100'],
+            'fields.*.label' => ['required', 'string', 'max:100'],
+            'fields.*.type' => ['required', Rule::in(['text', 'number'])],
+            'fields.*.placeholder' => ['nullable', 'string', 'max:255'],
+            'fields.*.validation' => ['nullable', 'string', 'max:255'],
+            'fields.*.is_required' => ['nullable', 'boolean'],
+            'fields.*.sort_order' => ['nullable', 'integer'],
+
+            // Durations validation
+            'durations' => ['required', 'array', 'min:1'],
+            'durations.*.id' => ['nullable', 'exists:product_durations,id'],
+            'durations.*.name' => ['required', 'string', 'max:100'],
+            'durations.*.duration_days' => ['required', 'integer', 'min:1'],
+            'durations.*.price' => ['required', 'numeric', 'min:0'],
+            'durations.*.is_active' => ['nullable', 'boolean'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'discount_price.lt' => 'Harga diskon harus lebih kecil dari harga normal.',
-            'sku.unique' => 'SKU ini sudah digunakan oleh produk lain.',
+            'slug.unique' => 'Slug ini sudah digunakan oleh produk lain.',
         ];
     }
 }

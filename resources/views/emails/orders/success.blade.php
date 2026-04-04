@@ -1,66 +1,53 @@
 @extends('emails.layout')
 
-@section('header_badge', 'Top-up Berhasil 🎉')
+@section('header_badge', 'Key Berhasil Terkirim')
 
 @section('content')
-    <div class="greeting">Top-up Berhasil Terkirim! 🎉</div>
+    <div class="greeting">Halo, {{ $order->customer_name }}! 👋</div>
     <p class="message-text">
-        Halo <strong>{{ $order->getCustomerName() }}</strong>,<br>
-        top-up Anda telah berhasil dikirimkan ke akun yang dituju. Terima kasih!
+        Pesanan <strong>#{{ $order->invoice_code }}</strong> Anda telah berhasil diproses.<br>
+        Berikut adalah detail serial key / lisensi produk Anda:
     </p>
 
-    <span class="status-badge badge-success">🎉 Berhasil</span>
+    <span class="status-badge badge-success">💎 Pesanan Selesai</span>
 
     <div class="order-card">
-        <div class="order-card-title">🧾 Bukti Transaksi</div>
+        <div class="order-card-title">🔑 Serial Key / Lisensi</div>
 
-        <div class="detail-row">
-            <span class="detail-label">ID Transaksi</span>
-            <span class="detail-value trx-id">{{ $order->trx_id }}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">Produk</span>
-            <span class="detail-value">{{ $order->product?->name ?? '-' }}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">ID Akun Tujuan</span>
-            <span class="detail-value">{{ $order->target_id }}{{ $order->zone_id ? " / {$order->zone_id}" : '' }}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">Metode Bayar</span>
-            <span class="detail-value">{{ $order->paymentMethod?->name ?? '-' }}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">Total Dibayar</span>
-            <span class="detail-value highlight">Rp {{ number_format($order->total_price, 0, ',', '.') }}</span>
-        </div>
-        @if($order->reference)
-        <div class="detail-row">
-            <span class="detail-label">Referensi PG</span>
-            <span class="detail-value trx-id">{{ $order->reference }}</span>
-        </div>
-        @endif
-        <div class="detail-row">
-            <span class="detail-label">Waktu Selesai</span>
-            <span class="detail-value">{{ $order->updated_at->format('d M Y, H:i') }} WIB</span>
-        </div>
+        @foreach($order->items as $item)
+            <div style="background: #f8fafc; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px dashed #cbd5e1;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #64748b; margin-bottom: 5px;">
+                    {{ $item->product_name }} ({{ $item->duration_name }})
+                </div>
+                @foreach($item->orderKeys as $key)
+                    <div style="font-family: 'Courier New', Courier, monospace; font-size: 16px; font-weight: 700; color: #1e293b; letter-spacing: 1px;">
+                        {{ $key->key_code }}
+                    </div>
+                @endforeach
+            </div>
+        @endforeach
     </div>
 
+    @if($order->fieldValues->count() > 0)
+    <div class="order-card" style="margin-top: 15px;">
+        <div class="order-card-title">📦 Detail Akun</div>
+        @foreach($order->fieldValues as $fv)
+            <div class="detail-row">
+                <span class="detail-label">{{ $fv->field_name }}</span>
+                <span class="detail-value">{{ $fv->field_value }}</span>
+            </div>
+        @endforeach
+    </div>
+    @endif
+
     <div class="alert-box alert-success">
-        ✅ <strong>Transaksi selesai dan tercatat</strong> di sistem kami.<br>
-        Simpan email ini sebagai bukti transaksi Anda.
+        📖 <strong>Tips:</strong> Salin key di atas dan masukkan ke dalam aplikasi / game yang sesuai.
+        Jika ada kendala, hubungi WhatsApp kami.
     </div>
 
     <div class="center">
-        <a href="{{ config('app.url') }}/orders/{{ $order->trx_id }}" class="btn-cta">
-            Lihat Detail Transaksi →
+        <a href="{{ config('app.url') }}/orders/{{ $order->invoice_code }}" class="btn-cta">
+            Invoice Detail →
         </a>
     </div>
-
-    <hr class="divider">
-
-    <p style="font-size: 13px; color: #64748b; text-align: center;">
-        Puas dengan layanan kami? Bagikan ke teman-temanmu! 🙌<br>
-        <a href="{{ config('app.url') }}" style="color: #6366f1;">Kunjungi {{ config('app.name') }}</a>
-    </p>
 @endsection

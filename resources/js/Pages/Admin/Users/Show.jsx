@@ -5,7 +5,7 @@ import { AppIcons } from '@/Components/shared/AppIcon';
 
 export default function UserShow({ user }) {
     // Destructure nested data from JsonResource
-    const userData = user;
+    const u = user.data || user;
 
     const BackIcon = AppIcons.chevronLeft;
     const MailIcon = AppIcons.mail;
@@ -16,9 +16,9 @@ export default function UserShow({ user }) {
     return (
         <AdminLayout
             title="Detail Pengguna"
-            subtitle={`Informasi lengkap akun: ${userData?.name}`}
+            subtitle={`Informasi lengkap akun: ${u?.name}`}
         >
-            <Head title={`Detail User - ${userData?.name}`} />
+            <Head title={`Detail User - ${u?.name}`} />
 
             <div className="mb-8">
                 <Link
@@ -34,14 +34,14 @@ export default function UserShow({ user }) {
                 <div className="lg:col-span-1 space-y-6">
                     <div className="admin-content-card p-8 text-center group">
                         <div className="w-24 h-24 rounded-3xl bg-admin-bg border-2 border-white shadow-lux mx-auto flex items-center justify-center text-4xl font-black text-store-muted mb-6 group-hover:scale-105 transition-transform duration-500">
-                            {userData.name ? userData.name.charAt(0).toUpperCase() : '?'}
+                            {u.name ? u.name.charAt(0).toUpperCase() : '?'}
                         </div>
-                        <h3 className="text-xl font-black text-store-charcoal tracking-tight">{userData?.name}</h3>
-                        <p className="text-xs font-bold text-store-subtle uppercase tracking-widest mt-1">ID: #{userData?.id}</p>
+                        <h3 className="text-xl font-black text-store-charcoal tracking-tight">{u?.name}</h3>
+                        <p className="text-xs font-bold text-store-subtle uppercase tracking-widest mt-1">ID: #{u?.id}</p>
 
                         <div className="mt-6">
-                            <Badge variant={userData.role === 'admin' ? 'charcoal' : 'gray'} className="px-6 py-1.5 text-[10px]">
-                                {userData.role}
+                            <Badge variant={u.role === 'admin' ? 'charcoal' : 'gray'} className="px-6 py-1.5 text-[10px]">
+                                {u.role}
                             </Badge>
                         </div>
                     </div>
@@ -55,7 +55,7 @@ export default function UserShow({ user }) {
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-bold text-store-subtle uppercase tracking-wider">Email</span>
-                                <span className="text-sm font-black text-store-charcoal">{userData.email}</span>
+                                <span className="text-sm font-black text-store-charcoal">{u.email}</span>
                             </div>
                         </div>
 
@@ -65,7 +65,7 @@ export default function UserShow({ user }) {
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-bold text-store-subtle uppercase tracking-wider">Nomor HP</span>
-                                <span className="text-sm font-black text-store-charcoal">{userData.phone_number || '-'}</span>
+                                <span className="text-sm font-black text-store-charcoal">{u.phone_number || '-'}</span>
                             </div>
                         </div>
                     </div>
@@ -82,7 +82,7 @@ export default function UserShow({ user }) {
                             <div className="p-6 bg-admin-bg rounded-2xl border border-store-border relative group overflow-hidden">
                                 <CalendarIcon size={40} className="absolute -right-4 -bottom-4 text-store-charcoal/[0.03] group-hover:scale-110 transition-transform duration-500" />
                                 <span className="text-[10px] font-bold text-store-subtle uppercase tracking-wider block mb-1">Terdaftar Sejak</span>
-                                <span className="text-lg font-black text-store-charcoal">{user.created_at}</span>
+                                <span className="text-lg font-black text-store-charcoal">{u.created_at}</span>
                             </div>
 
                             <div className="p-6 bg-admin-bg rounded-2xl border border-store-border relative group overflow-hidden">
@@ -100,7 +100,7 @@ export default function UserShow({ user }) {
                                 <div>
                                     <h5 className="text-sm font-black text-yellow-800 uppercase tracking-tight mb-1">Catatan Akun</h5>
                                     <p className="text-xs text-yellow-700 font-medium leading-relaxed">
-                                        Pengguna ini memiliki hak akses sebagai <strong>{user.role}</strong>. Pastikan setiap perubahan data profil sudah sesuai dengan permintaan pemilik akun untuk menjaga keamanan data.
+                                        Pengguna ini memiliki hak akses sebagai <strong>{u.role}</strong>. Pastikan setiap perubahan data profil sudah sesuai dengan permintaan pemilik akun untuk menjaga keamanan data.
                                     </p>
                                 </div>
                             </div>

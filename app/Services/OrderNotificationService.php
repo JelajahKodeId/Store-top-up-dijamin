@@ -18,7 +18,7 @@ class OrderNotificationService
     public function sendForStatus(Order $order): void
     {
         if (! $order->hasEmailRecipient()) {
-            Log::info("OrderNotification: Order #{$order->trx_id} tidak memiliki email tujuan, dilewati.");
+            Log::info("OrderNotification: Order #{$order->invoice_code} tidak memiliki email tujuan, dilewati.");
             return;
         }
 
@@ -37,9 +37,9 @@ class OrderNotificationService
 
         try {
             Mail::to($email)->queue($mailable);
-            Log::info("OrderNotification: Email '{$order->status}' dikirim ke {$email} untuk order #{$order->trx_id}");
+            Log::info("OrderNotification: Email '{$order->status}' dikirim ke {$email} untuk order #{$order->invoice_code}");
         } catch (\Throwable $e) {
-            Log::error("OrderNotification: Gagal kirim email untuk order #{$order->trx_id} — {$e->getMessage()}");
+            Log::error("OrderNotification: Gagal kirim email untuk order #{$order->invoice_code} — {$e->getMessage()}");
         }
     }
 }

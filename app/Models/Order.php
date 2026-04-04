@@ -3,72 +3,76 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
     protected $fillable = [
-        'trx_id',
-        'user_id',
-        'product_id',
-        'target_id',
-        'zone_id',
-        'total_price',
-        'status',
-        'payment_method_id',
-        'reference',
-        'note',
         'customer_name',
         'customer_email',
-        'extra_data',
+        'customer_phone',
+        'whatsapp_number',
+        'invoice_code',
+        'total_price',
+        'discount_amount',
+        'status',
+        'payment_method',
+        'is_sent',
+        'voucher_id',
+        'ip_address',
     ];
 
     protected $casts = [
         'total_price' => 'decimal:2',
-        'extra_data' => 'array',
+        'discount_amount' => 'decimal:2',
+        'is_sent' => 'boolean',
+        'status' => \App\Enums\OrderStatus::class,
     ];
 
-    // ─── Relationships ────────────────────────────────────────────────────────
-
-    public function user()
+    public function voucher(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Voucher::class);
     }
 
-    public function product()
+    public function items(): HasMany
     {
-        return $this->belongsTo(Product::class);
+        return $this->hasMany(OrderItem::class);
     }
 
-    public function paymentMethod()
+    public function fieldValues(): HasMany
     {
-        return $this->belongsTo(PaymentMethod::class);
+        return $this->hasMany(OrderFieldValue::class);
     }
 
-    // ─── Email Notification Helpers ───────────────────────────────────────────
-
-    /**
-     * Dapatkan email penerima notifikasi.
-     * Prioritas: email dari relasi user (member) → customer_email (guest).
-     */
-    public function getCustomerEmail(): ?string
+    public function payment(): HasOne
     {
-        return $this->user?->email ?? $this->customer_email;
+        return $this->hasOne(Payment::class);
     }
 
-    /**
-     * Dapatkan nama pelanggan untuk email.
-     * Prioritas: nama dari relasi user → customer_name → 'Pelanggan'.
-     */
-    public function getCustomerName(): string
+    protected static function booted()
     {
-        return $this->user?->name ?? $this->customer_name ?? 'Pelanggan';
+        parent::booted();
+        static::creating(function ($order) {
+            if (empty($order->invoice_code)) {
+                $order->invoice_code = 'INV-' . strtoupper(\Illuminate\Support\Str::random(12));
+            }
+        });
     }
 
-    /**
-     * Cek apakah order memiliki tujuan email yang valid.
-     */
     public function hasEmailRecipient(): bool
     {
-        return ! empty($this->getCustomerEmail());
+        return !empty($this->customer_email);
+    }
+
+    public function getCustomerEmail(): string
+    {
+        return $this->customer_email;
+    }
+
+    public function getCustomerName(): string
+    {
+        return $this->customer_name;
     }
 }

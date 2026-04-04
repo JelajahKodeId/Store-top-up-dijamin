@@ -2,86 +2,134 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OrderKey;
+use App\Models\OrderFieldValue;
 use App\Models\Product;
-use App\Models\User;
-use App\Models\PaymentMethod;
-use Illuminate\Support\Str;
+use App\Models\ProductKey;
+use App\Models\Voucher;
+use App\Enums\OrderStatus;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class OrderSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $products = Product::all();
-        $paymentMethods = PaymentMethod::all();
-        $members = User::role('member')->get();
+        // Clear existing orders to avoid unique key conflicts
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('orders')->truncate();
+        DB::table('order_items')->truncate();
+        DB::table('order_keys')->truncate();
+        DB::table('order_field_values')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        $products = Product::with(['durations', 'fields'])->get();
+        $vouchers = Voucher::active()->get();
         
-        if ($products->isEmpty() || $paymentMethods->isEmpty()) {
+        if ($products->isEmpty()) {
+            $this->command->warn('No products found. Please seed products first.');
             return;
         }
 
-        $count = 100; // Reduced count for seeding
-        
-        for ($i = 0; $i < $count; $i++) {
-            $product = $products->random();
-            $category = $product->category;
-            $paymentMethod = $paymentMethods->random();
-            
-            $isMember = !$members->isEmpty() && rand(0, 1) === 1;
-            $user = $isMember ? $members->random() : null;
-            
-            $status = $this->getRandomStatus();
+        $statuses = [
+            OrderStatus::SUCCESS,
+            OrderStatus::PAID,
+            OrderStatus::UNPAID,
+            OrderStatus::FAILED,
+            OrderStatus::CANCELED
+        ];
+
+        $paymentMethods = ['E-Wallet (OVO)', 'E-Wallet (DANA)', 'Virtual Account (BCA)', 'QRIS', 'Retail (Alfamart)'];
+
+        for ($i = 0; $i < 20; $i++) {
             $createdAt = Carbon::now()->subDays(rand(0, 30))->subHours(rand(0, 23));
+            $status = $statuses[array_rand($statuses)];
             
-            // Populate extra_data based on category fields
-            $extraData = [];
-            if ($category->fields) {
-                foreach ($category->fields as $field) {
-                    $extraData[$field['name']] = match ($field['name']) {
-                        'target_id' => (string)rand(1000000, 9999999),
-                        'zone_id' => (string)rand(1000, 9999),
-                        'username' => 'user_' . Str::random(5),
-                        'password' => Str::random(10),
-                        'login_via' => ['Moonton', 'FB', 'Google'][rand(0, 2)],
-                        'email' => Str::random(8) . '@example.com',
-                        'target_url' => 'https://v-k.com/p/' . Str::random(10),
-                        default => Str::random(5),
-                    };
-                }
+            // Bias towards Success for a better looking dashboard
+            if (rand(1, 10) <= 6) {
+                $status = OrderStatus::SUCCESS;
             }
 
-            Order::create([
-                'trx_id' => 'TRX' . strtoupper(Str::random(12)),
-                'user_id' => $user?->id,
-                'product_id' => $product->id,
-                'target_id' => $extraData['target_id'] ?? $extraData['username'] ?? $extraData['email'] ?? $extraData['target_url'] ?? 'N/A',
-                'zone_id' => $extraData['zone_id'] ?? null,
-                'total_price' => $product->price,
+            $order = Order::create([
+                'customer_name' => fake()->name(),
+                'customer_email' => fake()->safeEmail(),
+                'whatsapp_number' => '08' . rand(100000000, 999999999),
+                'invoice_code' => 'INV-' . strtoupper(\Illuminate\Support\Str::random(12)),
                 'status' => $status,
-                'payment_method_id' => $paymentMethod->id,
-                'reference' => 'REF' . strtoupper(Str::random(8)),
-                'customer_name' => $user ? null : 'Guest ' . Str::random(5),
-                'customer_email' => $user ? null : 'guest_' . Str::random(5) . '@example.com',
-                'extra_data' => $extraData,
+                'payment_method' => $paymentMethods[array_rand($paymentMethods)],
+                'total_price' => 0, // Will calculate later
+                'discount_amount' => 0,
+                'is_sent' => $status === OrderStatus::SUCCESS,
                 'created_at' => $createdAt,
                 'updated_at' => $createdAt,
             ]);
-        }
-    }
 
-    private function getRandomStatus(): string
-    {
-        $rand = rand(1, 100);
-        if ($rand <= 80) return 'success';
-        if ($rand <= 90) return 'failed';
-        if ($rand <= 95) return 'unpaid';
-        return 'canceled';
+            $totalPrice = 0;
+            $numItems = rand(1, 2);
+            $orderProducts = $products->random($numItems > $products->count() ? $products->count() : $numItems);
+
+            foreach ($orderProducts as $product) {
+                $duration = $product->durations->random();
+                
+                $item = OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $product->id,
+                    'product_duration_id' => $duration->id,
+                    'product_name' => $product->name,
+                    'duration_name' => $duration->name,
+                    'price' => $duration->price,
+                    'quantity' => 1,
+                ]);
+
+                $totalPrice += $duration->price;
+
+                // Create Order Field Values
+                foreach ($product->fields as $field) {
+                    OrderFieldValue::create([
+                        'order_id' => $order->id,
+                        'product_field_id' => $field->id,
+                        'value' => fake()->word() . (rand(100, 999)),
+                    ]);
+                }
+
+                // If success, attach a key
+                if ($status === OrderStatus::SUCCESS) {
+                    $availableKey = ProductKey::where('product_id', $product->id)
+                        ->where('product_duration_id', $duration->id)
+                        ->where('status', 'available')
+                        ->first();
+
+                    if ($availableKey) {
+                        OrderKey::create([
+                            'order_item_id' => $item->id,
+                            'product_key_id' => $availableKey->id,
+                            'key_code' => $availableKey->key_code,
+                        ]);
+                        $availableKey->update(['status' => 'sold']);
+                    }
+                }
+            }
+
+            // Apply random voucher
+            $discount = 0;
+            if (rand(1, 5) === 1 && $vouchers->isNotEmpty()) {
+                $voucher = $vouchers->random();
+                if ($totalPrice >= $voucher->min_transaction) {
+                    $discount = $voucher->type === 'fixed' ? $voucher->value : ($totalPrice * $voucher->value / 100);
+                    $order->update([
+                        'voucher_id' => $voucher->id,
+                        'discount_amount' => $discount,
+                    ]);
+                    $voucher->increment('used');
+                }
+            }
+
+            $order->update(['total_price' => $totalPrice - $discount]);
+        }
+
+        $this->command->info('Successfully seeded 20 orders.');
     }
 }
