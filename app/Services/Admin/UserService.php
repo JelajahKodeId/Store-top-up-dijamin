@@ -14,7 +14,7 @@ class UserService
      */
     public function getPaginatedUsers(array $filters = []): LengthAwarePaginator
     {
-        $query = User::with('roles')->latest();
+        $query = User::with('roles')->latest()->orderByDesc('id');
 
         if (!empty($filters['search'])) {
             $query->where(function($q) use ($filters) {

@@ -56,6 +56,11 @@ const navItems = [
                 icon: 'settings',
             },
             {
+                label: 'WhatsApp',
+                route: 'admin.whatsapp.index',
+                icon: 'phone',
+            },
+            {
                 label: 'Manajemen Pengguna',
                 route: 'admin.users.index',
                 icon: 'users',

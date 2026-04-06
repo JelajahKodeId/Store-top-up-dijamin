@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -43,12 +44,20 @@ class Order extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(OrderItem::class);
+        return $this->hasMany(OrderItem::class)->orderBy('id');
     }
 
     public function fieldValues(): HasMany
     {
-        return $this->hasMany(OrderFieldValue::class);
+        return $this->hasMany(OrderFieldValue::class)->orderBy('id');
+    }
+
+    /**
+     * Pesanan terbaru di atas: waktu buat dulu, lalu id (stabil bila created_at sama).
+     */
+    public function scopeNewestFirst(Builder $query): Builder
+    {
+        return $query->orderByDesc('created_at')->orderByDesc('id');
     }
 
     public function payment(): HasOne

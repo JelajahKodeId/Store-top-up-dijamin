@@ -27,7 +27,7 @@ class ProductKeyController extends Controller
             $query->where('key_code', 'like', '%' . $request->search . '%');
         }
 
-        $keys = $query->latest()->paginate(20)->withQueryString();
+        $keys = $query->latest()->orderByDesc('id')->paginate(20)->withQueryString();
 
         return Inertia::render('Admin/Products/Keys/Index', [
             'product' => $product,

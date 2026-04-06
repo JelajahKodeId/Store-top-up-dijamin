@@ -12,7 +12,7 @@ class BannerController extends Controller
     public function index()
     {
         \Illuminate\Support\Facades\Gate::authorize('viewAny', Banner::class);
-        $banners = Banner::latest()->get();
+        $banners = Banner::latest()->orderByDesc('id')->get();
         return Inertia::render('Admin/Banners/Index', [
             'banners' => \App\Http\Resources\Admin\BannerResource::collection($banners),
         ]);

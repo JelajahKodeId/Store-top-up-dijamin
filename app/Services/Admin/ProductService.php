@@ -4,9 +4,19 @@ namespace App\Services\Admin;
 
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ProductService
 {
+    private function normalizedImage(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return trim($value);
+    }
+
     /**
      * Create new product with dynamic fields and durations
      */
@@ -17,7 +27,7 @@ class ProductService
                 'name' => $data['name'],
                 'slug' => $data['slug'],
                 'description' => $data['description'] ?? null,
-                'image' => $data['image'] ?? null,
+                'image' => $this->normalizedImage($data['image'] ?? null),
                 'status' => $data['status'],
             ]);
 
@@ -47,7 +57,7 @@ class ProductService
                 'name' => $data['name'],
                 'slug' => $data['slug'],
                 'description' => $data['description'] ?? null,
-                'image' => $data['image'] ?? null,
+                'image' => $this->normalizedImage($data['image'] ?? null),
                 'status' => $data['status'],
             ]);
 
@@ -102,6 +112,11 @@ class ProductService
     {
         if ($product->keys()->where('status', 'sold')->exists()) {
             throw new \Exception('Produk tidak dapat dihapus karena sudah memiliki riwayat penjualan.');
+        }
+
+        $path = $product->getRawOriginal('image');
+        if (Product::isRelativeStoragePath($path)) {
+            Storage::disk('public')->delete($path);
         }
 
         return $product->delete();

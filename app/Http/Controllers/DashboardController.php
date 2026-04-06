@@ -33,7 +33,7 @@ class DashboardController extends Controller
         ];
 
         $recentOrders = Order::with(['items'])
-            ->latest()
+            ->newestFirst()
             ->take(10)
             ->get()
             ->map(fn ($order) => [

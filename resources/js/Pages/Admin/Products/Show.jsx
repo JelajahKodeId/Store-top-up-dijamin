@@ -44,9 +44,9 @@ export default function ProductShow({ product }) {
                     {/* Info Card */}
                     <div className="bg-white p-8 rounded-3xl border border-store-border shadow-sm space-y-6">
                         <div className="flex items-start gap-5">
-                            {p.image ? (
+                            {(p.image_url || p.image) ? (
                                 <div className="w-16 h-16 rounded-2xl overflow-hidden border border-store-border flex-shrink-0">
-                                    <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                                    <img src={p.image_url || p.image} alt={p.name} className="w-full h-full object-cover" />
                                 </div>
                             ) : (
                                 <div className="w-16 h-16 rounded-2xl bg-admin-bg border border-store-border flex items-center justify-center flex-shrink-0">
