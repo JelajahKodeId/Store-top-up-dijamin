@@ -51,26 +51,40 @@ class ProductService
                 'status' => $data['status'],
             ]);
 
-            // Sync Fields
+            // Sync Fields — hapus yang tidak ada di payload, lalu upsert
             if (isset($data['fields'])) {
                 $fieldIds = collect($data['fields'])->pluck('id')->filter()->toArray();
                 $product->fields()->whereNotIn('id', $fieldIds)->delete();
                 foreach ($data['fields'] as $field) {
-                    if (isset($field['id'])) {
-                        $product->fields()->find($field['id'])->update($field);
+                    if (! empty($field['id'])) {
+                        // Hanya update jika field memang milik produk ini
+                        $existing = $product->fields()->find((int) $field['id']);
+                        if ($existing) {
+                            $existing->update($field);
+                        }
                     } else {
                         $product->fields()->create($field);
                     }
                 }
+            } else {
+                // Jika fields tidak dikirim sama sekali, hapus semua field produk ini
+                $product->fields()->delete();
             }
 
-            // Sync Durations
+            // Sync Durations — hapus yang tidak ada di payload, lalu upsert
             if (isset($data['durations'])) {
                 $durationIds = collect($data['durations'])->pluck('id')->filter()->toArray();
-                $product->durations()->whereNotIn('id', $durationIds)->delete();
+                // Jangan hapus durasi yang masih punya key terjual
+                $product->durations()
+                    ->whereNotIn('id', $durationIds)
+                    ->whereDoesntHave('keys', fn ($q) => $q->where('status', 'sold'))
+                    ->delete();
                 foreach ($data['durations'] as $duration) {
-                    if (isset($duration['id'])) {
-                        $product->durations()->find($duration['id'])->update($duration);
+                    if (! empty($duration['id'])) {
+                        $existing = $product->durations()->find((int) $duration['id']);
+                        if ($existing) {
+                            $existing->update($duration);
+                        }
                     } else {
                         $product->durations()->create($duration);
                     }

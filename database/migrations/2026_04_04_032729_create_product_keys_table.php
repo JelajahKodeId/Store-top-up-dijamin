@@ -17,8 +17,10 @@ return new class extends Migration
             $table->foreignId('product_duration_id')->constrained()->cascadeOnDelete();
             $table->string('key_code')->unique();
             $table->enum('status', ['available', 'sold', 'expired'])->default('available');
+            $table->timestamp('expires_at')->nullable(); // tanggal key kadaluarsa setelah dialokasikan
             $table->timestamps();
-            $table->index(['product_id', 'status']); // index untuk query ambil key available
+            $table->index(['product_id', 'status']);
+            $table->index(['product_duration_id', 'status']); // index untuk query ambil key available per durasi
         });
     }
 

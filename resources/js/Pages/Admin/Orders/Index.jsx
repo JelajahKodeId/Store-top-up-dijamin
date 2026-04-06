@@ -3,7 +3,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import AdminTable from '@/Components/ui/AdminTable';
 import Button from '@/Components/ui/Button';
-import Badge from '@/Components/ui/Badge';
+import { OrderStatusBadge } from '@/Components/ui/Badge';
 import Modal from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Input';
 import { AppIcons } from '@/Components/shared/AppIcon';
@@ -38,17 +38,6 @@ export default function OrderIndex({ orders, filters }) {
                 reset();
             },
         });
-    };
-
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'success': return 'accent';
-            case 'paid': return 'indigo';
-            case 'unpaid': return 'gray';
-            case 'failed': return 'red';
-            case 'canceled': return 'slate';
-            default: return 'gray';
-        }
     };
 
     return (
@@ -103,9 +92,7 @@ export default function OrderIndex({ orders, filters }) {
                             <span className="text-sm font-black text-store-charcoal">{order.total_price_formatted}</span>
                         </td>
                         <td>
-                            <Badge variant={getStatusVariant(order.status)} className="w-fit">
-                                {order.status}
-                            </Badge>
+                            <OrderStatusBadge status={order.status} />
                         </td>
                         <td className="text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -146,9 +133,7 @@ export default function OrderIndex({ orders, filters }) {
                             <span className="text-[10px] font-bold text-store-subtle uppercase tracking-widest leading-none font-sans">Invoice</span>
                             <span className="text-sm font-black text-store-charcoal leading-tight font-sans">{selectedOrder?.invoice_code}</span>
                         </div>
-                        <Badge variant={getStatusVariant(selectedOrder?.status)} className="px-3 py-1 text-[10px] uppercase font-sans">
-                            {selectedOrder?.status}
-                        </Badge>
+                        <OrderStatusBadge status={selectedOrder?.status} />
                     </div>
 
                     <Select

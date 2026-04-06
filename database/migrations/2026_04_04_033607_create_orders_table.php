@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             // DATA CUSTOMER
             $table->string('customer_name')->nullable();
-            $table->string('customer_email');
+            $table->string('customer_email')->nullable();
             $table->string('customer_phone')->nullable();
             $table->string('whatsapp_number')->nullable();
             $table->string('invoice_code')->unique();
@@ -24,12 +24,18 @@ return new class extends Migration
             $table->string('status')->default('unpaid');
             $table->string('payment_method')->nullable();
             $table->boolean('is_sent')->default(false);
+            // Payment gateway info
+            $table->string('payment_reference')->nullable();
+            $table->string('payment_url')->nullable();
+            $table->timestamp('payment_expired_at')->nullable();
             // voucher
             $table->foreignId('voucher_id')->nullable()->constrained();
             // tracking
             $table->ipAddress('ip_address')->nullable();
+            $table->text('note')->nullable();
             $table->timestamps();
             $table->index('customer_email');
+            $table->index('status');
         });
     }
 

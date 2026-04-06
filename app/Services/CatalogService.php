@@ -9,12 +9,14 @@ use Illuminate\Database\Eloquent\Collection;
 class CatalogService
 {
     /**
-     * Get all active products for landing page
+     * Get all active products for landing page.
+     * Includes available_keys_count per duration agar ProductCard bisa cek stok.
      */
     public function getActiveProducts(): Collection
     {
         return Product::where('status', 'active')
-            ->with(['durations' => fn($q) => $q->where('is_active', true)])
+            ->with(['durations' => fn ($q) => $q->where('is_active', true)
+                ->withCount(['keys as available_keys_count' => fn ($q) => $q->where('status', 'available')])])
             ->latest()
             ->get();
     }
@@ -30,13 +32,34 @@ class CatalogService
     }
 
     /**
-     * Get product details by slug
+     * Get product details by slug, including per-duration stock counts.
      */
     public function getProductDetails(string $slug): ?Product
     {
         return Product::where('slug', $slug)
             ->where('status', 'active')
-            ->with(['durations' => fn($q) => $q->where('is_active', true), 'fields'])
+            ->withCount(['keys as total_available_count' => fn ($q) => $q->where('status', 'available')])
+            ->with([
+                'durations' => fn ($q) => $q->where('is_active', true)
+                    ->withCount(['keys as available_keys_count' => fn ($q) => $q->where('status', 'available')]),
+                'fields' => fn ($q) => $q->orderBy('sort_order'),
+            ])
             ->first();
+    }
+
+    /**
+     * Get related products (other active products, excluding current), limit 6.
+     * Tidak berdasarkan kategori karena Product tidak punya relasi category.
+     */
+    public function getRelatedProducts(Product $product, int $limit = 6): Collection
+    {
+        return Product::where('status', 'active')
+            ->where('id', '!=', $product->id)
+            ->with(['durations' => fn ($q) => $q->where('is_active', true)
+                ->withCount(['keys as available_keys_count' => fn ($q) => $q->where('status', 'available')])])
+            ->withCount(['keys as total_available_count' => fn ($q) => $q->where('status', 'available')])
+            ->latest()
+            ->limit($limit)
+            ->get();
     }
 }

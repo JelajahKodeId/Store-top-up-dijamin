@@ -1,6 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import Badge from '@/Components/ui/Badge';
+import { OrderStatusBadge } from '@/Components/ui/Badge';
 import Button from '@/Components/ui/Button';
 import { AppIcons } from '@/Components/shared/AppIcon';
 
@@ -19,19 +19,7 @@ export default function OrderShow({ order }) {
     };
 
     const BackIcon = AppIcons.chevronLeft;
-    const KeyIcon = AppIcons.key || AppIcons.plus;
-    const InfoIcon = AppIcons.info;
-
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'success': return 'accent';
-            case 'paid': return 'indigo';
-            case 'unpaid': return 'gray';
-            case 'failed': return 'red';
-            case 'canceled': return 'slate';
-            default: return 'gray';
-        }
-    };
+    const KeyIcon  = AppIcons.key;
 
     return (
         <AdminLayout
@@ -48,9 +36,7 @@ export default function OrderShow({ order }) {
                     <BackIcon size={14} /> Daftar Pesanan
                 </Link>
 
-                <Badge variant={getStatusVariant(o.status)} className="px-6 py-2 text-[10px] uppercase tracking-widest font-black">
-                    {o.status}
-                </Badge>
+                <OrderStatusBadge status={o.status} className="px-6 py-2 text-[10px]" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -84,10 +70,16 @@ export default function OrderShow({ order }) {
                                             <span className="text-[10px] font-black text-store-subtle uppercase tracking-widest block mb-3">Lisensi / Key Digital</span>
                                             <div className="space-y-2">
                                                 {item.keys.map((key, idx) => (
-                                                    <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-store-border group">
-                                                        <KeyIcon size={14} className="text-store-accent" />
-                                                        <code className="text-xs font-bold text-store-charcoal font-mono flex-1">{key.key_content}</code>
-                                                        <Badge variant="charcoal" className="text-[8px] opacity-0 group-hover:opacity-100 transition-opacity">Ready</Badge>
+                                                    <div key={idx} className="flex flex-col gap-1 p-3 bg-white rounded-xl border border-store-border">
+                                                        <div className="flex items-center gap-3">
+                                                            <KeyIcon size={14} className="text-store-accent flex-shrink-0" />
+                                                            <code className="text-xs font-bold text-store-charcoal font-mono flex-1 break-all">{key.key_code}</code>
+                                                        </div>
+                                                        {key.expired_at && (
+                                                            <p className="text-[10px] text-store-subtle font-bold ml-6">
+                                                                Expired: {key.expired_at}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -200,15 +192,29 @@ export default function OrderShow({ order }) {
                     </div>
 
                     {/* Payment Info Card */}
-                    <div className="admin-content-card p-8 space-y-6">
-                        <h3 className="text-xs font-black text-store-charcoal uppercase tracking-widest">Metode Pembayaran</h3>
-                        <div className="p-4 bg-admin-bg rounded-2xl border border-store-border flex items-center justify-between">
-                            <div className="flex flex-col">
-                                <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight">Channel</span>
-                                <span className="text-xs font-black text-store-charcoal">{o.payment_method?.name || 'Manual'}</span>
+                    <div className="admin-content-card p-8 space-y-4">
+                        <h3 className="text-xs font-black text-store-charcoal uppercase tracking-widest">Info Pembayaran</h3>
+                        <div className="space-y-3">
+                            <div className="p-4 bg-admin-bg rounded-2xl border border-store-border flex items-center justify-between">
+                                <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight">Metode</span>
+                                    <span className="text-xs font-black text-store-charcoal">{o.payment_method || 'Manual'}</span>
+                                </div>
+                                <AppIcons.success size={16} className="text-store-muted" />
                             </div>
-                            {o.payment_method?.image_url && (
-                                <img src={o.payment_method.image_url} alt="" className="h-4 object-contain grayscale opacity-50" />
+                            {o.whatsapp_number && (
+                                <div className="p-4 bg-admin-bg rounded-2xl border border-store-border">
+                                    <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight block">WhatsApp</span>
+                                    <span className="text-xs font-black text-store-charcoal">{o.whatsapp_number}</span>
+                                </div>
+                            )}
+                            {o.discount_amount > 0 && (
+                                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200">
+                                    <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-tight block">Diskon Diterapkan</span>
+                                    <span className="text-xs font-black text-emerald-700">
+                                        Rp {new Intl.NumberFormat('id-ID').format(o.discount_amount)}
+                                    </span>
+                                </div>
                             )}
                         </div>
                     </div>

@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderStatus;
+use App\Models\Order;
+use App\Models\ProductKey;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,31 +17,36 @@ class DashboardController extends Controller
      */
     public function admin(): Response
     {
+        $totalOrders = Order::count();
+        $successOrders = Order::where('status', OrderStatus::SUCCESS)->count();
+        $pendingOrders = Order::whereIn('status', [OrderStatus::UNPAID, OrderStatus::PAID])->count();
+
         $stats = [
-            'revenue' => \App\Models\Order::where('status', 'success')->sum('total_price'),
-            'total_orders' => \App\Models\Order::count(),
-            'total_members' => \App\Models\User::role('member')->count(),
-            'success_rate' => \App\Models\Order::count() > 0 
-                ? round((\App\Models\Order::where('status', 'success')->count() / \App\Models\Order::count()) * 100, 1) 
+            'revenue'       => (float) Order::where('status', OrderStatus::SUCCESS)->sum('total_price'),
+            'total_orders'  => $totalOrders,
+            'pending_orders'=> $pendingOrders,
+            'total_members' => User::role('member')->count(),
+            'success_rate'  => $totalOrders > 0
+                ? round(($successOrders / $totalOrders) * 100, 1)
                 : 0,
+            'low_stock_keys' => ProductKey::where('status', 'available')->count(),
         ];
 
-        $recentOrders = \App\Models\Order::with(['items'])
+        $recentOrders = Order::with(['items'])
             ->latest()
-            ->take(8)
+            ->take(10)
             ->get()
-            ->map(function ($order) {
-                return [
-                    'id' => $order->invoice_code,
-                    'product' => $order->items->first()?->product_name ?? 'Produk Dihapus',
-                    'customer' => $order->customer_name,
-                    'amount' => 'Rp ' . number_format($order->total_price, 0, ',', '.'),
-                    'status' => $order->status,
-                ];
-            });
+            ->map(fn ($order) => [
+                'id'       => $order->invoice_code,
+                'product'  => $order->items->first()?->product_name ?? 'Produk Dihapus',
+                'customer' => $order->customer_name ?? $order->whatsapp_number ?? '-',
+                'amount'   => 'Rp ' . number_format($order->total_price, 0, ',', '.'),
+                'status'   => $order->status instanceof OrderStatus ? $order->status->value : $order->status,
+                'created_at' => $order->created_at->diffForHumans(),
+            ]);
 
         return Inertia::render('Admin/Dashboard', [
-            'stats' => $stats,
+            'stats'        => $stats,
             'recentOrders' => $recentOrders,
         ]);
     }

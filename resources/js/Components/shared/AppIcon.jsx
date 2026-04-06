@@ -47,7 +47,23 @@ import {
     CheckSquare,
     Activity,
     Boxes,
-    HelpCircle as Help
+    HelpCircle as Help,
+    UserCircle,
+    Copy,
+    RefreshCw,
+    Clock,
+    Music2,
+    QrCode,
+    Tag,
+    Hash,
+    Pencil,
+    FileText,
+    ClipboardList,
+    Ticket,
+    BadgeCheck,
+    ListChecks,
+    ReceiptText,
+    Layers,
 } from 'lucide-react';
 
 /**
@@ -92,7 +108,10 @@ export const AppIcons = {
     sales: ShoppingCart,
     success: Zap,
     wallet: Wallet,
+    qr: QrCode,
+    bank: CreditCard,
     globe: Globe,
+    vouchers: Banknote,
 
     // Feedback
     info: Info,
@@ -106,11 +125,15 @@ export const AppIcons = {
     mail: Mail,
     phone: Phone,
     location: MapPin,
-    facebook: Share2,    // Fallback
-    instagram: Camera,   // Fallback
-    twitter: Share2,     // Fallback
-    youtube: Play,       // Fallback
+    facebook: Share2,
+    instagram: Camera,
+    twitter: Share2,
+    tiktok: Music2,
+    youtube: Play,
     shield: Shield,
+
+    // Profile
+    profile: UserCircle,
 
     // Others
     lock: Lock,
@@ -122,6 +145,23 @@ export const AppIcons = {
     activity: Activity,
     boxes: Boxes,
     help: Help,
+
+    // Order & Utility
+    copy: Copy,
+    refresh: RefreshCw,
+    clock: Clock,
+
+    // Form & Content — untuk menggantikan overuse zap
+    tag: Tag,              // voucher, label
+    hash: Hash,            // field angka/number
+    pencil: Pencil,        // field teks, textarea
+    fileText: FileText,    // dokumen, detail
+    clipboard: ClipboardList, // data produk, form
+    ticket: Ticket,        // voucher/promo
+    badge: BadgeCheck,     // verifikasi
+    listChecks: ListChecks, // summary/konfirmasi
+    receipt: ReceiptText,  // ringkasan pembayaran
+    layers: Layers,        // paket/tier
 };
 
 /**

@@ -28,11 +28,32 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'fonnte' => [
+        'token'        => env('FONNTE_TOKEN'),
+        'admin_number' => env('WA_ADMIN_NUMBER'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email Notification Toggle
+    |--------------------------------------------------------------------------
+    | Set EMAIL_NOTIFICATIONS_ENABLED=true di .env untuk mengaktifkan email.
+    | Saat ini dimatikan — hanya WhatsApp yang digunakan untuk notifikasi.
+    */
+    'email_notifications_enabled' => env('EMAIL_NOTIFICATIONS_ENABLED', false),
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
+    ],
+
+    'tripay' => [
+        'api_key'       => env('TRIPAY_API_KEY'),
+        'private_key'   => env('TRIPAY_PRIVATE_KEY'),
+        'merchant_code' => env('TRIPAY_MERCHANT_CODE'),
+        'mode'          => env('TRIPAY_MODE', 'sandbox'),
     ],
 
 ];

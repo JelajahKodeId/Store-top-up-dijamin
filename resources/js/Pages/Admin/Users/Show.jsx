@@ -3,14 +3,22 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import Badge from '@/Components/ui/Badge';
 import { AppIcons } from '@/Components/shared/AppIcon';
 
-export default function UserShow({ user }) {
+const STATUS_CONFIG = {
+    success:  { label: 'Berhasil',    color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+    paid:     { label: 'Dibayar',     color: 'text-blue-600 bg-blue-50 border-blue-200' },
+    unpaid:   { label: 'Belum Bayar', color: 'text-amber-600 bg-amber-50 border-amber-200' },
+    failed:   { label: 'Gagal',       color: 'text-red-600 bg-red-50 border-red-200' },
+    canceled: { label: 'Dibatalkan',  color: 'text-slate-600 bg-slate-50 border-slate-200' },
+};
+
+export default function UserShow({ user, recentOrders = [] }) {
     // Destructure nested data from JsonResource
     const u = user.data || user;
 
     const BackIcon = AppIcons.chevronLeft;
     const MailIcon = AppIcons.mail;
     const PhoneIcon = AppIcons.phone;
-    const CalendarIcon = AppIcons.calendar || AppIcons.dashboard;
+    const CalendarIcon = AppIcons.clock;
     const ShieldIcon = AppIcons.shield;
 
     return (
@@ -107,15 +115,41 @@ export default function UserShow({ user }) {
                         </div>
                     </div>
 
-                    <div className="admin-content-card p-8">
-                        <h3 className="text-base font-black text-store-charcoal uppercase tracking-tight mb-6">Riwayat Transaksi Terakhir</h3>
-                        <div className="py-20 text-center">
-                            <div className="w-16 h-16 bg-admin-bg rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-soft">
-                                <AppIcons.orders className="w-6 h-6 text-store-subtle" />
-                            </div>
-                            <h4 className="text-base font-black text-store-charcoal uppercase tracking-tight">Belum Ada Transaksi</h4>
-                            <p className="text-xs text-store-subtle uppercase font-bold tracking-widest mt-1">Pengguna ini belum melakukan pesanan apa pun</p>
+                    <div className="admin-content-card overflow-hidden">
+                        <div className="px-8 py-5 border-b border-store-border flex items-center justify-between">
+                            <h3 className="text-base font-black text-store-charcoal uppercase tracking-tight">Riwayat Transaksi</h3>
+                            <span className="text-[10px] font-bold text-store-subtle uppercase tracking-widest">Berdasarkan email terdaftar</span>
                         </div>
+
+                        {recentOrders.length > 0 ? (
+                            <div className="divide-y divide-store-border">
+                                {recentOrders.map(order => {
+                                    const cfg = STATUS_CONFIG[order.status] ?? { label: order.status, color: 'text-gray-600 bg-gray-50 border-gray-200' };
+                                    return (
+                                        <div key={order.invoice_code} className="px-8 py-4 flex items-center justify-between gap-4">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs font-black text-store-charcoal font-mono">{order.invoice_code}</span>
+                                                <span className="text-[10px] text-store-subtle">{order.created_at}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sm font-black text-store-charcoal">{order.total_price_formatted}</span>
+                                                <span className={`inline-flex px-2.5 py-1 rounded-lg border text-[10px] font-black uppercase tracking-wide ${cfg.color}`}>
+                                                    {cfg.label}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="py-16 text-center">
+                                <div className="w-14 h-14 bg-admin-bg rounded-full flex items-center justify-center mx-auto mb-3 border-4 border-white shadow-soft">
+                                    <AppIcons.orders size={20} className="text-store-subtle" />
+                                </div>
+                                <h4 className="text-sm font-black text-store-charcoal uppercase tracking-tight">Belum Ada Transaksi</h4>
+                                <p className="text-xs text-store-subtle uppercase font-bold tracking-widest mt-1">Tidak ada order dengan email ini</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

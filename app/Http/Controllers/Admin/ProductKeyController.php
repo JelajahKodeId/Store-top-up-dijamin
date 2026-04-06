@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use App\Models\ProductDuration;
 use App\Models\ProductKey;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -55,14 +54,30 @@ class ProductKeyController extends Controller
                     $code = trim($code);
                     if (empty($code)) continue;
 
-                    ProductKey::updateOrCreate([
-                        'product_id' => $product->id,
-                        'key_code' => $code,
-                    ], [
-                        'product_duration_id' => $request->product_duration_id,
-                        'status' => 'available',
-                    ]);
-                    $count++;
+                    // Hanya buat baru jika key belum ada — JANGAN override key SOLD
+                    $existing = ProductKey::where('product_id', $product->id)
+                        ->where('key_code', $code)
+                        ->first();
+
+                    if ($existing) {
+                        // Key sudah ada: update durasi tapi HANYA jika belum terjual
+                        if ($existing->status !== 'sold') {
+                            $existing->update([
+                                'product_duration_id' => $request->product_duration_id,
+                                'status' => 'available',
+                            ]);
+                            $count++;
+                        }
+                    } else {
+                        // Key baru — langsung buat
+                        ProductKey::create([
+                            'product_id'          => $product->id,
+                            'product_duration_id' => $request->product_duration_id,
+                            'key_code'            => $code,
+                            'status'              => 'available',
+                        ]);
+                        $count++;
+                    }
                 }
             });
 

@@ -42,7 +42,7 @@ class OrderSeeder extends Seeder
             OrderStatus::CANCELED
         ];
 
-        $paymentMethods = ['E-Wallet (OVO)', 'E-Wallet (DANA)', 'Virtual Account (BCA)', 'QRIS', 'Retail (Alfamart)'];
+        $paymentMethods = ['QRIS', 'VA_BCA', 'VA_BRI', 'VA_MANDIRI', 'OVO', 'DANA', 'ALFAMART'];
 
         for ($i = 0; $i < 20; $i++) {
             $createdAt = Carbon::now()->subDays(rand(0, 30))->subHours(rand(0, 23));
@@ -103,12 +103,22 @@ class OrderSeeder extends Seeder
                         ->first();
 
                     if ($availableKey) {
+                        $expiredAt = null;
+                        if ($duration->duration_days > 0) {
+                            $expiredAt = $createdAt->copy()->addDays($duration->duration_days);
+                        }
+
                         OrderKey::create([
-                            'order_item_id' => $item->id,
+                            'order_item_id'  => $item->id,
                             'product_key_id' => $availableKey->id,
-                            'key_code' => $availableKey->key_code,
+                            'key_code'       => $availableKey->key_code,
+                            'expired_at'     => $expiredAt,
+                            'delivered_at'   => $createdAt,
                         ]);
-                        $availableKey->update(['status' => 'sold']);
+                        $availableKey->update([
+                            'status'     => 'sold',
+                            'expires_at' => $expiredAt,
+                        ]);
                     }
                 }
             }

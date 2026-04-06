@@ -22,4 +22,14 @@ class OrderFieldValue extends Model
     {
         return $this->belongsTo(ProductField::class, 'product_field_id');
     }
+
+    public function getFieldNameAttribute(): string
+    {
+        return $this->field?->label ?? $this->field?->name ?? 'Field';
+    }
+
+    public function getFieldValueAttribute(): string
+    {
+        return $this->value ?? '';
+    }
 }

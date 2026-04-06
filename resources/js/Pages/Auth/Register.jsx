@@ -1,10 +1,12 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AppLogo from '@/Components/shared/AppLogo';
 import { AppIcons } from '@/Components/shared/AppIcon';
 import Spinner from '@/Components/ui/Spinner';
-import Button from '@/Components/ui/Button';
 
 export default function Register() {
+    const { site } = usePage().props;
+    const siteName = site?.name || 'Mall Store';
+
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -19,7 +21,7 @@ export default function Register() {
 
     return (
         <>
-            <Head title="Daftar — Mall Store" />
+            <Head title={`Daftar — ${siteName}`} />
 
             <div className="min-h-screen bg-store-dark flex font-sans relative overflow-hidden">
                 {/* ── Decorative Background ── */}
@@ -62,7 +64,7 @@ export default function Register() {
                     </div>
 
                     <div className="relative z-10 text-[10px] font-black text-white/20 uppercase tracking-widest leading-relaxed max-w-xs">
-                        Dengan mendaftar, Anda menyetujui Syarat & Ketentuan dan Kebijakan Privasi Mall Store.
+                        Dengan mendaftar, Anda menyetujui Syarat & Ketentuan dan Kebijakan Privasi {siteName}.
                     </div>
                 </div>
 

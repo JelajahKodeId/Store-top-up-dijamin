@@ -5,9 +5,9 @@ import { AppIcons } from '@/Components/shared/AppIcon';
 import Button from '@/Components/ui/Button';
 
 const navLinks = [
-    { label: 'Beranda', href: '/', icon: 'home' },
-    { label: 'Katalog', href: '/catalog', icon: 'categories' },
-    { label: 'Lacak Pesanan', href: '/track-invoice', icon: 'zap' },
+    { label: 'Beranda',       href: '/',              icon: 'home'    },
+    { label: 'Katalog',       href: '/catalog',       icon: 'products'},
+    { label: 'Lacak Pesanan', href: '/track-invoice', icon: 'receipt' },
 ];
 
 export default function GuestNavbar() {
@@ -18,9 +18,9 @@ export default function GuestNavbar() {
     const CloseIcon = AppIcons.close;
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 py-4 bg-store-charcoal/80 backdrop-blur-xl border-b border-white/5 shadow-2xl">
+        <nav className="fixed top-0 left-0 right-0 z-50 py-2 bg-store-charcoal/80 backdrop-blur-xl border-b border-white/5 shadow-2xl">
             <div className="section-container">
-                <div className="flex items-center justify-between h-16">
+                <div className="flex items-center justify-between h-12">
                     {/* Brand */}
                     <div className="flex items-center gap-12">
                         <AppLogo href="/" size="md" theme="light" />
@@ -48,9 +48,9 @@ export default function GuestNavbar() {
                     <div className="flex items-center gap-4">
                         <div className="hidden sm:flex items-center gap-4">
                             {auth?.user ? (
-                                <Link href={route('dashboard')}>
+                                <Link href={route('admin.dashboard')}>
                                     <Button variant="dark" className="px-6 py-3 rounded-2xl bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-widest text-white hover:bg-store-accent hover:text-store-dark transition-all shadow-lg">
-                                        Dashboard
+                                        Admin Panel
                                     </Button>
                                 </Link>
                             ) : (
@@ -87,7 +87,7 @@ export default function GuestNavbar() {
                             key={link.label}
                             href={link.href}
                             onClick={() => setMobileOpen(false)}
-                            className="flex items-center justify-between p-6 rounded-[2rem] bg-white/5 border border-white/5 text-xl font-black text-white uppercase tracking-tight hover:bg-store-accent hover:text-store-dark transition-all group"
+                            className="flex items-center justify-between p-6 rounded-[2rem] bg-white/5 border border-white/5 text-xl font-black text-white uppercase tracking-wide hover:bg-store-accent hover:text-store-dark transition-all group"
                         >
                             <span className="flex items-center gap-4">
                                 <span className="text-store-accent group-hover:text-store-dark transition-colors">

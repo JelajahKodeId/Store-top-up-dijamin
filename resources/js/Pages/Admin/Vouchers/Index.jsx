@@ -161,7 +161,7 @@ export default function VoucherIndex({ vouchers, filters }) {
                                 <div className="w-full bg-store-border h-1 rounded-full mt-1 overflow-hidden">
                                     <div
                                         className="bg-store-charcoal h-full transition-all"
-                                        style={{ width: voucher.quota ? `${(voucher.used / voucher.quota) * 100}%` : '0%' }}
+                                        style={{ width: (voucher.quota && voucher.quota > 0) ? `${Math.min((voucher.used / voucher.quota) * 100, 100)}%` : '0%' }}
                                     />
                                 </div>
                             </div>

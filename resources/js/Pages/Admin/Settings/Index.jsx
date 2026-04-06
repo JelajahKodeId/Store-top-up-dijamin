@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Button from '@/Components/ui/Button';
@@ -8,15 +8,21 @@ import { AppIcons } from '@/Components/shared/AppIcon';
 export default function SettingIndex({ settings }) {
     const [activeTab, setActiveTab] = useState('general');
 
-    // Convert array of settings to key-value object for useForm
+    // Konversi array settings ke object key-value, dengan default untuk setiap key
+    const SETTING_DEFAULTS = {
+        site_name: '', site_description: '', site_keywords: '', announcement: '',
+        logo_web: '', logo_footer: '', favicon: '',
+        whatsapp_number: '', instagram_username: '', facebook_page: '', tiktok_username: '',
+        contact_email: '', contact_phone: '', address: '',
+    };
     const initialSettings = settings.reduce((acc, s) => {
-        acc[s.key] = s.value || '';
+        acc[s.key] = s.value ?? '';
         return acc;
-    }, {});
+    }, { ...SETTING_DEFAULTS });
 
     const { data, setData, post, processing, errors } = useForm({
         ...initialSettings,
-        // For file uploads, they should be null initially if we want to detect new files
+        // File uploads diset null agar bisa deteksi upload baru
         logo_web: null,
         logo_footer: null,
         favicon: null,

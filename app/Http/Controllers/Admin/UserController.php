@@ -42,8 +42,21 @@ class UserController extends Controller
     {
         Gate::authorize('view', $user);
 
+        // Cari order yang berkaitan dengan email user ini (guest order pun bisa ketahuan)
+        $recentOrders = \App\Models\Order::where('customer_email', $user->email)
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(fn ($o) => [
+                'invoice_code'       => $o->invoice_code,
+                'status'             => $o->status instanceof \App\Enums\OrderStatus ? $o->status->value : $o->status,
+                'total_price_formatted' => 'Rp ' . number_format($o->total_price, 0, ',', '.'),
+                'created_at'         => $o->created_at->format('d M Y H:i'),
+            ]);
+
         return Inertia::render('Admin/Users/Show', [
-            'user' => new UserResource($user->load('roles')),
+            'user'         => new UserResource($user->load('roles')),
+            'recentOrders' => $recentOrders,
         ]);
     }
 

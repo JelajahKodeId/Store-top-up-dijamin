@@ -12,10 +12,12 @@ class OrderKey extends Model
         'product_key_id',
         'key_code',
         'expired_at',
+        'delivered_at',
     ];
 
     protected $casts = [
         'expired_at' => 'datetime',
+        'delivered_at' => 'datetime',
     ];
 
     public function orderItem(): BelongsTo
