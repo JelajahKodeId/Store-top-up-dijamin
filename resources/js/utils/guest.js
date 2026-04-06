@@ -11,6 +11,22 @@ export const formatPrice = (price) =>
     }).format(price);
 
 /**
+ * URL untuk atribut src gambar produk.
+ * Backend mengirim `image_url` (path /storage/... atau URL absolut); fallback ke `image` mentah.
+ */
+export function productImageSrc(product) {
+    if (!product) return null;
+    const raw = product.image_url ?? product.image;
+    if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+    const u = String(raw).trim();
+    if (/^https?:\/\//i.test(u) || u.startsWith('//') || u.startsWith('/storage/') || u.startsWith('data:')) {
+        return u;
+    }
+    if (u.startsWith('/')) return u;
+    return `/storage/${u.replace(/^\//, '')}`;
+}
+
+/**
  * Normalisasi nomor telepon Indonesia → link wa.me
  * Contoh: "08123456789" → "https://wa.me/628123456789"
  */

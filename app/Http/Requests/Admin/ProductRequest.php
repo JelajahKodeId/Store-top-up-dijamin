@@ -20,7 +20,8 @@ class ProductRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique('products', 'slug')->ignore($id)],
             'description' => ['nullable', 'string'],
-            'image' => ['nullable', 'string'],
+            'image' => ['nullable', 'string', 'max:2048'],
+            'image_file' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             
             // Fields validation

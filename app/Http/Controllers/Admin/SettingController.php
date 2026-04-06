@@ -5,15 +5,20 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class SettingController extends Controller
 {
     public function index()
     {
-        \Illuminate\Support\Facades\Gate::authorize('viewAny', Setting::class);
+        Gate::authorize('viewAny', Setting::class);
         $settings = Setting::all();
-        
+
         return Inertia::render('Admin/Settings/Index', [
             'settings' => $settings,
         ]);
@@ -21,7 +26,7 @@ class SettingController extends Controller
 
     public function update(Request $request)
     {
-        \Illuminate\Support\Facades\Gate::authorize('update', Setting::class);
+        Gate::authorize('update', Setting::class);
 
         // Hanya izinkan key yang dikenal — cegah _token, _method, dsb tersimpan ke DB
         $allowedKeys = [
@@ -34,11 +39,13 @@ class SettingController extends Controller
         $data = $request->only($allowedKeys);
 
         try {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($request, $data, $fileKeys) {
+            DB::transaction(function () use ($request, $data, $fileKeys) {
                 foreach ($data as $key => $value) {
                     // Skip file keys jika tidak ada upload baru dan value kosong
                     if (in_array($key, $fileKeys) && ! $request->hasFile($key)) {
-                        if ($value === null || $value === '') continue;
+                        if ($value === null || $value === '') {
+                            continue;
+                        }
                     }
 
                     if ($request->hasFile($key) && in_array($key, $fileKeys)) {
@@ -46,7 +53,7 @@ class SettingController extends Controller
 
                         // Hapus file lama — nilai di DB adalah path relatif disk (e.g. settings/file.jpg)
                         if ($setting && $setting->value) {
-                            \Illuminate\Support\Facades\Storage::disk('public')->delete($setting->value);
+                            Storage::disk('public')->delete($setting->value);
                         }
 
                         // Simpan HANYA path relatif ke DB; HandleInertiaRequests menambahkan /storage/
@@ -60,10 +67,13 @@ class SettingController extends Controller
                 }
             });
 
+            Cache::forget('inertia_site_settings');
+
             return back()->with('success', 'Pengaturan berhasil diperbarui.');
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Settings update failed: ' . $e->getMessage());
-            return back()->with('error', 'Gagal memperbarui pengaturan: ' . $e->getMessage());
+            Log::error('Settings update failed: '.$e->getMessage());
+
+            return back()->with('error', 'Gagal memperbarui pengaturan: '.$e->getMessage());
         }
     }
 }

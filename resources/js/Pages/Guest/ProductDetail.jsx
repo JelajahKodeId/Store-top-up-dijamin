@@ -3,7 +3,7 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import { AppIcons } from '@/Components/shared/AppIcon';
 import { useState, useCallback } from 'react';
 import GuestInput from '@/Components/guest/GuestInput';
-import { formatPrice } from '@/utils/guest';
+import { formatPrice, productImageSrc } from '@/utils/guest';
 
 function fieldIcon(field) {
     const n = (field.name || field.label || '').toLowerCase();
@@ -196,7 +196,7 @@ function RelatedProductRow({ product }) {
             {/* Thumbnail kecil */}
             <div className="w-10 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-white/5">
                 <img
-                    src={product.image || PLACEHOLDER}
+                    src={productImageSrc(product) || PLACEHOLDER}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                     onError={(e) => { e.target.src = PLACEHOLDER; }}
@@ -355,7 +355,7 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                             <div className="lg:hidden">
                                 <div className="relative h-36 sm:h-44 overflow-hidden">
                                     <img
-                                        src={product.image || PLACEHOLDER}
+                                        src={productImageSrc(product) || PLACEHOLDER}
                                         alt={product.name}
                                         className="w-full h-full object-cover"
                                         onError={(e) => { e.target.src = PLACEHOLDER; }}
@@ -402,7 +402,7 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                             <div className="hidden lg:block">
                                 <div className="aspect-[3/4] overflow-hidden">
                                     <img
-                                        src={product.image || PLACEHOLDER}
+                                        src={productImageSrc(product) || PLACEHOLDER}
                                         alt={product.name}
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                         onError={(e) => { e.target.src = PLACEHOLDER; }}

@@ -1,12 +1,22 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\LandingController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Admin\BannerController;
+use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductKeyController;
+use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\VoucherController;
+use App\Http\Controllers\Admin\WhatsAppGatewayController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LandingController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WebhookController;
+use App\Models\Order;
+use App\Models\Voucher;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 // ── Public Guest Routes ─────────────────────────────────────────────────────
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -23,19 +33,19 @@ Route::post('/checkout', [CheckoutController::class, 'store'])
     ->name('checkout.store');
 
 // Cek validitas voucher + preview diskon (tanpa checkout)
-Route::post('/vouchers/check', function (\Illuminate\Http\Request $request) {
+Route::post('/vouchers/check', function (Request $request) {
     $request->validate([
-        'code'  => ['required', 'string', 'max:50'],
+        'code' => ['required', 'string', 'max:50'],
         'price' => ['required', 'numeric', 'min:0'],
     ]);
 
-    $voucher = \App\Models\Voucher::active()
+    $voucher = Voucher::active()
         ->where('code', strtoupper(trim($request->code)))
         ->first();
 
     if (! $voucher) {
         return response()->json([
-            'valid'   => false,
+            'valid' => false,
             'message' => 'Voucher tidak valid atau sudah kadaluarsa.',
         ]);
     }
@@ -44,8 +54,8 @@ Route::post('/vouchers/check', function (\Illuminate\Http\Request $request) {
 
     if ($voucher->min_transaction && $price < $voucher->min_transaction) {
         return response()->json([
-            'valid'   => false,
-            'message' => 'Minimum transaksi Rp ' . number_format($voucher->min_transaction, 0, ',', '.'),
+            'valid' => false,
+            'message' => 'Minimum transaksi Rp '.number_format($voucher->min_transaction, 0, ',', '.'),
         ]);
     }
 
@@ -54,20 +64,20 @@ Route::post('/vouchers/check', function (\Illuminate\Http\Request $request) {
         : (float) $voucher->value;
 
     $discountAmount = min($discountAmount, $price);
-    $finalPrice     = max(0, $price - $discountAmount);
+    $finalPrice = max(0, $price - $discountAmount);
 
     $label = $voucher->type === 'percent'
         ? "Diskon {$voucher->value}%"
-        : 'Diskon Rp ' . number_format($discountAmount, 0, ',', '.');
+        : 'Diskon Rp '.number_format($discountAmount, 0, ',', '.');
 
     return response()->json([
-        'valid'           => true,
-        'type'            => $voucher->type,
-        'value'           => (float) $voucher->value,
+        'valid' => true,
+        'type' => $voucher->type,
+        'value' => (float) $voucher->value,
         'discount_amount' => $discountAmount,
-        'final_price'     => $finalPrice,
-        'label'           => $label,
-        'message'         => $label . ' berhasil diterapkan!',
+        'final_price' => $finalPrice,
+        'label' => $label,
+        'message' => $label.' berhasil diterapkan!',
     ]);
 })->name('vouchers.check')->middleware('throttle:30,1');
 
@@ -87,7 +97,7 @@ Route::get('/mock-payment/{reference}', function (string $reference) {
 
     // Ekstrak invoice code dari reference (hapus prefix MOCK-)
     $invoiceCode = preg_replace('/^MOCK-/i', '', $reference);
-    $order = \App\Models\Order::where('invoice_code', $invoiceCode)
+    $order = Order::where('invoice_code', $invoiceCode)
         ->with('items')
         ->first();
 
@@ -96,9 +106,9 @@ Route::get('/mock-payment/{reference}', function (string $reference) {
     }
 
     return view('mock-payment', [
-        'order'       => $order,
+        'order' => $order,
         'invoiceCode' => $invoiceCode,
-        'reference'   => $reference,
+        'reference' => $reference,
     ]);
 })->name('mock.payment');
 
@@ -112,28 +122,33 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // Resources — dibatasi hanya pada method yang benar-benar tersedia di controller
-    Route::resource('users', App\Http\Controllers\Admin\UserController::class)
+    Route::resource('users', UserController::class)
         ->only(['index', 'show', 'store', 'update', 'destroy']);
 
-    Route::resource('products', App\Http\Controllers\Admin\ProductController::class);
+    Route::resource('products', ProductController::class);
 
-    Route::get('products/{product}/keys', [App\Http\Controllers\Admin\ProductKeyController::class, 'index'])
+    Route::get('products/{product}/keys', [ProductKeyController::class, 'index'])
         ->name('products.keys.index');
-    Route::post('products/{product}/keys', [App\Http\Controllers\Admin\ProductKeyController::class, 'store'])
+    Route::post('products/{product}/keys', [ProductKeyController::class, 'store'])
         ->name('products.keys.store');
-    Route::delete('product-keys/{key}', [App\Http\Controllers\Admin\ProductKeyController::class, 'destroy'])
+    Route::delete('product-keys/{key}', [ProductKeyController::class, 'destroy'])
         ->name('products.keys.destroy');
 
-    Route::resource('vouchers', App\Http\Controllers\Admin\VoucherController::class)
+    Route::resource('vouchers', VoucherController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
-    Route::resource('banners', App\Http\Controllers\Admin\BannerController::class)
+    Route::resource('banners', BannerController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
-    Route::get('settings', [App\Http\Controllers\Admin\SettingController::class, 'index'])->name('settings.index');
-    Route::post('settings', [App\Http\Controllers\Admin\SettingController::class, 'update'])->name('settings.update');
+    Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::post('settings', [SettingController::class, 'update'])->name('settings.update');
 
-    Route::resource('orders', App\Http\Controllers\Admin\OrderController::class)
+    Route::get('whatsapp', [WhatsAppGatewayController::class, 'index'])->name('whatsapp.index');
+    Route::get('whatsapp/status', [WhatsAppGatewayController::class, 'status'])->name('whatsapp.status');
+    Route::post('whatsapp/logout', [WhatsAppGatewayController::class, 'logoutSession'])->name('whatsapp.logout');
+    Route::post('whatsapp/send-test', [WhatsAppGatewayController::class, 'sendTest'])->name('whatsapp.send-test');
+
+    Route::resource('orders', OrderController::class)
         ->only(['index', 'show', 'update']);
 });
 

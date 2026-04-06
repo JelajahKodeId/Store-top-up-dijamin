@@ -13,7 +13,7 @@ class VoucherController extends Controller
     public function index(Request $request)
     {
         \Illuminate\Support\Facades\Gate::authorize('viewAny', Voucher::class);
-        $query = Voucher::latest();
+        $query = Voucher::latest()->orderByDesc('id');
 
         if ($request->search) {
             $query->where('code', 'like', '%' . $request->search . '%');

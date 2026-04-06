@@ -40,6 +40,6 @@ class OrderItem extends Model
 
     public function orderKeys(): HasMany
     {
-        return $this->hasMany(OrderKey::class);
+        return $this->hasMany(OrderKey::class)->orderBy('id');
     }
 }

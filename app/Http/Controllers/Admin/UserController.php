@@ -44,7 +44,7 @@ class UserController extends Controller
 
         // Cari order yang berkaitan dengan email user ini (guest order pun bisa ketahuan)
         $recentOrders = \App\Models\Order::where('customer_email', $user->email)
-            ->latest()
+            ->newestFirst()
             ->take(5)
             ->get()
             ->map(fn ($o) => [

@@ -22,6 +22,7 @@ export default function ProductIndex({ products, filters }) {
         slug: '',
         description: '',
         image: '',
+        image_file: null,
         status: 'active',
         fields: [],
         durations: [{ name: '', duration_days: '', price: '', is_active: true }],
@@ -42,6 +43,7 @@ export default function ProductIndex({ products, filters }) {
             slug: product.slug,
             description: product.description || '',
             image: product.image || '',
+            image_file: null,
             status: product.status,
             fields: product.fields || [],
             durations: product.durations || [],
@@ -52,7 +54,9 @@ export default function ProductIndex({ products, filters }) {
 
     const submitCreate = (e) => {
         e.preventDefault();
+        const useMultipart = data.image_file instanceof File;
         post(route('admin.products.store'), {
+            forceFormData: useMultipart,
             onSuccess: () => {
                 setIsCreateModalOpen(false);
                 reset();
@@ -62,7 +66,9 @@ export default function ProductIndex({ products, filters }) {
 
     const submitEdit = (e) => {
         e.preventDefault();
+        const useMultipart = data.image_file instanceof File;
         put(route('admin.products.update', selectedProduct.id), {
+            forceFormData: useMultipart,
             onSuccess: () => {
                 setIsEditModalOpen(false);
                 reset();
@@ -273,7 +279,31 @@ export default function ProductIndex({ products, filters }) {
                             <div className="space-y-6">
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black text-store-charcoal uppercase tracking-widest border-b border-store-border pb-3">Status & Brand</h4>
-                                    <Input label="URL Gambar / Ikon" value={data.image} onChange={e => setData('image', e.target.value)} error={errors.image} placeholder="https://..." />
+                                    <Input
+                                        label="URL gambar (opsional)"
+                                        value={data.image}
+                                        onChange={e => setData('image', e.target.value)}
+                                        error={errors.image}
+                                        placeholder="https://… atau kosongkan jika unggah file"
+                                    />
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-bold text-store-subtle uppercase tracking-widest block">
+                                            Unggah gambar (opsional)
+                                        </label>
+                                        <input
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp,image/gif"
+                                            className="block w-full text-xs font-medium text-store-charcoal file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-store-charcoal file:text-white file:font-bold"
+                                            onChange={(e) => setData('image_file', e.target.files?.[0] ?? null)}
+                                        />
+                                        {errors.image_file && (
+                                            <p className="text-[10px] font-bold text-red-600">{errors.image_file}</p>
+                                        )}
+                                        <p className="text-[9px] text-store-subtle font-medium leading-relaxed">
+                                            Jika file dipilih, file dipakai dan disimpan di <code className="text-[8px] bg-admin-bg px-1 rounded">storage/app/public/products</code>
+                                            (pastikan <code className="text-[8px] bg-admin-bg px-1 rounded">php artisan storage:link</code> sudah dijalankan).
+                                        </p>
+                                    </div>
                                     <Select label="Status Produk" value={data.status} onChange={e => setData('status', e.target.value)} error={errors.status}>
                                         <option value="active">Aktif (Tampil di Toko)</option>
                                         <option value="inactive">Draft (Sembunyikan)</option>

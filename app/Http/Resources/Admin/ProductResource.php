@@ -18,6 +18,7 @@ class ProductResource extends JsonResource
             'slug' => $this->slug,
             'description' => $this->description,
             'image' => $this->image,
+            'image_url' => $this->image_url,
             'status' => $this->status,
             'fields' => $this->fields->map(fn($f) => [
                 'id' => $f->id,

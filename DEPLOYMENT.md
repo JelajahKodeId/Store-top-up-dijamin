@@ -158,8 +158,9 @@ TRIPAY_PRIVATE_KEY=isi_dengan_private_key
 TRIPAY_MERCHANT_CODE=isi_dengan_kode_merchant
 TRIPAY_MODE=production
 
-# WhatsApp Fonnte
-FONNTE_TOKEN=isi_dengan_token_fonnte
+# WhatsApp (wa-server — lihat checklist & wa-server/README.md)
+WA_SERVER_URL=http://127.0.0.1:3000
+WHATSAPP_SERVER_SECRET=
 WA_ADMIN_NUMBER=628xxxxxxxxxx
 
 EMAIL_NOTIFICATIONS_ENABLED=false
@@ -409,10 +410,10 @@ Jalankan semua item ini sebelum go-live:
 - [ ] `callback_url` dapat diakses dari internet (bukan localhost)
 - [ ] Uji dengan transaksi kecil di sandbox sebelum production
 
-### WhatsApp (Fonnte)
-- [ ] `FONNTE_TOKEN` sudah diisi dengan token aktif dari fonnte.com
-- [ ] `WA_ADMIN_NUMBER` sudah diisi dengan format `628xxxx`
-- [ ] Nomor WA sudah terhubung di dashboard Fonnte
+### WhatsApp
+- [ ] `wa-server/` berjalan (Node); `WA_SERVER_URL` & `WHATSAPP_SERVER_SECRET` di `.env` Laravel; secret sama di wa-server.
+- [ ] Scan QR di **Admin → WhatsApp**; status **ready**.
+- [ ] Nomor admin notifikasi: Pengaturan Situs → WhatsApp atau `WA_ADMIN_NUMBER`.
 
 ### Database
 - [ ] Migrasi sudah dijalankan (`php artisan migrate --force`)
@@ -533,10 +534,9 @@ php artisan optimize:clear
 - Verifikasi `TRIPAY_PRIVATE_KEY` sama dengan yang di dashboard Tripay
 
 ### WhatsApp tidak terkirim
-- Cek `FONNTE_TOKEN` masih aktif di dashboard fonnte.com
-- Cek log: `tail -f storage/logs/laravel.log | grep -i whatsapp`
-- Format nomor harus `628xxxx` (tanpa `+` atau `0` di depan)
-- Pastikan device WA terhubung di Fonnte
+- Cek proses Node (`wa-server`); `curl -s -H "Authorization: Bearer SECRET" http://127.0.0.1:3000/status` harus JSON; status **ready** setelah scan QR di admin.
+- Log Laravel: `grep -i whatsapp storage/logs/laravel.log`; format nomor `628xxxx`.
+- `WA_SERVER_URL` dari sisi PHP (`www-data`) harus mencapai Node (localhost atau IP internal).
 
 ### Queue tidak berjalan
 ```bash

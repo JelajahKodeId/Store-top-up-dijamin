@@ -28,8 +28,15 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'fonnte' => [
-        'token'        => env('FONNTE_TOKEN'),
+    /*
+    |--------------------------------------------------------------------------
+    | WhatsApp — gateway Node (wa-server/)
+    |--------------------------------------------------------------------------
+    | Scan QR di Admin → WhatsApp. WA_SERVER_URL harus reachable dari PHP.
+    */
+    'whatsapp' => [
+        'server_url' => env('WA_SERVER_URL', ''),
+        'server_secret' => env('WHATSAPP_SERVER_SECRET'),
         'admin_number' => env('WA_ADMIN_NUMBER'),
     ],
 
@@ -50,10 +57,10 @@ return [
     ],
 
     'tripay' => [
-        'api_key'       => env('TRIPAY_API_KEY'),
-        'private_key'   => env('TRIPAY_PRIVATE_KEY'),
+        'api_key' => env('TRIPAY_API_KEY'),
+        'private_key' => env('TRIPAY_PRIVATE_KEY'),
         'merchant_code' => env('TRIPAY_MERCHANT_CODE'),
-        'mode'          => env('TRIPAY_MODE', 'sandbox'),
+        'mode' => env('TRIPAY_MODE', 'sandbox'),
     ],
 
 ];

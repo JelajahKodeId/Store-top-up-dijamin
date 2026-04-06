@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Http\Requests\Admin\ProductRequest;
 use App\Http\Resources\Admin\ProductResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ProductController extends Controller
@@ -26,7 +27,8 @@ class ProductController extends Controller
         \Illuminate\Support\Facades\Gate::authorize('viewAny', Product::class);
         $query = Product::with(['durations', 'fields'])
             ->withCount(['keys as keys_count' => fn ($q) => $q->where('status', 'available')])
-            ->latest();
+            ->latest()
+            ->orderByDesc('id');
 
         if ($request->search) {
             $query->where('name', 'like', '%' . $request->search . '%')
@@ -69,8 +71,9 @@ class ProductController extends Controller
     public function store(ProductRequest $request)
     {
         \Illuminate\Support\Facades\Gate::authorize('create', Product::class);
-        
-        $this->productService->createProduct($request->validated());
+
+        $validated = $this->mergeUploadedProductImage($request, $request->validated(), null);
+        $this->productService->createProduct($validated);
 
         return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
@@ -83,10 +86,10 @@ class ProductController extends Controller
         \Illuminate\Support\Facades\Gate::authorize('view', $product);
 
         $product->load([
-            'durations' => fn ($q) => $q->withCount([
+            'durations' => fn ($q) => $q->orderByDesc('id')->withCount([
                 'keys as available_keys_count' => fn ($q) => $q->where('status', 'available'),
             ]),
-            'fields',
+            'fields' => fn ($q) => $q->orderByDesc('id'),
         ]);
 
         return Inertia::render('Admin/Products/Show', [
@@ -101,7 +104,9 @@ class ProductController extends Controller
     {
         \Illuminate\Support\Facades\Gate::authorize('update', $product);
 
-        $this->productService->updateProduct($product, $request->validated());
+        $previous = $product->getRawOriginal('image');
+        $validated = $this->mergeUploadedProductImage($request, $request->validated(), $previous);
+        $this->productService->updateProduct($product, $validated);
 
         return redirect()->route('admin.products.index')->with('success', 'Produk berhasil diperbarui.');
     }
@@ -119,5 +124,35 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Unggah file mengalahkan isian URL. Path lama di disk public dihapus jika diganti.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function mergeUploadedProductImage(Request $request, array $validated, ?string $previousStored): array
+    {
+        unset($validated['image_file']);
+
+        if ($request->hasFile('image_file')) {
+            $validated['image'] = $request->file('image_file')->store('products', 'public');
+            if (Product::isRelativeStoragePath($previousStored)) {
+                Storage::disk('public')->delete($previousStored);
+            }
+
+            return $validated;
+        }
+
+        $validated['image'] = isset($validated['image']) && $validated['image'] !== ''
+            ? trim((string) $validated['image'])
+            : null;
+
+        if (Product::isRelativeStoragePath($previousStored) && $validated['image'] !== $previousStored) {
+            Storage::disk('public')->delete($previousStored);
+        }
+
+        return $validated;
     }
 }

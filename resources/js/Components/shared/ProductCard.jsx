@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { AppIcons } from '@/Components/shared/AppIcon';
-import { formatPrice } from '@/utils/guest';
+import { formatPrice, productImageSrc } from '@/utils/guest';
 
 // Placeholder abu-abu jika gambar tidak ada
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500' viewBox='0 0 400 500'%3E%3Crect width='400' height='500' fill='%232C2F3C'/%3E%3Ctext x='200' y='260' font-family='sans-serif' font-size='40' fill='%234a4d5e' text-anchor='middle'%3E%3F%3C/text%3E%3C/svg%3E";
@@ -33,7 +33,7 @@ export default function ProductCard({ product }) {
                 className="relative aspect-[4/5] overflow-hidden block"
             >
                 <img
-                    src={product.image || PLACEHOLDER}
+                    src={productImageSrc(product) || PLACEHOLDER}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => { e.target.src = PLACEHOLDER; }}

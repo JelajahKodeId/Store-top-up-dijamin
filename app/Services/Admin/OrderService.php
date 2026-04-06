@@ -18,7 +18,7 @@ class OrderService
      */
     public function getPaginatedOrders(array $filters = []): LengthAwarePaginator
     {
-        $query = Order::latest();
+        $query = Order::query()->newestFirst();
 
         if (!empty($filters['search'])) {
             $s = '%' . $filters['search'] . '%';
