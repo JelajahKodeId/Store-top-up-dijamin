@@ -14,11 +14,11 @@ use Inertia\Response;
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Display the admin profile form inside the admin panel.
      */
     public function edit(Request $request): Response
     {
-        return Inertia::render('Profile/Edit', [
+        return Inertia::render('Admin/Profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
         ]);
@@ -37,27 +37,16 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return Redirect::route('profile.edit');
+        return Redirect::route('admin.profile.edit')->with('success', 'Profil berhasil diperbarui.');
     }
 
     /**
-     * Delete the user's account.
+     * Admin account deletion is disabled for security reasons.
+     * Only developers can remove admin accounts directly via database.
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
-
-        $user = $request->user();
-
-        Auth::logout();
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
+        return Redirect::route('admin.profile.edit')
+            ->with('error', 'Akun Super Administrator tidak dapat dihapus melalui panel.');
     }
 }

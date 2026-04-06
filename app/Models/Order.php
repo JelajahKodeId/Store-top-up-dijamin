@@ -22,6 +22,10 @@ class Order extends Model
         'is_sent',
         'voucher_id',
         'ip_address',
+        'note',
+        'payment_reference',
+        'payment_url',
+        'payment_expired_at',
     ];
 
     protected $casts = [
@@ -29,6 +33,7 @@ class Order extends Model
         'discount_amount' => 'decimal:2',
         'is_sent' => 'boolean',
         'status' => \App\Enums\OrderStatus::class,
+        'payment_expired_at' => 'datetime',
     ];
 
     public function voucher(): BelongsTo

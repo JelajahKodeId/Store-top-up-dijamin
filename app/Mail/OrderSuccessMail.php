@@ -16,7 +16,7 @@ class OrderSuccessMail extends Mailable implements ShouldQueue
 
     public function __construct(public Order $order)
     {
-        $this->order->loadMissing(['items.orderKeys', 'fieldValues']);
+        $this->order->loadMissing(['items.orderKeys', 'fieldValues.field']);
     }
 
     public function envelope(): Envelope

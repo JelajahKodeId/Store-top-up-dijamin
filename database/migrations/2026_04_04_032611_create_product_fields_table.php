@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('label');
-            $table->enum('type', ['text', 'number']);
+            $table->enum('type', ['text', 'number', 'email', 'textarea', 'select']);
             $table->string('placeholder')->nullable();
             $table->string('validation')->nullable();
             $table->boolean('is_required')->default(true);

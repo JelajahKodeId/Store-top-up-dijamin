@@ -58,8 +58,8 @@ export const Select = forwardRef(function Select(
     { label, error, icon, children, className = '', containerClassName = '', ...props },
     ref
 ) {
+    // Mempertahankan icon custom (biasanya di sisi kiri) jika dikirim via props
     const Icon = typeof icon === 'string' ? (AppIcons[icon] || AppIcons.info) : icon;
-    const ChevronIcon = AppIcons.chevronDown;
 
     return (
         <div className={`space-y-2 ${containerClassName}`}>
@@ -81,7 +81,7 @@ export const Select = forwardRef(function Select(
                     ref={ref}
                     className={`
                         w-full bg-white border-1.5 rounded-xl py-3 px-4 text-sm font-bold text-store-charcoal
-                        appearance-none transition-all outline-none shadow-soft
+                        transition-all outline-none shadow-soft
                         ${Icon ? 'pl-12' : ''}
                         ${error
                             ? 'border-red-500 focus:ring-4 focus:ring-red-500/10'
@@ -93,9 +93,7 @@ export const Select = forwardRef(function Select(
                     {children}
                 </select>
 
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-store-muted pointer-events-none">
-                    <ChevronIcon size={16} strokeWidth={2.5} />
-                </div>
+                {/* Bagian ChevronIcon di sini sudah dihapus */}
             </div>
 
             {error && (

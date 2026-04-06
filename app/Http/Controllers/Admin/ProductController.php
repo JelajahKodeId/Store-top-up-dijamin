@@ -8,8 +8,6 @@ use App\Http\Requests\Admin\ProductRequest;
 use App\Http\Resources\Admin\ProductResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -26,7 +24,9 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         \Illuminate\Support\Facades\Gate::authorize('viewAny', Product::class);
-        $query = Product::with(['durations', 'fields'])->latest();
+        $query = Product::with(['durations', 'fields'])
+            ->withCount(['keys as keys_count' => fn ($q) => $q->where('status', 'available')])
+            ->latest();
 
         if ($request->search) {
             $query->where('name', 'like', '%' . $request->search . '%')
@@ -47,11 +47,20 @@ class ProductController extends Controller
 
     /**
      * Show the form for creating a new resource.
+     * Redirects to index since create is handled via modal.
      */
     public function create()
     {
-        \Illuminate\Support\Facades\Gate::authorize('create', Product::class);
-        return Inertia::render('Admin/Products/Create');
+        return redirect()->route('admin.products.index');
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     * Redirects to index since edit is handled via modal on the index page.
+     */
+    public function edit(Product $product)
+    {
+        return redirect()->route('admin.products.index');
     }
 
     /**
@@ -63,7 +72,7 @@ class ProductController extends Controller
         
         $this->productService->createProduct($request->validated());
 
-        return back()->with('success', 'Produk berhasil ditambahkan.');
+        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
 
     /**
@@ -72,8 +81,16 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         \Illuminate\Support\Facades\Gate::authorize('view', $product);
+
+        $product->load([
+            'durations' => fn ($q) => $q->withCount([
+                'keys as available_keys_count' => fn ($q) => $q->where('status', 'available'),
+            ]),
+            'fields',
+        ]);
+
         return Inertia::render('Admin/Products/Show', [
-            'product' => new ProductResource($product->load(['durations', 'fields'])),
+            'product' => new ProductResource($product),
         ]);
     }
 
@@ -86,7 +103,7 @@ class ProductController extends Controller
 
         $this->productService->updateProduct($product, $request->validated());
 
-        return back()->with('success', 'Produk berhasil diperbarui.');
+        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil diperbarui.');
     }
 
     /**

@@ -1,10 +1,12 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AppLogo from '@/Components/shared/AppLogo';
 import { AppIcons } from '@/Components/shared/AppIcon';
 import Spinner from '@/Components/ui/Spinner';
-import Button from '@/Components/ui/Button';
 
 export default function Login({ status, canResetPassword }) {
+    const { site } = usePage().props;
+    const siteName = site?.name || 'Mall Store';
+
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -18,7 +20,7 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <>
-            <Head title="Masuk — Mall Store" />
+            <Head title={`Masuk — ${siteName}`} />
 
             <div className="min-h-screen bg-store-dark flex font-sans relative overflow-hidden">
                 {/* ── Decorative Background ── */}
@@ -43,7 +45,7 @@ export default function Login({ status, canResetPassword }) {
                             <span className="text-gradient-accent">Gaming gears</span>
                         </h1>
                         <p className="text-store-subtle text-lg leading-relaxed max-w-md font-medium">
-                            Masuk ke portal premium Mall Store dan nikmati layanan top-up tercepat di industri gaming.
+                            Masuk ke portal premium {siteName} dan nikmati layanan top-up tercepat di industri gaming.
                         </p>
                     </div>
 

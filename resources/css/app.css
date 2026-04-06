@@ -36,9 +36,10 @@
     h4,
     h5,
     h6 {
-        @apply font-bold tracking-tight;
+        @apply font-bold;
         color: theme('colors.white');
         font-style: normal;
+        /* tracking disesuaikan per-ukuran di komponen; base tidak force tracking-tight */
     }
 
     p {
@@ -58,18 +59,19 @@
 @layer components {
 
     .t-hero {
-        @apply font-black leading-none uppercase;
+        @apply font-black leading-tight uppercase;
         font-size: clamp(3rem, 10vw, 8rem);
         color: theme('colors.store-charcoal');
     }
 
     .t-h1 {
-        @apply leading-none font-bebas uppercase;
+        @apply leading-tight font-bebas uppercase;
         font-size: clamp(2.5rem, 8vw, 5.5rem);
     }
 
     .t-h2 {
-        @apply font-bebas uppercase tracking-tight;
+        @apply font-bebas uppercase;
+        line-height: 1.05;
         font-size: clamp(1.75rem, 5vw, 3rem);
     }
 
@@ -215,12 +217,15 @@
 
     /* ── Guest Section Typography ── */
     .section-heading {
-        @apply font-bebas font-black text-white uppercase tracking-tight leading-none;
-        font-size: clamp(2.5rem, 5vw, 3.75rem);
+        @apply font-bebas font-bold text-white uppercase;
+        /* leading-[1.05]: cukup rapat untuk display heading, tidak tercekik seperti leading-none/[0.9] */
+        line-height: 1.05;
+        font-size: clamp(2rem, 4vw, 3rem);
+        letter-spacing: 0.01em;
     }
 
     .section-subtext {
-        @apply text-base text-store-subtle font-medium leading-relaxed;
+        @apply text-sm text-store-subtle font-medium leading-relaxed;
     }
 
     .label-chip {

@@ -26,7 +26,7 @@ export default function GuestLayout({ children, title, subtitle }) {
                         <div className="space-y-1">
                             <h1 className="section-heading">{title}</h1>
                             {subtitle && (
-                                <p className="section-subtext text-sm">{subtitle}</p>
+                                <p className="section-subtext">{subtitle}</p>
                             )}
                         </div>
                     </div>

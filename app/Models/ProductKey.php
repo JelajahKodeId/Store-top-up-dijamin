@@ -12,7 +12,22 @@ class ProductKey extends Model
         'product_duration_id',
         'key_code',
         'status',
+        'expires_at',
     ];
+
+    protected $casts = [
+        'expires_at' => 'datetime',
+    ];
+
+    public function scopeAvailable($query)
+    {
+        return $query->where('status', 'available');
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
 
     public function product(): BelongsTo
     {

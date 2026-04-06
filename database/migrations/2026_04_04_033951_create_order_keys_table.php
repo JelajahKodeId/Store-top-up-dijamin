@@ -16,7 +16,8 @@ return new class extends Migration
             $table->foreignId('order_item_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_key_id')->constrained()->cascadeOnDelete();
             $table->text('key_code');
-            $table->timestamp('expired_at')->nullable();
+            $table->timestamp('expired_at')->nullable();   // key kadaluarsa (dari durasi produk)
+            $table->timestamp('delivered_at')->nullable(); // waktu key berhasil dikirim ke customer
             $table->timestamps();
         });
     }

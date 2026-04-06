@@ -1,5 +1,4 @@
 import { Link } from '@inertiajs/react';
-import AppLogo from '@/Components/shared/AppLogo';
 import { AppIcons } from '@/Components/shared/AppIcon';
 
 const navItems = [
@@ -60,6 +59,11 @@ const navItems = [
                 label: 'Manajemen Pengguna',
                 route: 'admin.users.index',
                 icon: 'users',
+            },
+            {
+                label: 'Profil Saya',
+                route: 'admin.profile.edit',
+                icon: 'profile',
             },
         ],
     },

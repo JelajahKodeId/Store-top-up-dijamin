@@ -27,6 +27,10 @@ export default function BannerIndex({ banners }) {
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            // Cabut URL objek lama sebelum buat yang baru agar tidak memory leak
+            if (imagePreview && imagePreview.startsWith('blob:')) {
+                URL.revokeObjectURL(imagePreview);
+            }
             setData('image', file);
             setImagePreview(URL.createObjectURL(file));
         }

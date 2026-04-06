@@ -30,14 +30,15 @@ class ProductResource extends JsonResource
                 'sort_order' => $f->sort_order,
             ]),
             'durations' => $this->durations->map(fn($d) => [
-                'id' => $d->id,
-                'name' => $d->name,
-                'duration_days' => $d->duration_days,
-                'price' => (float) $d->price,
-                'price_formatted' => 'Rp ' . number_format($d->price, 0, ',', '.'),
-                'is_active' => $d->is_active,
+                'id'                   => $d->id,
+                'name'                 => $d->name,
+                'duration_days'        => $d->duration_days,
+                'price'                => (float) $d->price,
+                'price_formatted'      => 'Rp ' . number_format($d->price, 0, ',', '.'),
+                'is_active'            => $d->is_active,
+                'available_keys_count' => $d->available_keys_count ?? 0,
             ]),
-            'keys_count' => $this->keys()->where('status', 'available')->count(),
+            'keys_count' => $this->keys_count ?? $this->keys()->where('status', 'available')->count(),
             'created_at' => $this->created_at->format('d M Y'),
         ];
     }

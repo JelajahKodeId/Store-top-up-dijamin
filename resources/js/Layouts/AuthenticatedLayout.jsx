@@ -6,8 +6,7 @@ import Dropdown from '@/Components/Dropdown';
 
 const memberNavLinks = [
     { label: 'Beranda', href: '/', route: null },
-    { label: 'Dashboard', href: route('dashboard'), route: 'dashboard' },
-    { label: 'Riwayat', href: '#', route: null },
+    { label: 'Dashboard', href: route('admin.dashboard'), route: 'admin.dashboard' },
 ];
 
 function isActive(routeName) {
@@ -38,8 +37,8 @@ export default function AuthenticatedLayout({ header, children }) {
                                     key={link.label}
                                     href={link.href}
                                     className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-150 ${isActive(link.route)
-                                            ? 'text-store-dark bg-store-surface-2'
-                                            : 'text-store-muted hover:text-store-dark hover:bg-store-surface-2'
+                                            ? 'text-store-dark bg-admin-bg'
+                                            : 'text-store-muted hover:text-store-dark hover:bg-admin-bg'
                                         }`}
                                 >
                                     {link.label}
@@ -52,7 +51,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             <div className="hidden sm:block">
                                 <Dropdown>
                                     <Dropdown.Trigger>
-                                        <button className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-store-border hover:bg-store-surface-2 transition-all text-sm font-semibold text-store-body">
+                                        <button className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-store-border hover:bg-admin-bg transition-all text-sm font-semibold text-store-body">
                                             <Avatar name={user?.name ?? ''} size="sm" />
                                             <span className="hidden sm:block max-w-[120px] truncate">{user?.name}</span>
                                             <svg className="w-4 h-4 text-store-subtle" fill="currentColor" viewBox="0 0 20 20">
@@ -68,8 +67,8 @@ export default function AuthenticatedLayout({ header, children }) {
                                             <p className="text-sm font-bold text-store-dark truncate">{user?.email}</p>
                                         </div>
                                         <Dropdown.Link
-                                            href={route('profile.edit')}
-                                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-store-body hover:bg-store-surface-2 hover:text-store-dark transition-colors"
+                                            href={route('admin.profile.edit')}
+                                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-store-body hover:bg-admin-bg hover:text-store-dark transition-colors"
                                         >
                                             <svg className="w-4 h-4 text-store-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -93,7 +92,7 @@ export default function AuthenticatedLayout({ header, children }) {
 
                             {/* Mobile hamburger */}
                             <button
-                                className="sm:hidden p-2 rounded-xl text-store-muted hover:bg-store-surface-2 transition-all"
+                                className="sm:hidden p-2 rounded-xl text-store-muted hover:bg-admin-bg transition-all"
                                 onClick={() => setMobileOpen(!mobileOpen)}
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,13 +115,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                     key={link.label}
                                     href={link.href}
                                     onClick={() => setMobileOpen(false)}
-                                    className="block px-4 py-3 text-sm font-semibold text-store-muted hover:text-store-dark hover:bg-store-surface-2 rounded-xl"
+                                    className="block px-4 py-3 text-sm font-semibold text-store-muted hover:text-store-dark hover:bg-admin-bg rounded-xl"
                                 >
                                     {link.label}
                                 </Link>
                             ))}
                             <div className="border-t border-store-border pt-2 mt-2 space-y-0.5">
-                                <Link href={route('profile.edit')} className="block px-4 py-3 text-sm font-semibold text-store-body hover:bg-store-surface-2 rounded-xl">
+                                <Link href={route('admin.profile.edit')} className="block px-4 py-3 text-sm font-semibold text-store-body hover:bg-admin-bg rounded-xl">
                                     Profil Saya
                                 </Link>
                                 <Link

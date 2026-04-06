@@ -102,6 +102,10 @@ export default function ProductIndex({ products, filters }) {
         }
     }, [data.name]);
 
+    // Auto-derive field name from label (snake_case)
+    const slugifyFieldName = (label) =>
+        label.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
     // Dynamic Fields Logic
     const addField = () => setData('fields', [...data.fields, { name: '', label: '', type: 'text', placeholder: '', is_required: true, sort_order: data.fields.length + 1 }]);
     const removeField = (idx) => {
@@ -303,11 +307,34 @@ export default function ProductIndex({ products, filters }) {
                                                 <span className="text-[10px] font-black text-store-charcoal uppercase tracking-wider">Field {idx + 1}</span>
                                             </div>
                                             <div className="grid grid-cols-1 gap-4">
-                                                <Input label="Label (Tampil ke User)" value={field.label} onChange={e => updateField(idx, 'label', e.target.value)} placeholder="Contoh: Masukkan User ID" />
+                                                <Input
+                                                    label="Label (Tampil ke User)"
+                                                    value={field.label}
+                                                    onChange={e => {
+                                                        const newLabel = e.target.value;
+                                                        const autoName = !field.name || field.name === slugifyFieldName(field.label);
+                                                        const updated = [...data.fields];
+                                                        updated[idx] = {
+                                                            ...updated[idx],
+                                                            label: newLabel,
+                                                            ...(autoName ? { name: slugifyFieldName(newLabel) } : {}),
+                                                        };
+                                                        setData('fields', updated);
+                                                    }}
+                                                    placeholder="Contoh: HWID (Hardware ID)"
+                                                />
+                                                <Input
+                                                    label="Nama Field (Key)"
+                                                    value={field.name}
+                                                    onChange={e => updateField(idx, 'name', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
+                                                    placeholder="Contoh: user_id"
+                                                />
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <Select label="Tipe Input" value={field.type} onChange={e => updateField(idx, 'type', e.target.value)}>
                                                         <option value="text">Teks Bebas</option>
                                                         <option value="number">Hanya Angka</option>
+                                                        <option value="email">Email</option>
+                                                        <option value="textarea">Teks Panjang</option>
                                                     </Select>
                                                     <div className="space-y-2">
                                                         <label className="text-[9px] font-bold text-store-subtle uppercase tracking-widest block">Wajib Isi?</label>

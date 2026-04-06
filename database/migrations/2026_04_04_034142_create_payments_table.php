@@ -14,11 +14,14 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
-            $table->string('reference_id')->nullable();
+            $table->string('gateway')->nullable();        // tripay, midtrans, mock, dll
+            $table->string('reference_id')->nullable();   // kode referensi dari gateway
             $table->decimal('amount', 12, 2);
-            $table->enum('status', ['pending', 'success', 'failed'])->default('pending');
-            $table->json('payload')->nullable();
+            $table->enum('status', ['pending', 'success', 'failed', 'expired'])->default('pending');
+            $table->json('payload')->nullable();          // raw response dari gateway
+            $table->timestamp('paid_at')->nullable();     // waktu pembayaran dikonfirmasi
             $table->timestamps();
+            $table->index(['order_id', 'status']);
         });
     }
 

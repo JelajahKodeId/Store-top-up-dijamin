@@ -28,7 +28,7 @@ class ProductRequest extends FormRequest
             'fields.*.id' => ['nullable', 'exists:product_fields,id'],
             'fields.*.name' => ['required', 'string', 'max:100'],
             'fields.*.label' => ['required', 'string', 'max:100'],
-            'fields.*.type' => ['required', Rule::in(['text', 'number'])],
+            'fields.*.type' => ['required', Rule::in(['text', 'number', 'email', 'textarea', 'select'])],
             'fields.*.placeholder' => ['nullable', 'string', 'max:255'],
             'fields.*.validation' => ['nullable', 'string', 'max:255'],
             'fields.*.is_required' => ['nullable', 'boolean'],
@@ -38,7 +38,7 @@ class ProductRequest extends FormRequest
             'durations' => ['required', 'array', 'min:1'],
             'durations.*.id' => ['nullable', 'exists:product_durations,id'],
             'durations.*.name' => ['required', 'string', 'max:100'],
-            'durations.*.duration_days' => ['required', 'integer', 'min:1'],
+            'durations.*.duration_days' => ['required', 'integer', 'min:0'],
             'durations.*.price' => ['required', 'numeric', 'min:0'],
             'durations.*.is_active' => ['nullable', 'boolean'],
         ];
