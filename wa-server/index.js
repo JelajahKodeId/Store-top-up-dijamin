@@ -50,9 +50,10 @@ function resolveChromeExecutable() {
  *   POST /logout — putus sesi WA
  *   POST /send   — { number, message } kirim teks
  *
- * Opsional: set WHATSAPP_SERVER_SECRET — semua route wajib header Authorization: Bearer <secret>
- * (Laravel memanggil lewat proxy admin yang menyertakan token ini.)
+ * WHATSAPP_SERVER_SECRET: wajib jika NODE_ENV=production. Header: Authorization: Bearer <secret>
+ * (Laravel & panel admin mem-proxy dengan token yang sama.)
  */
+const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const qrcode = require('qrcode');
@@ -62,17 +63,29 @@ const app = express();
 const port = process.env.PORT || 3000;
 const bind = process.env.WA_BIND || '127.0.0.1';
 const apiSecret = (process.env.WHATSAPP_SERVER_SECRET || '').trim();
+const isProd = process.env.NODE_ENV === 'production';
 
-app.use(cors());
+if (isProd && !apiSecret) {
+    console.error('[wa-server] WHATSAPP_SERVER_SECRET wajib saat NODE_ENV=production.');
+    process.exit(1);
+}
+
+/* Hanya dipanggil server-to-server dari Laravel — tanpa CORS terbuka ke sembarang origin */
+app.use(cors({ origin: false }));
 app.use(express.json({ limit: '1mb' }));
 
 function requireSecret(req, res, next) {
     if (!apiSecret) {
+        if (isProd) {
+            return res.status(503).json({ error: 'Server misconfigured' });
+        }
         return next();
     }
     const auth = req.headers.authorization || '';
     const token = auth.replace(/^Bearer\s+/i, '').trim();
-    if (token !== apiSecret) {
+    const a = Buffer.from(token, 'utf8');
+    const b = Buffer.from(apiSecret, 'utf8');
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     return next();
@@ -228,7 +241,7 @@ app.post('/send', async (req, res) => {
         return res.json({ success: true });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: err.message || 'Gagal mengirim pesan.' });
+        return res.status(500).json({ error: isProd ? 'Gagal mengirim pesan.' : (err.message || 'Gagal mengirim pesan.') });
     }
 });
 

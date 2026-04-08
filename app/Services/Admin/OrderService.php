@@ -13,25 +13,26 @@ class OrderService
     public function __construct(
         protected KeyDeliveryService $keyDeliveryService
     ) {}
+
     /**
      * Get paginated orders with filters
      */
     public function getPaginatedOrders(array $filters = []): LengthAwarePaginator
     {
-        $query = Order::query()->newestFirst();
+        $query = Order::query()->with('payment')->newestFirst();
 
-        if (!empty($filters['search'])) {
-            $s = '%' . $filters['search'] . '%';
+        if (! empty($filters['search'])) {
+            $s = '%'.$filters['search'].'%';
             $query->where(function ($q) use ($s) {
                 $q->where('invoice_code', 'like', $s)
-                  ->orWhere('customer_name', 'like', $s)
-                  ->orWhere('customer_email', 'like', $s)
-                  ->orWhere('whatsapp_number', 'like', $s)
-                  ->orWhere('payment_reference', 'like', $s);
+                    ->orWhere('customer_name', 'like', $s)
+                    ->orWhere('customer_email', 'like', $s)
+                    ->orWhere('whatsapp_number', 'like', $s)
+                    ->orWhere('payment_reference', 'like', $s);
             });
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
@@ -45,7 +46,7 @@ class OrderService
     {
         $order->update([
             'status' => $status,
-            'note'   => $note ?? $order->note,
+            'note' => $note ?? $order->note,
         ]);
 
         // Jika admin set ke PAID secara manual, langsung deliver key otomatis

@@ -1,4 +1,4 @@
-import { Head, useForm, Link } from '@inertiajs/react';
+import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { AppIcons } from '@/Components/shared/AppIcon';
 import { useState, useCallback } from 'react';
@@ -17,10 +17,14 @@ function fieldIcon(field) {
 }
 
 // Fallback jika backend tidak mengembalikan channels (dev / mock)
-const FALLBACK_PAYMENT_METHODS = [
-    { code: 'MOCK_QRIS', label: 'QRIS (Dev)' },
-    { code: 'MOCK_BANK', label: 'Bank (Dev)' },
-];
+const FALLBACK_BY_GATEWAY = {
+    midtrans: [{ code: 'midtrans_snap', label: 'Midtrans (QRIS, VA, E-Wallet)', fee: 0, fee_pct: 0 }],
+    tripay: [{ code: 'QRIS', label: 'QRIS (fallback)', fee: 0, fee_pct: 0.7 }],
+    mock: [
+        { code: 'MOCK_QRIS', label: 'QRIS (Mock)', fee: 0, fee_pct: 0 },
+        { code: 'MOCK_BANK', label: 'Bank (Mock)', fee: 0, fee_pct: 0 },
+    ],
+};
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Crect width='300' height='400' fill='%232C2F3C'/%3E%3C/svg%3E";
 
@@ -245,10 +249,12 @@ function InfoPill({ icon, label }) {
 }
 
 // ── Main Page ────────────────────────────────────────────────────────────────
-export default function ProductDetail({ product, related = [], paymentChannels = [] }) {
+export default function ProductDetail({ product, related = [], paymentChannels = [], checkoutGateway = 'mock', midtransSandboxMode = false }) {
+    const { flash } = usePage().props;
+    const fallbackList = FALLBACK_BY_GATEWAY[checkoutGateway] || FALLBACK_BY_GATEWAY.mock;
     const PAYMENT_METHODS = paymentChannels.length > 0
         ? paymentChannels.map(ch => ({ code: ch.code, label: ch.label, fee: ch.fee ?? 0, fee_pct: ch.fee_pct ?? 0, icon_url: ch.icon_url ?? null }))
-        : FALLBACK_PAYMENT_METHODS;
+        : fallbackList;
     const [selectedDuration, setSelectedDuration] = useState(null);
     const [showConfirm, setShowConfirm]           = useState(false);
 
@@ -329,6 +335,14 @@ export default function ProductDetail({ product, related = [], paymentChannels =
         <GuestLayout title={product.name}>
             <Head title={`${product.name} — Order`} />
 
+            {flash?.error && (
+                <div className="section-container pt-4">
+                    <div className="p-4 rounded-2xl bg-red-500/15 border border-red-500/25 text-[10px] font-bold text-red-400 uppercase tracking-wide leading-relaxed">
+                        {flash.error}
+                    </div>
+                </div>
+            )}
+
             <ConfirmModal
                 open={showConfirm}
                 onClose={() => setShowConfirm(false)}
@@ -342,6 +356,16 @@ export default function ProductDetail({ product, related = [], paymentChannels =
             />
 
             <div className="section-container pb-24">
+                {midtransSandboxMode && (
+                    <div className="mb-4 p-3 rounded-2xl bg-amber-400/10 border border-amber-400/25">
+                        <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">
+                            Mode sandbox Midtrans
+                        </p>
+                        <p className="text-[11px] text-white/45 font-medium leading-relaxed mt-1">
+                            Pembayaran uji saja; gunakan kartu dan skenario dari dokumentasi Midtrans sandbox. Bukan uang sungguhan.
+                        </p>
+                    </div>
+                )}
 
                 {/* ═══ MAIN LAYOUT ══════════════════════════════════════════ */}
                 <div className="flex flex-col lg:flex-row gap-4 lg:gap-10 items-start">

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Setting;
+use App\Support\WhatsAppGateway;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -20,17 +21,11 @@ class WhatsAppService
 
     public function __construct()
     {
-        $this->waServerUrl = $this->normalizeUrl(config('services.whatsapp.server_url'));
+        $this->waServerUrl = WhatsAppGateway::normalizeServerUrl(
+            config('services.whatsapp.server_url'),
+            app()->isProduction()
+        );
         $this->waServerSecret = config('services.whatsapp.server_secret') ?: null;
-    }
-
-    protected function normalizeUrl(?string $url): ?string
-    {
-        if (! is_string($url) || trim($url) === '') {
-            return null;
-        }
-
-        return rtrim($url, '/');
     }
 
     protected function resolveAdminNumber(): ?string
@@ -139,13 +134,23 @@ class WhatsAppService
 
     protected function send(string $target, string $message): bool
     {
-        $target = preg_replace('/[^0-9]/', '', $target);
-        if (str_starts_with($target, '0')) {
-            $target = '62'.substr($target, 1);
+        $normalized = WhatsAppGateway::normalizeRecipientNumber($target);
+        if ($normalized === null) {
+            Log::warning('[WhatsApp] Nomor penerima tidak valid — pengiriman dibatalkan.');
+
+            return false;
         }
 
+        $target = $normalized;
+
         if ($this->waServerUrl === null) {
-            Log::warning('[WhatsApp] WA_SERVER_URL kosong — pesan tidak dikirim ke '.$target);
+            Log::warning('[WhatsApp] WA_SERVER_URL tidak valid atau kosong — pesan tidak dikirim.');
+
+            return false;
+        }
+
+        if (app()->isProduction() && empty($this->waServerSecret)) {
+            Log::error('[WhatsApp] WHATSAPP_SERVER_SECRET wajib di production — pesan tidak dikirim.');
 
             return false;
         }
@@ -164,14 +169,23 @@ class WhatsAppService
             $ok = $response->successful() && ($response->json('success') === true);
 
             if ($ok) {
-                Log::info("WhatsApp: Terkirim ke {$target}.");
+                if (app()->isProduction()) {
+                    Log::info('WhatsApp: pesan terkirim', ['to_suffix' => strlen($target) > 4 ? '***'.substr($target, -4) : '***']);
+                } else {
+                    Log::info("WhatsApp: Terkirim ke {$target}.");
+                }
             } else {
-                Log::warning('WhatsApp: Gagal ke '.$target.' — '.$response->body());
+                Log::warning('WhatsApp: Gagal mengirim', [
+                    'target_suffix' => strlen($target) > 4 ? '***'.substr($target, -4) : '***',
+                    'http_status' => $response->status(),
+                ]);
             }
 
             return $ok;
         } catch (\Throwable $e) {
-            Log::error("WhatsApp: Exception → {$target} — {$e->getMessage()}");
+            Log::error('WhatsApp: Exception saat mengirim', [
+                'message' => $e->getMessage(),
+            ]);
 
             return false;
         }

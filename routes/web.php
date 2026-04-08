@@ -144,9 +144,13 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('settings', [SettingController::class, 'update'])->name('settings.update');
 
     Route::get('whatsapp', [WhatsAppGatewayController::class, 'index'])->name('whatsapp.index');
-    Route::get('whatsapp/status', [WhatsAppGatewayController::class, 'status'])->name('whatsapp.status');
-    Route::post('whatsapp/logout', [WhatsAppGatewayController::class, 'logoutSession'])->name('whatsapp.logout');
-    Route::post('whatsapp/send-test', [WhatsAppGatewayController::class, 'sendTest'])->name('whatsapp.send-test');
+    Route::middleware('throttle:90,1')->group(function () {
+        Route::get('whatsapp/status', [WhatsAppGatewayController::class, 'status'])->name('whatsapp.status');
+    });
+    Route::middleware('throttle:12,1')->group(function () {
+        Route::post('whatsapp/logout', [WhatsAppGatewayController::class, 'logoutSession'])->name('whatsapp.logout');
+        Route::post('whatsapp/send-test', [WhatsAppGatewayController::class, 'sendTest'])->name('whatsapp.send-test');
+    });
 
     Route::resource('orders', OrderController::class)
         ->only(['index', 'show', 'update']);

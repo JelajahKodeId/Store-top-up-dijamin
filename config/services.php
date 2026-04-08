@@ -33,6 +33,7 @@ return [
     | WhatsApp — gateway Node (wa-server/)
     |--------------------------------------------------------------------------
     | Scan QR di Admin → WhatsApp. WA_SERVER_URL harus reachable dari PHP.
+    | Production: WHATSAPP_SERVER_SECRET wajib; URL HTTP hanya ke localhost / IP privat (lihat WhatsAppGateway).
     */
     'whatsapp' => [
         'server_url' => env('WA_SERVER_URL', ''),
@@ -61,6 +62,30 @@ return [
         'private_key' => env('TRIPAY_PRIVATE_KEY'),
         'merchant_code' => env('TRIPAY_MERCHANT_CODE'),
         'mode' => env('TRIPAY_MODE', 'sandbox'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment — driver: midtrans (default), tripay, atau mock implisit tanpa kunci
+    |--------------------------------------------------------------------------
+    */
+    'payment' => [
+        'driver' => env('PAYMENT_GATEWAY', 'midtrans'),
+    ],
+
+    'midtrans' => [
+        'server_key' => env('MIDTRANS_SERVER_KEY'),
+        'client_key' => env('MIDTRANS_CLIENT_KEY'),
+        /*
+         * false = API + Snap sandbox (uji transaksi).
+         * true = production — hanya setelah go-live dan kunci production.
+         */
+        'is_production' => filter_var(env('MIDTRANS_IS_PRODUCTION', false), FILTER_VALIDATE_BOOLEAN),
+        /*
+         * Izinkan MIDTRANS_IS_PRODUCTION=true saat APP_ENV=local (default: tidak).
+         * Hanya aktifkan jika Anda sengaja menguji hit production dari mesin lokal.
+         */
+        'allow_production_in_local' => filter_var(env('MIDTRANS_ALLOW_PRODUCTION_IN_LOCAL', false), FILTER_VALIDATE_BOOLEAN),
     ],
 
 ];
