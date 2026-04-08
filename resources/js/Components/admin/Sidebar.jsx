@@ -85,7 +85,6 @@ function safePath(routeName) {
 export default function Sidebar({ isCollapsed, onClose, isMobile }) {
     const BrandIcon = AppIcons.dashboard;
     const CloseIcon = AppIcons.close;
-    const LogoutIcon = AppIcons.logout;
 
     return (
         <div className="flex flex-col h-full bg-store-charcoal relative z-[70]">
@@ -150,20 +149,6 @@ export default function Sidebar({ isCollapsed, onClose, isMobile }) {
                     </div>
                 ))}
             </nav>
-
-            {/* ── Logout ── */}
-            <div className="p-4 mt-auto border-t border-store-border-dark flex-shrink-0">
-                <Link
-                    href={route('logout')}
-                    method="post"
-                    as="button"
-                    className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all w-full ${isCollapsed && !isMobile ? 'justify-center px-0' : ''
-                        }`}
-                >
-                    <LogoutIcon className="w-5 h-5 flex-shrink-0" />
-                    {!isCollapsed || isMobile ? <span>Keluar Panel</span> : null}
-                </Link>
-            </div>
         </div>
     );
 }
