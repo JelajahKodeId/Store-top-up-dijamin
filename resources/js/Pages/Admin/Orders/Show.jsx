@@ -195,13 +195,43 @@ export default function OrderShow({ order }) {
                     <div className="admin-content-card p-8 space-y-4">
                         <h3 className="text-xs font-black text-store-charcoal uppercase tracking-widest">Info Pembayaran</h3>
                         <div className="space-y-3">
-                            <div className="p-4 bg-admin-bg rounded-2xl border border-store-border flex items-center justify-between">
-                                <div className="flex flex-col gap-0.5">
-                                    <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight">Metode</span>
-                                    <span className="text-xs font-black text-store-charcoal">{o.payment_method || 'Manual'}</span>
+                            <div className="p-4 bg-admin-bg rounded-2xl border border-store-border flex items-center justify-between gap-3">
+                                <div className="flex flex-col gap-0.5 min-w-0">
+                                    <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight">Metode / Gateway</span>
+                                    <span className="text-xs font-black text-store-charcoal">{o.payment_method_display || o.payment_method || '—'}</span>
+                                    {o.payment_record?.gateway && (
+                                        <span className="text-[9px] font-mono font-bold text-store-muted uppercase">{o.payment_record.gateway}</span>
+                                    )}
                                 </div>
-                                <AppIcons.success size={16} className="text-store-muted" />
+                                <AppIcons.success size={16} className="text-store-muted flex-shrink-0" />
                             </div>
+                            {o.payment_reference && (
+                                <div className="p-4 bg-admin-bg rounded-2xl border border-store-border">
+                                    <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight block">Referensi / Order ID Gateway</span>
+                                    <span className="text-xs font-black text-store-charcoal font-mono break-all">{o.payment_reference}</span>
+                                </div>
+                            )}
+                            {o.payment_record && (
+                                <div className="p-4 bg-white rounded-2xl border border-store-border space-y-2">
+                                    <div className="flex justify-between gap-2">
+                                        <span className="text-[9px] font-bold text-store-subtle uppercase">Status pembayaran</span>
+                                        <span className="text-[10px] font-black text-store-charcoal uppercase">{o.payment_record.status}</span>
+                                    </div>
+                                    {o.payment_record.paid_at && (
+                                        <p className="text-[9px] font-bold text-store-muted">Dibayar: {o.payment_record.paid_at}</p>
+                                    )}
+                                </div>
+                            )}
+                            {o.payment_url && o.status === 'unpaid' && (
+                                <a
+                                    href={o.payment_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block p-4 rounded-2xl bg-store-accent/10 border border-store-accent/30 text-center text-xs font-black text-store-accent uppercase tracking-wide hover:bg-store-accent/20 transition-colors"
+                                >
+                                    Buka halaman bayar (URL gateway) →
+                                </a>
+                            )}
                             {o.whatsapp_number && (
                                 <div className="p-4 bg-admin-bg rounded-2xl border border-store-border">
                                     <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight block">WhatsApp</span>

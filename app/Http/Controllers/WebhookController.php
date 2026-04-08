@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Services\KeyDeliveryService;
 use App\Services\Payment\PaymentGatewayInterface;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -20,51 +21,57 @@ class WebhookController extends Controller
     ) {}
 
     /**
-     * Handle callback dari payment gateway (Tripay, Midtrans, dll).
-     * CSRF dikecualikan — validasi dilakukan via HMAC signature dari raw body.
-     *
-     * PENTING: Tripay menghitung signature dari raw JSON body, bukan dari
-     * array yang di-decode ulang. Ambil raw body SEBELUM parsing.
+     * Notifikasi pembayaran dari gateway (Midtrans, Tripay, dll).
+     * CSRF dikecualikan — validasi lewat verifyWebhook() per gateway.
      */
     public function handle(Request $request): Response
     {
-        $rawBody   = $request->getContent();
-        $signature = $request->header('X-Callback-Signature') ?? $request->input('signature', '');
+        $parsed = $this->paymentGateway->verifyWebhook($request);
 
-        // Validasi signature menggunakan raw body
-        if (! $this->paymentGateway->validateWebhookSignature($rawBody, $signature)) {
-            Log::warning('WebhookController: Invalid signature dari ' . $request->ip());
+        if ($parsed === null) {
+            Log::warning('WebhookController: Webhook tidak valid dari '.$request->ip());
+
             return response('Invalid signature', 403);
         }
 
-        // Payload di-parse setelah signature valid
-        $payload     = json_decode($rawBody, true) ?? $request->all();
-        $referenceId = $payload['reference'] ?? $payload['reference_id'] ?? null;
-        $status      = strtolower($payload['status'] ?? '');
-
-        if (! $referenceId) {
-            Log::warning('WebhookController: reference_id tidak ada dalam payload');
-            return response('Missing reference', 422);
-        }
+        $referenceId = $parsed['reference_id'];
+        $status = $parsed['status'];
 
         $payment = Payment::where('reference_id', $referenceId)->first();
 
         if (! $payment) {
             Log::warning("WebhookController: Payment dengan reference {$referenceId} tidak ditemukan");
+
             return response('Payment not found', 404);
+        }
+
+        if ($payment->gateway === 'midtrans' && isset($parsed['raw']['gross_amount'])) {
+            $notified = (int) round((float) $parsed['raw']['gross_amount']);
+            $expected = (int) round((float) $payment->amount);
+            if ($notified !== $expected) {
+                Log::warning("WebhookController: Midtrans gross_amount tidak cocok untuk {$referenceId}");
+
+                return response('Amount mismatch', 400);
+            }
         }
 
         $order = $payment->order;
 
-        // Idempotency check — abaikan jika sudah diproses
         if ($order->status !== OrderStatus::UNPAID) {
             Log::info("WebhookController: Order #{$order->invoice_code} sudah diproses (status: {$order->status->value}), diabaikan.");
+
             return response('OK', 200);
         }
 
-        if ($status === 'paid' || $status === 'success' || $status === 'settlement') {
-            $this->handlePaidWebhook($order, $payment, $payload);
-        } elseif ($status === 'failed' || $status === 'cancel' || $status === 'expired') {
+        if ($status === 'pending') {
+            Log::info("WebhookController: Notifikasi pending untuk {$referenceId} — order tetap unpaid.");
+
+            return response('OK', 200);
+        }
+
+        if ($status === 'paid') {
+            $this->handlePaidWebhook($order, $payment, $parsed['raw']);
+        } elseif ($status === 'failed' || $status === 'expired') {
             $this->handleFailedWebhook($order, $payment, $status);
         }
 
@@ -73,9 +80,8 @@ class WebhookController extends Controller
 
     /**
      * Simulasi pembayaran sukses untuk mode mock (development only).
-     * Endpoint: GET /webhooks/mock/{invoice_code}
      */
-    public function mock(string $invoiceCode): \Illuminate\Http\RedirectResponse
+    public function mock(string $invoiceCode): RedirectResponse
     {
         abort_unless(app()->environment(['local', 'testing']), 404);
 
@@ -111,7 +117,7 @@ class WebhookController extends Controller
         try {
             DB::transaction(function () use ($order, $payment, $payload) {
                 $payment->update([
-                    'status'  => 'success',
+                    'status' => 'success',
                     'paid_at' => now(),
                     'payload' => $payload,
                 ]);
@@ -129,8 +135,8 @@ class WebhookController extends Controller
 
     protected function handleFailedWebhook(Order $order, Payment $payment, string $status): void
     {
-        $payment->update(['status' => 'failed', 'payload' => ['status' => $status]]);
-        $order->update(['status' => OrderStatus::FAILED, 'note' => "Payment {$status} dari gateway."]);
+        $payment->update(['status' => 'failed', 'payload' => ['gateway_status' => $status]]);
+        $order->update(['status' => OrderStatus::FAILED, 'note' => "Pembayaran {$status} dari gateway."]);
 
         Log::info("WebhookController: Order #{$order->invoice_code} ditandai FAILED (gateway: {$status}).");
     }

@@ -85,6 +85,25 @@ export default function OrderStatus({ order, flash }) {
                         </div>
                     )}
 
+                    {flash?.error && (
+                        <div className="p-4 rounded-2xl bg-red-400/10 border border-red-400/25 flex items-center gap-3">
+                            <AppIcons.error size={16} className="text-red-400 flex-shrink-0" />
+                            <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest leading-relaxed">{flash.error}</p>
+                        </div>
+                    )}
+
+                    {order.status === 'unpaid' && order.needs_payment_help && (
+                        <div className="p-4 rounded-2xl bg-amber-400/10 border border-amber-400/25 space-y-2">
+                            <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
+                                <AppIcons.help size={14} /> Pembayaran belum siap
+                            </p>
+                            <p className="text-[10px] text-white/50 font-medium leading-relaxed">
+                                Sesi bayar tidak bisa dibuka (misalnya kunci Midtrans atau URL pembayaran kosong). Simpan invoice{' '}
+                                <span className="font-mono text-white/70">{order.invoice_code}</span> dan hubungi CS bantuan.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Status Hero Card */}
                     <div className={`p-8 rounded-3xl border ${cfg.bg} ${cfg.border} relative overflow-hidden`}>
                         <div className="absolute top-0 right-0 w-48 h-48 rounded-full blur-[80px] pointer-events-none opacity-20"
@@ -95,13 +114,18 @@ export default function OrderStatus({ order, flash }) {
                                 <StatusIcon size={26} className={cfg.color} strokeWidth={2} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
                                     {cfg.pulse && (
                                         <span className={`w-2 h-2 rounded-full ${cfg.dot} animate-pulse flex-shrink-0`} />
                                     )}
                                     <span className={`text-[10px] font-bold uppercase tracking-widest ${cfg.color}`}>
                                         {cfg.title}
                                     </span>
+                                    {order.midtrans_is_sandbox && (
+                                        <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/30 text-[8px] font-bold text-amber-400 uppercase tracking-widest">
+                                            Sandbox
+                                        </span>
+                                    )}
                                 </div>
                                 <p className="text-[11px] text-white/50 font-medium leading-relaxed">
                                     {cfg.desc}
@@ -200,13 +224,19 @@ export default function OrderStatus({ order, flash }) {
                                     <span className="text-xs font-bold text-white">{order.customer_name}</span>
                                 </div>
                             )}
-                            {order.payment_method && (
+                            {(order.payment_method_label || order.payment_method) && (
                                 <div className="px-6 py-3 flex items-center justify-between gap-4">
                                     <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest flex-shrink-0">Metode Bayar</span>
-                                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                                        <AppIcons.wallet size={11} className="text-store-accent" />
-                                        {order.payment_method}
+                                    <span className="text-xs font-bold text-white flex items-center gap-1.5 text-right">
+                                        <AppIcons.wallet size={11} className="text-store-accent flex-shrink-0" />
+                                        {order.payment_method_label || order.payment_method}
                                     </span>
+                                </div>
+                            )}
+                            {order.payment_gateway && (
+                                <div className="px-6 py-3 flex items-center justify-between gap-4">
+                                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest flex-shrink-0">Gateway</span>
+                                    <span className="text-[10px] font-bold text-white/60 font-mono uppercase">{order.payment_gateway}</span>
                                 </div>
                             )}
                         </div>
@@ -249,8 +279,58 @@ export default function OrderStatus({ order, flash }) {
                         </div>
                     </div>
 
-                    {/* Payment URL (jika masih unpaid) */}
-                    {order.payment_url && order.status === 'unpaid' && (
+                    {/* Midtrans Snap (prioritas) */}
+                    {order.status === 'unpaid' && order.midtrans_snap_token && order.midtrans_client_key && order.midtrans_snap_js && (
+                        <div className="p-6 rounded-3xl bg-yellow-400/5 border border-yellow-400/20 space-y-4">
+                            <p className="text-[9px] font-bold text-yellow-400/60 uppercase tracking-widest flex items-center gap-1.5">
+                                <AppIcons.wallet size={11} strokeWidth={2.5} />
+                                Lanjutkan Pembayaran (Midtrans)
+                            </p>
+                            <p className="text-[10px] text-white/40 font-medium leading-relaxed">
+                                QRIS, transfer VA, kartu, dan e-wallet dipilih di jendela pembayaran Midtrans.
+                            </p>
+                            <Button
+                                type="button"
+                                variant="accent"
+                                className="w-full py-4 rounded-xl text-xs font-bold uppercase tracking-[0.15em]"
+                                onClick={async () => {
+                                    try {
+                                        await new Promise((resolve, reject) => {
+                                            if (typeof window !== 'undefined' && window.snap) {
+                                                resolve();
+                                                return;
+                                            }
+                                            const existing = document.querySelector('script[data-midtrans-snap]');
+                                            if (existing) {
+                                                existing.addEventListener('load', () => resolve());
+                                                existing.addEventListener('error', reject);
+                                                return;
+                                            }
+                                            const s = document.createElement('script');
+                                            s.src = order.midtrans_snap_js;
+                                            s.setAttribute('data-client-key', order.midtrans_client_key);
+                                            s.setAttribute('data-midtrans-snap', '1');
+                                            s.onload = () => resolve();
+                                            s.onerror = () => reject(new Error('Gagal memuat Snap'));
+                                            document.body.appendChild(s);
+                                        });
+                                        window.snap.pay(order.midtrans_snap_token, {
+                                            onSuccess: () => router.reload({ only: ['order'] }),
+                                            onPending: () => router.reload({ only: ['order'] }),
+                                            onClose: () => {},
+                                        });
+                                    } catch {
+                                        alert('Gagal memuat pembayaran Midtrans. Coba refresh halaman.');
+                                    }
+                                }}
+                            >
+                                Bayar dengan Midtrans
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Payment URL (Tripay / redirect lain, jika tidak pakai Snap) */}
+                    {order.payment_url && order.status === 'unpaid' && !order.midtrans_snap_token && (
                         <div className="p-6 rounded-3xl bg-yellow-400/5 border border-yellow-400/20 space-y-4">
                             <p className="text-[9px] font-bold text-yellow-400/60 uppercase tracking-widest flex items-center gap-1.5">
                                 <AppIcons.wallet size={11} strokeWidth={2.5} />

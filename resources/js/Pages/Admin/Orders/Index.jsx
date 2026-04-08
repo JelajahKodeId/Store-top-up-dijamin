@@ -80,6 +80,11 @@ export default function OrderIndex({ orders, filters }) {
                             <div className="flex flex-col">
                                 <span className="font-black text-store-charcoal text-sm">{order.invoice_code}</span>
                                 <span className="text-[10px] text-store-subtle uppercase font-bold tracking-widest">{order.created_at}</span>
+                                {order.payment_method_display && (
+                                    <span className="text-[9px] text-store-muted font-bold mt-0.5 truncate max-w-[200px]" title={order.payment_method_display}>
+                                        {order.payment_record?.gateway ? `${order.payment_record.gateway} · ` : ''}{order.payment_method_display}
+                                    </span>
+                                )}
                             </div>
                         </td>
                         <td className="hidden md:table-cell">

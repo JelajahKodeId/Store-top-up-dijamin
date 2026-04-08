@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Support\WhatsAppGateway;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class WhatsAppGatewayController extends Controller
         Gate::authorize('viewAny', Setting::class);
 
         return Inertia::render('Admin/WhatsApp/Index', [
-            'serverUrlConfigured' => (bool) config('services.whatsapp.server_url'),
+            'serverUrlConfigured' => $this->resolvedBaseUrl() !== null,
             'adminWhatsappHint' => Setting::where('key', 'whatsapp_number')->value('value'),
         ]);
     }
@@ -31,9 +32,9 @@ class WhatsAppGatewayController extends Controller
     {
         Gate::authorize('viewAny', Setting::class);
 
-        $base = rtrim((string) config('services.whatsapp.server_url'), '/');
-        if ($base === '') {
-            return response()->json(['error' => 'WA_SERVER_URL belum diatur di .env'], 503);
+        $base = $this->resolvedBaseUrl();
+        if ($base === null) {
+            return response()->json(['error' => 'WA_SERVER_URL tidak valid atau belum diatur di .env'], 503);
         }
 
         $response = $this->waHttp()->get("{$base}/status");
@@ -48,9 +49,9 @@ class WhatsAppGatewayController extends Controller
     {
         Gate::authorize('viewAny', Setting::class);
 
-        $base = rtrim((string) config('services.whatsapp.server_url'), '/');
-        if ($base === '') {
-            return response()->json(['error' => 'WA_SERVER_URL belum diatur'], 503);
+        $base = $this->resolvedBaseUrl();
+        if ($base === null) {
+            return response()->json(['error' => 'WA_SERVER_URL tidak valid atau belum diatur'], 503);
         }
 
         $response = $this->waHttp()->post("{$base}/logout");
@@ -70,9 +71,17 @@ class WhatsAppGatewayController extends Controller
             'message' => ['required', 'string', 'max:4096'],
         ]);
 
-        $base = rtrim((string) config('services.whatsapp.server_url'), '/');
-        if ($base === '') {
-            return response()->json(['error' => 'WA_SERVER_URL belum diatur'], 503);
+        if (WhatsAppGateway::normalizeRecipientNumber($validated['number']) === null) {
+            return response()->json(['error' => 'Format nomor tidak valid.'], 422);
+        }
+
+        if (app()->isProduction() && empty(config('services.whatsapp.server_secret'))) {
+            return response()->json(['error' => 'WHATSAPP_SERVER_SECRET wajib di production.'], 503);
+        }
+
+        $base = $this->resolvedBaseUrl();
+        if ($base === null) {
+            return response()->json(['error' => 'WA_SERVER_URL tidak valid atau belum diatur'], 503);
         }
 
         $response = $this->waHttp()->post("{$base}/send", [
@@ -83,6 +92,14 @@ class WhatsAppGatewayController extends Controller
         return response()->json(
             $response->json() ?? ['error' => 'Tidak ada respons'],
             $response->status()
+        );
+    }
+
+    protected function resolvedBaseUrl(): ?string
+    {
+        return WhatsAppGateway::normalizeServerUrl(
+            config('services.whatsapp.server_url'),
+            app()->isProduction()
         );
     }
 
