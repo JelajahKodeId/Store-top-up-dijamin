@@ -3,7 +3,7 @@ import AppLogo from '@/Components/shared/AppLogo';
 import { AppIcons } from '@/Components/shared/AppIcon';
 import Spinner from '@/Components/ui/Spinner';
 
-export default function Login({ status, canResetPassword }) {
+export default function Login({ status }) {
     const { site } = usePage().props;
     const siteName = site?.name || 'Mall Store';
 
@@ -108,11 +108,6 @@ export default function Login({ status, canResetPassword }) {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between px-1">
                                     <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">Input Pass-code</label>
-                                    {canResetPassword && (
-                                        <Link href={route('password.request')} className="text-[10px] font-black text-store-accent uppercase tracking-widest hover:text-white transition-colors">
-                                            Lupa Password?
-                                        </Link>
-                                    )}
                                 </div>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/20 group-focus-within:text-store-accent transition-colors">
@@ -161,12 +156,14 @@ export default function Login({ status, canResetPassword }) {
                         </form>
 
                         <div className="pt-8 border-t border-white/5">
-                            <p className="text-center text-xs font-bold text-white/20 uppercase tracking-widest">
-                                Tidak memiliki akses?{' '}
-                                <Link href={route('register')} className="text-store-accent hover:text-white transition-colors">
-                                    Daftar Sekarang
-                                </Link>
+                            <p className="text-center text-[10px] font-bold text-white/25 uppercase tracking-widest leading-relaxed">
+                                Akses khusus pengelola toko. Pembelian tetap lewat katalog tanpa akun.
                             </p>
+                            <div className="mt-6 flex justify-center">
+                                <Link href="/" className="text-[10px] font-black text-store-accent uppercase tracking-widest hover:text-white transition-colors">
+                                    ← Kembali ke beranda
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>

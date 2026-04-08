@@ -45,6 +45,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
+                'info' => $request->session()->get('info'),
             ],
             'site' => Cache::remember('inertia_site_settings', 300, function () {
                 $s = Setting::whereIn('key', [
@@ -53,13 +54,13 @@ class HandleInertiaRequests extends Middleware
                 ])->pluck('value', 'key')->toArray();
 
                 return [
-                    'name'        => $s['site_name'] ?? 'Mall Store',
+                    'name' => $s['site_name'] ?? 'Mall Store',
                     'description' => $s['site_description'] ?? 'Platform top-up game instan 24 jam.',
-                    'logo'        => isset($s['logo_web']) && $s['logo_web'] ? '/storage/' . $s['logo_web'] : null,
-                    'whatsapp'    => $s['whatsapp_number'] ?? null,
-                    'instagram'   => $s['instagram_username'] ?? null,
-                    'facebook'    => $s['facebook_page'] ?? null,
-                    'tiktok'      => $s['tiktok_username'] ?? null,
+                    'logo' => isset($s['logo_web']) && $s['logo_web'] ? '/storage/'.$s['logo_web'] : null,
+                    'whatsapp' => $s['whatsapp_number'] ?? null,
+                    'instagram' => $s['instagram_username'] ?? null,
+                    'facebook' => $s['facebook_page'] ?? null,
+                    'tiktok' => $s['tiktok_username'] ?? null,
                 ];
             }),
         ];

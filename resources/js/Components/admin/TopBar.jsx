@@ -29,9 +29,9 @@ export default function TopBar({
 
     const CollapseIcon = isCollapsed ? AppIcons.sidebarOpen : AppIcons.sidebarClose;
     const MenuIcon = AppIcons.menu;
-    const BellIcon = AppIcons.notification;
     const GlobeIcon = AppIcons.globe;
     const ProfileIcon = AppIcons.profile;
+    const LogoutIcon = AppIcons.logout;
 
     return (
         <header className="h-20 bg-white/80 backdrop-blur-md border-b border-store-border flex items-center justify-between px-6 sm:px-10 sticky top-0 z-50">
@@ -63,22 +63,16 @@ export default function TopBar({
             </div>
 
             {/* Right Section */}
-            <div className="flex items-center gap-3 sm:gap-6 shrink-0">
-                {/* Quick Actions (Desktop) */}
-                <div className="hidden md:flex items-center gap-2 p-1 bg-admin-bg rounded-2xl border border-store-border">
-                    <button className="p-2 rounded-xl text-store-muted hover:text-store-charcoal hover:bg-white hover:shadow-soft transition-all relative">
-                        <BellIcon className="w-4 h-4" />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-                    </button>
-                    <a
-                        href="/"
-                        target="_blank"
-                        className="p-2 rounded-xl text-store-muted hover:text-store-charcoal hover:bg-white hover:shadow-soft transition-all"
-                        title="Lihat Toko"
-                    >
-                        <GlobeIcon className="w-4 h-4" />
-                    </a>
-                </div>
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                <a
+                    href="/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2.5 rounded-xl text-store-muted hover:text-store-charcoal hover:bg-admin-bg border border-transparent hover:border-store-border transition-all"
+                    title="Lihat Toko"
+                >
+                    <GlobeIcon className="w-5 h-5" />
+                </a>
 
                 {/* User Dropdown */}
                 {user && (
@@ -123,6 +117,19 @@ export default function TopBar({
                                     >
                                         <AppIcons.settings className="w-4 h-4 text-store-muted" />
                                         Pengaturan
+                                    </Link>
+                                </div>
+
+                                <div className="p-2 border-t border-store-border bg-white">
+                                    <Link
+                                        href={route('logout')}
+                                        method="post"
+                                        as="button"
+                                        onClick={() => setDropdownOpen(false)}
+                                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-500/10 hover:text-red-600 transition-all w-full text-left"
+                                    >
+                                        <LogoutIcon className="w-4 h-4 flex-shrink-0" />
+                                        Keluar Panel
                                     </Link>
                                 </div>
                             </div>

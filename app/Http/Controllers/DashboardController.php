@@ -22,11 +22,11 @@ class DashboardController extends Controller
         $pendingOrders = Order::whereIn('status', [OrderStatus::UNPAID, OrderStatus::PAID])->count();
 
         $stats = [
-            'revenue'       => (float) Order::where('status', OrderStatus::SUCCESS)->sum('total_price'),
-            'total_orders'  => $totalOrders,
-            'pending_orders'=> $pendingOrders,
+            'revenue' => (float) Order::where('status', OrderStatus::SUCCESS)->sum('total_price'),
+            'total_orders' => $totalOrders,
+            'pending_orders' => $pendingOrders,
             'total_members' => User::role('member')->count(),
-            'success_rate'  => $totalOrders > 0
+            'success_rate' => $totalOrders > 0
                 ? round(($successOrders / $totalOrders) * 100, 1)
                 : 0,
             'low_stock_keys' => ProductKey::where('status', 'available')->count(),
@@ -37,16 +37,16 @@ class DashboardController extends Controller
             ->take(10)
             ->get()
             ->map(fn ($order) => [
-                'id'       => $order->invoice_code,
-                'product'  => $order->items->first()?->product_name ?? 'Produk Dihapus',
+                'id' => $order->invoice_code,
+                'product' => $order->items->first()?->product_name ?? 'Produk Dihapus',
                 'customer' => $order->customer_name ?? $order->whatsapp_number ?? '-',
-                'amount'   => 'Rp ' . number_format($order->total_price, 0, ',', '.'),
-                'status'   => $order->status instanceof OrderStatus ? $order->status->value : $order->status,
+                'amount' => 'Rp '.number_format($order->total_price, 0, ',', '.'),
+                'status' => $order->status instanceof OrderStatus ? $order->status->value : $order->status,
                 'created_at' => $order->created_at->diffForHumans(),
             ]);
 
         return Inertia::render('Admin/Dashboard', [
-            'stats'        => $stats,
+            'stats' => $stats,
             'recentOrders' => $recentOrders,
         ]);
     }
@@ -60,6 +60,7 @@ class DashboardController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        return Inertia::render('Dashboard');
+        return redirect()->route('home')
+            ->with('info', 'Area member belum tersedia. Lacak pesanan lewat menu Lacak Pesanan.');
     }
 }

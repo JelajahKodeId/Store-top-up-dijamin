@@ -47,23 +47,12 @@ export default function GuestNavbar() {
                     {/* Right Side */}
                     <div className="flex items-center gap-4">
                         <div className="hidden sm:flex items-center gap-4">
-                            {auth?.user ? (
+                            {auth?.user && (
                                 <Link href={route('admin.dashboard')}>
                                     <Button variant="dark" className="px-6 py-3 rounded-2xl bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-widest text-white hover:bg-store-accent hover:text-store-dark transition-all shadow-lg">
                                         Admin Panel
                                     </Button>
                                 </Link>
-                            ) : (
-                                <div className="flex items-center gap-6">
-                                    <Link href={route('login')} className="text-[10px] font-black text-white/40 hover:text-white uppercase tracking-widest transition-colors">
-                                        Masuk
-                                    </Link>
-                                    <Link href={route('register')}>
-                                        <Button variant="accent" className="px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-accent-glow hover:scale-105 transition-transform">
-                                            Daftar Sekarang
-                                        </Button>
-                                    </Link>
-                                </div>
                             )}
                         </div>
 
@@ -100,16 +89,6 @@ export default function GuestNavbar() {
                             </div>
                         </Link>
                     ))}
-                    {!auth?.user && (
-                        <div className="pt-8 grid grid-cols-2 gap-4">
-                            <Link href={route('login')} className="w-full">
-                                <Button variant="dark" className="w-full py-5 rounded-2xl font-black uppercase tracking-widest bg-white/5">Masuk</Button>
-                            </Link>
-                            <Link href={route('register')} className="w-full">
-                                <Button variant="accent" className="w-full py-5 rounded-2xl font-black uppercase tracking-widest shadow-accent-glow">Daftar</Button>
-                            </Link>
-                        </div>
-                    )}
                 </div>
             </div>
         </nav>
