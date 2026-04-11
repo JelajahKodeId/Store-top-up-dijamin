@@ -43,11 +43,11 @@ function ConfirmRow({ label, value, mono = false, accent = false }) {
 // ── Modal Konfirmasi — slide up dari bawah di mobile ─────────────────────────
 function ConfirmModal({ open, onClose, onConfirm, processing, data, product, selectedDuration, voucherInfo, paymentMethods = [] }) {
     if (!open) return null;
-    const paymentLabel   = paymentMethods.find(m => m.code === data.payment_method)?.label ?? data.payment_method;
-    const originalPrice  = selectedDuration?.price ?? 0;
+    const paymentLabel = paymentMethods.find(m => m.code === data.payment_method)?.label ?? data.payment_method;
+    const originalPrice = selectedDuration?.price ?? 0;
     const discountAmount = voucherInfo?.valid ? voucherInfo.discount_amount : 0;
-    const finalPrice     = voucherInfo?.valid ? voucherInfo.final_price : originalPrice;
-    const hasDiscount    = discountAmount > 0;
+    const finalPrice = voucherInfo?.valid ? voucherInfo.final_price : originalPrice;
+    const hasDiscount = discountAmount > 0;
 
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -81,9 +81,9 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                         <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest mb-1">Produk</p>
                         <p className="text-base font-bold text-white font-bebas tracking-wide">{product.name}</p>
                     </div>
-                    <ConfirmRow label="Layanan"   value={selectedDuration?.name} />
-                    <ConfirmRow label="Durasi"    value={selectedDuration ? (selectedDuration.duration_days > 0 ? `${selectedDuration.duration_days} Hari` : 'Seumur Hidup') : '-'} />
-                    <ConfirmRow label="WhatsApp"  value={data.whatsapp} mono />
+                    <ConfirmRow label="Layanan" value={selectedDuration?.name} />
+                    <ConfirmRow label="Durasi" value={selectedDuration ? (selectedDuration.duration_days > 0 ? `${selectedDuration.duration_days} Hari` : 'Seumur Hidup') : '-'} />
+                    <ConfirmRow label="WhatsApp" value={data.whatsapp} mono />
                     <ConfirmRow label="Bayar Via" value={paymentLabel} />
                     {(product.fields || []).length > 0 && (
                         <>
@@ -155,6 +155,7 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                 </div>
             </div>
         </div>
+        , document.body
     );
 }
 
@@ -163,7 +164,7 @@ function StepHeader({ step, icon, title, subtitle, color = 'accent' }) {
     const palette = {
         accent: 'bg-store-accent/10 border-store-accent/20 text-store-accent',
         purple: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
-        blue:   'bg-blue-500/10   border-blue-500/20   text-blue-400',
+        blue: 'bg-blue-500/10   border-blue-500/20   text-blue-400',
     };
     const Icon = AppIcons[icon] ?? AppIcons.clipboard;
     return (
@@ -182,20 +183,19 @@ function StepHeader({ step, icon, title, subtitle, color = 'accent' }) {
 
 // ── Related product list item (gaya artikel terkait) ─────────────────────────
 function RelatedProductRow({ product }) {
-    const prices      = product.durations?.map(d => Number(d.price)).filter(p => p > 0) ?? [];
+    const prices = product.durations?.map(d => Number(d.price)).filter(p => p > 0) ?? [];
     const lowestPrice = prices.length > 0 ? Math.min(...prices) : 0;
     const hasMultiple = (product.durations?.length ?? 0) > 1;
-    const inStock     = (product.total_available_count ?? 0) > 0 || product.durations?.some(d => (d.available_keys_count ?? 0) > 0);
-    const href        = route('products.show.public', product.slug);
+    const inStock = (product.total_available_count ?? 0) > 0 || product.durations?.some(d => (d.available_keys_count ?? 0) > 0);
+    const href = route('products.show.public', product.slug);
 
     return (
         <Link
             href={href}
-            className={`group flex items-center gap-3 p-3 rounded-xl border transition-all duration-150 ${
-                inStock
+            className={`group flex items-center gap-3 p-3 rounded-xl border transition-all duration-150 ${inStock
                     ? 'border-white/5 hover:border-white/15 hover:bg-white/[0.03]'
                     : 'border-white/[0.03] opacity-50 pointer-events-none'
-            }`}
+                }`}
         >
             {/* Thumbnail kecil */}
             <div className="w-10 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-white/5">
@@ -256,10 +256,10 @@ export default function ProductDetail({ product, related = [], paymentChannels =
         ? paymentChannels.map(ch => ({ code: ch.code, label: ch.label, fee: ch.fee ?? 0, fee_pct: ch.fee_pct ?? 0, icon_url: ch.icon_url ?? null }))
         : fallbackList;
     const [selectedDuration, setSelectedDuration] = useState(null);
-    const [showConfirm, setShowConfirm]           = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
 
     // State voucher: null | { valid, message, discount_amount, final_price, label }
-    const [voucherInfo,    setVoucherInfo]    = useState(null);
+    const [voucherInfo, setVoucherInfo] = useState(null);
     const [voucherLoading, setVoucherLoading] = useState(false);
 
     const buildInitialFields = () => {
@@ -269,12 +269,12 @@ export default function ProductDetail({ product, related = [], paymentChannels =
     };
 
     const { data, setData, post, processing, errors } = useForm({
-        product_id:     product.id,
-        duration_id:    '',
-        whatsapp:       '',
+        product_id: product.id,
+        duration_id: '',
+        whatsapp: '',
         payment_method: PAYMENT_METHODS[0]?.code ?? '',
-        voucher_code:   '',
-        fields:         buildInitialFields(),
+        voucher_code: '',
+        fields: buildInitialFields(),
     });
 
     const handleSelectDuration = (d) => {
@@ -321,15 +321,15 @@ export default function ProductDetail({ product, related = [], paymentChannels =
         post(route('checkout.store'), { onError: () => setShowConfirm(false) });
     };
 
-    const hasStock  = product.durations?.some(d => (d.available_keys_count ?? 0) > 0);
+    const hasStock = product.durations?.some(d => (d.available_keys_count ?? 0) > 0);
     const hasFields = (product.fields || []).length > 0;
-    const step2     = hasFields ? 2 : 1;
-    const step3     = hasFields ? 3 : 2;
+    const step2 = hasFields ? 2 : 1;
+    const step3 = hasFields ? 3 : 2;
     const canSubmit = selectedDuration && data.whatsapp.trim().length >= 8;
 
-    const totalStock          = product.durations?.reduce((sum, d) => sum + (d.available_keys_count ?? 0), 0) ?? 0;
+    const totalStock = product.durations?.reduce((sum, d) => sum + (d.available_keys_count ?? 0), 0) ?? 0;
     const activeDurationsCount = product.durations?.filter(d => (d.available_keys_count ?? 0) > 0).length ?? 0;
-    const lowestPrice          = Math.min(...(product.durations?.map(d => Number(d.price)).filter(p => p > 0) ?? [0]));
+    const lowestPrice = Math.min(...(product.durations?.map(d => Number(d.price)).filter(p => p > 0) ?? [0]));
 
     return (
         <GuestLayout title={product.name}>
@@ -415,9 +415,9 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                                                 <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> Habis
                                             </span>
                                         )}
-                                        <InfoPill icon="speed"  label="Instan" />
-                                        <InfoPill icon="phone"  label="Via WA" />
-                                        <InfoPill icon="shield" label="Aman"   />
+                                        <InfoPill icon="speed" label="Instan" />
+                                        <InfoPill icon="phone" label="Via WA" />
+                                        <InfoPill icon="shield" label="Aman" />
                                     </div>
                                 </div>
                             </div>
@@ -607,22 +607,19 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                                             type="button"
                                             onClick={() => handleSelectDuration(duration)}
                                             disabled={outOfStock}
-                                            className={`p-2.5 rounded-xl border-2 transition-all duration-200 text-left ${
-                                                outOfStock
+                                            className={`p-2.5 rounded-xl border-2 transition-all duration-200 text-left ${outOfStock
                                                     ? 'bg-white/[0.02] border-white/5 opacity-40 cursor-not-allowed'
                                                     : isSelected
                                                         ? 'bg-store-accent/10 border-store-accent shadow-accent-glow'
                                                         : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.98]'
-                                            }`}
+                                                }`}
                                         >
-                                            <p className={`text-[7px] font-bold uppercase tracking-widest mb-0.5 truncate ${
-                                                outOfStock ? 'text-white/20' : isSelected ? 'text-store-accent' : 'text-white/20'
-                                            }`}>
+                                            <p className={`text-[7px] font-bold uppercase tracking-widest mb-0.5 truncate ${outOfStock ? 'text-white/20' : isSelected ? 'text-store-accent' : 'text-white/20'
+                                                }`}>
                                                 {duration.duration_days > 0 ? `${duration.duration_days}H` : 'Lifetime'}
                                             </p>
-                                            <p className={`text-xs font-bold font-bebas uppercase leading-none mb-1 truncate ${
-                                                outOfStock ? 'text-white/30' : 'text-white'
-                                            }`}>
+                                            <p className={`text-xs font-bold font-bebas uppercase leading-none mb-1 truncate ${outOfStock ? 'text-white/30' : 'text-white'
+                                                }`}>
                                                 {duration.name}
                                             </p>
                                             <div className="flex items-center justify-between gap-1">
@@ -693,11 +690,10 @@ export default function ProductDetail({ product, related = [], paymentChannels =
 
                                 {/* Feedback voucher */}
                                 {voucherInfo && (
-                                    <div className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border text-[10px] font-bold uppercase tracking-widest ${
-                                        voucherInfo.valid
+                                    <div className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border text-[10px] font-bold uppercase tracking-widest ${voucherInfo.valid
                                             ? 'bg-green-400/5 border-green-400/20 text-green-400'
                                             : 'bg-red-400/5 border-red-400/20 text-red-400'
-                                    }`}>
+                                        }`}>
                                         {voucherInfo.valid
                                             ? <AppIcons.check size={13} className="flex-shrink-0 mt-0.5" strokeWidth={3} />
                                             : <AppIcons.help size={13} className="flex-shrink-0 mt-0.5" />
@@ -728,11 +724,10 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                                                 key={method.code}
                                                 type="button"
                                                 onClick={() => setData('payment_method', method.code)}
-                                                className={`py-2 rounded-xl border transition-all text-[8px] font-bold uppercase tracking-wide active:scale-95 ${
-                                                    isSelected
+                                                className={`py-2 rounded-xl border transition-all text-[8px] font-bold uppercase tracking-wide active:scale-95 ${isSelected
                                                         ? 'bg-store-accent/10 border-store-accent text-store-accent'
                                                         : 'bg-white/[0.03] border-white/5 text-white/35 hover:border-white/20 hover:text-white/70'
-                                                }`}
+                                                    }`}
                                             >
                                                 {method.label}
                                             </button>
@@ -754,11 +749,10 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                                 const hasVoucherDiscount = voucherInfo?.valid && voucherInfo.discount_amount > 0;
                                 const displayPrice = hasVoucherDiscount ? voucherInfo.final_price : selectedDuration.price;
                                 return (
-                                    <div className={`p-3.5 rounded-xl border transition-colors ${
-                                        hasVoucherDiscount
+                                    <div className={`p-3.5 rounded-xl border transition-colors ${hasVoucherDiscount
                                             ? 'bg-green-400/5 border-green-400/20'
                                             : 'bg-white/[0.03] border-white/5'
-                                    }`}>
+                                        }`}>
                                         {hasVoucherDiscount && (
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className="text-[8px] font-bold text-white/25 uppercase tracking-widest line-through">
