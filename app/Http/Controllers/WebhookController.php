@@ -26,6 +26,14 @@ class WebhookController extends Controller
      */
     public function handle(Request $request): Response
     {
+        Log::debug('WebhookController: Incoming request', [
+            'method' => $request->method(),
+            'url'    => $request->fullUrl(),
+            'ip'     => $request->ip(),
+            'headers'=> $request->headers->all(),
+            'body'   => $request->all(),
+        ]);
+
         $parsed = $this->paymentGateway->verifyWebhook($request);
 
         if ($parsed === null) {
@@ -45,11 +53,13 @@ class WebhookController extends Controller
             return response('Payment not found', 404);
         }
 
-        if ($payment->gateway === 'midtrans' && isset($parsed['raw']['gross_amount'])) {
-            $notified = (int) round((float) $parsed['raw']['gross_amount']);
+        // Validasi kecocokan nominal (Amount) untuk mencegah fraud
+        if (isset($parsed['raw']['amount']) || isset($parsed['raw']['gross_amount'])) {
+            $notified = (int) round((float) ($parsed['raw']['amount'] ?? $parsed['raw']['gross_amount']));
             $expected = (int) round((float) $payment->amount);
+
             if ($notified !== $expected) {
-                Log::warning("WebhookController: Midtrans gross_amount tidak cocok untuk {$referenceId}");
+                Log::warning("WebhookController: Amount mismatch for {$referenceId} (Gateway: {$payment->gateway}, Notified: {$notified}, Expected: {$expected})");
 
                 return response('Amount mismatch', 400);
             }
@@ -81,35 +91,27 @@ class WebhookController extends Controller
     /**
      * Simulasi pembayaran sukses untuk mode mock (development only).
      */
-    public function mock(string $invoiceCode): RedirectResponse
+    public function pakKasirSimulate(string $invoiceCode): RedirectResponse
     {
         abort_unless(app()->environment(['local', 'testing']), 404);
 
         $order = Order::where('invoice_code', $invoiceCode)->firstOrFail();
+        $amount = (int) round((float) $order->total_price);
 
-        if ($order->status !== OrderStatus::UNPAID) {
+        $response = \Illuminate\Support\Facades\Http::asJson()->post('https://app.pakasir.com/api/paymentsimulation', [
+            'project'  => config('services.pak_kasir.slug'),
+            'order_id' => $invoiceCode,
+            'amount'   => $amount,
+            'api_key'  => config('services.pak_kasir.api_key'),
+        ]);
+
+        if ($response->successful()) {
             return redirect()->route('orders.status', $invoiceCode)
-                ->with('info', 'Pesanan ini sudah diproses sebelumnya.');
-        }
-
-        $payment = $order->payment;
-
-        DB::transaction(function () use ($order, $payment) {
-            if ($payment) {
-                $payment->update(['status' => 'success', 'paid_at' => now()]);
-            }
-
-            $order->update(['status' => OrderStatus::PAID]);
-        });
-
-        try {
-            $this->keyDeliveryService->deliver($order->fresh());
-        } catch (\Throwable $e) {
-            Log::error("WebhookController (mock): Gagal deliver key untuk #{$invoiceCode} — {$e->getMessage()}");
+                ->with('success', 'Berhasil mengirim aba-aba simulasi ke Pak Kasir! Tunggu beberapa detik hingga webhook sampai.');
         }
 
         return redirect()->route('orders.status', $invoiceCode)
-            ->with('success', 'Simulasi pembayaran berhasil! Key sudah dikirim.');
+            ->with('error', 'Gagal kirim simulasi: ' . $response->json('message', 'Unknown error'));
     }
 
     protected function handlePaidWebhook(Order $order, Payment $payment, array $payload): void

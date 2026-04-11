@@ -91,6 +91,10 @@ Route::post('/webhooks/payment', [WebhookController::class, 'handle'])
 Route::get('/webhooks/mock/{invoice_code}', [WebhookController::class, 'mock'])
     ->name('webhooks.mock');
 
+// Simulasi Pak Kasir (mengirim hit ke API simulasi Pak Kasir)
+Route::get('/webhooks/pak-kasir-simulate/{invoice_code}', [WebhookController::class, 'pakKasirSimulate'])
+    ->name('webhooks.pak-kasir-simulate');
+
 // Mock payment page — halaman simulasi bayar (development only)
 Route::get('/mock-payment/{reference}', function (string $reference) {
     abort_unless(app()->environment(['local', 'testing']), 404);

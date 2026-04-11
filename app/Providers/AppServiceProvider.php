@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Observers\OrderObserver;
 use App\Services\Payment\MidtransService;
 use App\Services\Payment\MockPaymentService;
+use App\Services\Payment\PakKasirService;
 use App\Services\Payment\PaymentGatewayInterface;
 use App\Services\Payment\TripayService;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -31,6 +32,10 @@ class AppServiceProvider extends ServiceProvider
 
             if ($driver === 'midtrans' && filled(config('services.midtrans.server_key'))) {
                 return new MidtransService;
+            }
+
+            if ($driver === 'pak_kasir') {
+                return new PakKasirService;
             }
 
             if ($driver === 'mock') {
