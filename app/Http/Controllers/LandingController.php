@@ -93,6 +93,7 @@ class LandingController extends Controller
                 'success' => session('success'),
                 'error' => session('error'),
             ],
+            'app_env' => app()->environment(),
         ]);
     }
 
@@ -145,6 +146,20 @@ class LandingController extends Controller
                 : 'https://app.sandbox.midtrans.com/snap/snap.js';
         }
 
+        // Pak Kasir Payload
+        $pakKasirDetails = null;
+        if ($order->status === OrderStatus::UNPAID && $payment && $payment->gateway === 'pak_kasir') {
+            $p = $payment->payload['payment'] ?? $payment->payload ?? [];
+            if (isset($p['payment_number'])) {
+                $pakKasirDetails = [
+                    'number' => $p['payment_number'],
+                    'total_payment' => $p['total_payment'] ?? $p['amount'] ?? $order->total_price,
+                    'method' => $p['payment_method'] ?? $order->payment_method,
+                    'is_qris' => str_contains(strtolower($p['payment_method'] ?? ''), 'qris'),
+                ];
+            }
+        }
+
         $canOpenPayment = false;
         if ($order->status === OrderStatus::UNPAID) {
             if ($payment && $payment->gateway === 'midtrans') {
@@ -175,7 +190,8 @@ class LandingController extends Controller
             'midtrans_client_key' => $midtransClientKey,
             'midtrans_snap_js' => $midtransSnapJs,
             'midtrans_is_sandbox' => $midtransSandbox,
-            'needs_payment_help' => $order->status === OrderStatus::UNPAID && ! $canOpenPayment,
+            'pak_kasir_details' => $pakKasirDetails,
+            'needs_payment_help' => $order->status === OrderStatus::UNPAID && ! $canOpenPayment && ! $pakKasirDetails,
             'payment_expired_at' => $order->payment_expired_at?->toISOString(),
             'created_at' => $order->created_at->format('d M Y, H:i'),
             'items' => $order->items->map(fn ($item) => [

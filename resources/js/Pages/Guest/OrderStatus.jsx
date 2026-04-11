@@ -39,7 +39,7 @@ function CountdownTimer({ expiredAt }) {
     );
 }
 
-export default function OrderStatus({ order, flash }) {
+export default function OrderStatus({ order, flash, app_env }) {
     const { site } = usePage().props;
     const cfg = statusConfig[order.status] ?? statusConfig.failed;
     const StatusIcon = AppIcons[cfg.icon] ?? AppIcons.info;
@@ -317,7 +317,7 @@ export default function OrderStatus({ order, flash }) {
                                         window.snap.pay(order.midtrans_snap_token, {
                                             onSuccess: () => router.reload({ only: ['order'] }),
                                             onPending: () => router.reload({ only: ['order'] }),
-                                            onClose: () => {},
+                                            onClose: () => { },
                                         });
                                     } catch {
                                         alert('Gagal memuat pembayaran Midtrans. Coba refresh halaman.');
@@ -326,6 +326,69 @@ export default function OrderStatus({ order, flash }) {
                             >
                                 Bayar dengan Midtrans
                             </Button>
+                        </div>
+                    )}
+
+                    {/* Pak Kasir Direct Details (VA / QRIS) */}
+                    {order.status === 'unpaid' && order.pak_kasir_details && (
+                        <div className="p-6 rounded-3xl bg-store-accent/5 border border-store-accent/20 space-y-5 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] bg-store-accent/10 pointer-events-none" />
+
+                            <div className="relative z-10">
+                                <p className="text-[10px] font-bold text-store-accent uppercase tracking-[0.2em] mb-4">
+                                    Instruksi Pembayaran
+                                </p>
+
+                                {order.pak_kasir_details.is_qris ? (
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="p-4 bg-white rounded-2xl border-4 border-white shadow-xl">
+                                            <img
+                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(order.pak_kasir_details.number)}`}
+                                                alt="QRIS Code"
+                                                className="w-48 h-48 block mx-auto"
+                                            />
+                                        </div>
+                                        <div className="text-center space-y-1">
+                                            <p className="text-xs font-bold text-white">QRIS All Payment</p>
+                                            <p className="text-[10px] text-white/40 font-medium leading-relaxed">
+                                                Scan QR di atas menggunakan aplikasi m-banking atau e-wallet (Gojek, Dana, Shopee, dll).
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-1.5 group">
+                                            <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest">Nomor {order.pak_kasir_details.method?.toUpperCase() || 'VA'}</p>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <p className="text-2xl font-bold text-white font-mono tracking-wider break-all leading-tight">
+                                                    {order.pak_kasir_details.number}
+                                                </p>
+                                                <button
+                                                    onClick={() => {
+                                                        const el = document.createElement('textarea');
+                                                        el.value = order.pak_kasir_details.number;
+                                                        document.body.appendChild(el);
+                                                        el.select();
+                                                        document.execCommand('copy');
+                                                        document.body.removeChild(el);
+                                                        alert('Nomor berhasil disalin!');
+                                                    }}
+                                                    className="p-3 rounded-xl bg-white/5 hover:bg-store-accent hover:text-store-dark transition-all text-white/40 group-hover:text-white/60 active:scale-95 flex-shrink-0"
+                                                >
+                                                    <AppIcons.copy size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest">Total Bayar</p>
+                                                <p className="text-lg font-bold text-store-accent font-bebas">{formatPrice(order.pak_kasir_details.total_payment)}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -346,6 +409,24 @@ export default function OrderStatus({ order, flash }) {
                                     Bayar Sekarang →
                                 </Button>
                             </a>
+                        </div>
+                    )}
+
+                    {/* Pak Kasir Simulation (Development Only) */}
+                    {order.status === 'unpaid' && order.payment_gateway === 'pak_kasir' && app_env === 'local' && (
+                        <div className="p-6 rounded-3xl bg-blue-400/5 border border-blue-400/20 space-y-4">
+                            <p className="text-[9px] font-bold text-blue-400/60 uppercase tracking-widest flex items-center gap-1.5">
+                                <AppIcons.refresh size={11} strokeWidth={2.5} />
+                                Simulasi Pembayaran (Pak Kasir)
+                            </p>
+                            <p className="text-[10px] text-white/40 font-medium leading-relaxed">
+                                Klik tombol di bawah untuk mensimulasikan status <b>PAID</b> via API Pak Kasir.
+                            </p>
+                            <Link href={route('webhooks.pak-kasir-simulate', order.invoice_code)}>
+                                <Button variant="accent" className="w-full py-4 rounded-xl text-xs font-bold uppercase tracking-[0.15em]">
+                                    Simulasi Bayar Sekarang
+                                </Button>
+                            </Link>
                         </div>
                     )}
 

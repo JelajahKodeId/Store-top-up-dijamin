@@ -88,4 +88,10 @@ return [
         'allow_production_in_local' => filter_var(env('MIDTRANS_ALLOW_PRODUCTION_IN_LOCAL', false), FILTER_VALIDATE_BOOLEAN),
     ],
 
+    'pak_kasir' => [
+        'api_key' => env('PAK_KASIR_API_KEY'),
+        'slug' => env('PAK_KASIR_SLUG'),
+        'mode' => env('PAK_KASIR_MODE', 'sandbox'),
+    ],
+
 ];

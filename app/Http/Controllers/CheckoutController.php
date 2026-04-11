@@ -45,6 +45,7 @@ class CheckoutController extends Controller
         $defaultMethod = match ($gateway->getGatewayName()) {
             'tripay' => 'QRIS',
             'midtrans' => 'midtrans_snap',
+            'pak_kasir' => 'qris',
             default => 'MOCK_QRIS',
         };
         $paymentMethod = $request->payment_method ?? $defaultMethod;
@@ -142,7 +143,7 @@ class CheckoutController extends Controller
 
                 return back()->with(
                     'error',
-                    'Gagal membuka sesi pembayaran. Periksa MIDTRANS_SERVER_KEY / jaringan, lalu coba lagi.'
+                    'Gagal membuka sesi pembayaran. Periksa konfigurasi gateway atau koneksi internet Anda, lalu coba lagi.'
                 );
             }
 
