@@ -42,7 +42,7 @@ class LandingController extends Controller
     /**
      * Display product detail page.
      */
-    public function show(string $slug): Response
+    public function show(Request $request, string $slug): Response
     {
         $product = $this->catalogService->getProductDetails($slug);
 
@@ -55,6 +55,12 @@ class LandingController extends Controller
 
         $gateway = $this->paymentGateway->getGatewayName();
 
+        $invoiceHint = $request->query('invoice');
+        $reviewInvoice = is_string($invoiceHint) ? strtoupper(trim($invoiceHint)) : null;
+        if ($reviewInvoice === '') {
+            $reviewInvoice = null;
+        }
+
         return Inertia::render('Guest/ProductDetail', [
             'product' => $product,
             'related' => $related,
@@ -62,6 +68,7 @@ class LandingController extends Controller
             'checkoutGateway' => $gateway,
             'midtransSandboxMode' => $gateway === 'midtrans'
                 && ! filter_var(config('services.midtrans.is_production'), FILTER_VALIDATE_BOOLEAN),
+            'reviewInvoice' => $reviewInvoice,
         ]);
     }
 
@@ -196,6 +203,7 @@ class LandingController extends Controller
             'created_at' => $order->created_at->format('d M Y, H:i'),
             'items' => $order->items->map(fn ($item) => [
                 'product_name' => $item->product_name,
+                'product_slug' => $item->product?->slug,
                 'duration_name' => $item->duration_name,
                 'price' => $item->price,
                 'quantity' => $item->quantity,

@@ -2,14 +2,7 @@ import { forwardRef } from 'react';
 import { AppIcons } from '@/Components/shared/AppIcon';
 
 /**
- * GuestInput — Dark-theme input/textarea field for all public-facing guest forms.
- * When type === 'textarea', renders a <textarea> element instead of <input>.
- *
- * @param {string} label           - Field label (optional)
- * @param {string} error           - Validation error message (optional)
- * @param {string|Component} icon  - AppIcon key string or component (optional)
- * @param {string} className       - Extra classes for the input element
- * @param {boolean} required       - Whether the field is required
+ * GuestInput — field form halaman publik (tema terang).
  */
 const GuestInput = forwardRef(function GuestInput(
     { label, error, icon, className = '', containerClassName = '', required, type, rows = 4, ...props },
@@ -19,38 +12,38 @@ const GuestInput = forwardRef(function GuestInput(
     const isTextarea = type === 'textarea';
 
     const baseClass = `
-        w-full bg-white/5 border border-white/5 text-white font-medium
-        placeholder:text-white/15 transition-all outline-none
-        focus:ring-4 focus:ring-store-accent/10 focus:border-store-accent/30
-        ${error ? 'border-red-500/40 focus:ring-red-500/10 focus:border-red-500/40' : ''}
+        w-full rounded-xl border border-guest-border bg-white font-medium text-guest-text shadow-sm
+        text-sm placeholder:text-guest-subtle transition-all outline-none
+        focus:border-store-accent/50 focus:ring-2 focus:ring-store-accent/15
+        ${error ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}
         ${className}
     `.trim();
 
     return (
-        <div className={`space-y-3 ${containerClassName}`}>
+        <div className={`space-y-1.5 ${containerClassName}`}>
             {label && (
-                <label className="flex items-center gap-2 ml-2">
-                    <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">
+                <label className="ml-1 flex items-center gap-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wide text-guest-muted">
                         {label}
                     </span>
                     {!required && (
-                        <span className="text-[8px] font-bold text-white/20 uppercase tracking-widest border border-white/10 rounded px-1.5 py-0.5">
+                        <span className="rounded border border-guest-border bg-guest-elevated px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-guest-subtle">
                             Opsional
                         </span>
                     )}
                 </label>
             )}
 
-            <div className="relative group">
+            <div className="group relative">
                 {Icon && !isTextarea && (
-                    <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-white/20 group-focus-within:text-store-accent transition-colors duration-300">
-                        <Icon size={20} strokeWidth={2.5} />
+                    <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-guest-subtle transition-colors duration-300 group-focus-within:text-store-accent">
+                        <Icon size={18} strokeWidth={2.5} />
                     </div>
                 )}
 
                 {Icon && isTextarea && (
-                    <div className="absolute top-5 left-6 pointer-events-none text-white/20 group-focus-within:text-store-accent transition-colors duration-300">
-                        <Icon size={20} strokeWidth={2.5} />
+                    <div className="pointer-events-none absolute left-4 top-4 text-guest-subtle transition-colors duration-300 group-focus-within:text-store-accent">
+                        <Icon size={18} strokeWidth={2.5} />
                     </div>
                 )}
 
@@ -60,7 +53,7 @@ const GuestInput = forwardRef(function GuestInput(
                         ref={ref}
                         rows={rows}
                         required={required}
-                        className={`${baseClass} rounded-2xl py-4 pr-6 resize-none ${Icon ? 'pl-16' : 'pl-6'}`}
+                        className={`${baseClass} resize-none py-3 pr-4 ${Icon ? 'pl-12' : 'pl-4'}`}
                     />
                 ) : (
                     <input
@@ -68,13 +61,13 @@ const GuestInput = forwardRef(function GuestInput(
                         ref={ref}
                         type={type}
                         required={required}
-                        className={`${baseClass} rounded-[2rem] py-5 pr-8 ${Icon ? 'pl-16' : 'pl-6'}`}
+                        className={`${baseClass} py-3 pr-4 ${Icon ? 'pl-12' : 'pl-4'}`}
                     />
                 )}
             </div>
 
             {error && (
-                <p className="text-red-400 text-[10px] font-black uppercase tracking-widest ml-2 flex items-center gap-2">
+                <p className="ml-2 flex items-center gap-2 text-sm font-medium text-red-600">
                     <AppIcons.help size={12} />
                     {error}
                 </p>

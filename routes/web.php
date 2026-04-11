@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductKeyController;
+use App\Http\Controllers\Admin\ProductReviewController as AdminProductReviewController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VoucherController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Admin\WhatsAppGatewayController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WebhookController;
 use App\Models\Order;
@@ -22,6 +24,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [LandingController::class, 'index'])->name('home');
 Route::get('/catalog', [LandingController::class, 'catalog'])->name('catalog');
 Route::get('/products/{slug}', [LandingController::class, 'show'])->name('products.show.public');
+Route::post('/products/{slug}/reviews', [ProductReviewController::class, 'store'])
+    ->middleware('throttle:20,1')
+    ->name('products.reviews.store');
 Route::get('/track-invoice', [LandingController::class, 'trackInvoice'])->name('track-invoice');
 Route::get('/track-invoice/search', [LandingController::class, 'trackInvoiceSearch'])
     ->middleware('throttle:10,1')
@@ -130,6 +135,13 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         ->only(['index', 'show', 'store', 'update', 'destroy']);
 
     Route::resource('products', ProductController::class);
+
+    Route::patch('products/{product}/reviews/{review}/publish', [AdminProductReviewController::class, 'publish'])
+        ->name('products.reviews.publish');
+    Route::patch('products/{product}/reviews/{review}/unpublish', [AdminProductReviewController::class, 'unpublish'])
+        ->name('products.reviews.unpublish');
+    Route::delete('products/{product}/reviews/{review}', [AdminProductReviewController::class, 'destroy'])
+        ->name('products.reviews.destroy');
 
     Route::get('products/{product}/keys', [ProductKeyController::class, 'index'])
         ->name('products.keys.index');

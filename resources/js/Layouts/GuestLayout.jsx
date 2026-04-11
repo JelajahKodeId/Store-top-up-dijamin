@@ -3,50 +3,42 @@ import GuestNavbar from '@/Components/guest/GuestNavbar';
 import GuestFooter from '@/Components/guest/GuestFooter';
 
 /**
- * GuestLayout — Minimal wrapper layout for all public guest pages.
- * Each page manages its own heading / hero section.
- * Navbar is `h-16 + py-4 = ~88px` tall, so `pt-[88px]` aligns content.
+ * GuestLayout — wrapper halaman publik (tema putih / abu).
  */
 export default function GuestLayout({ children, title, subtitle }) {
     const { flash } = usePage().props;
 
     return (
-        <div className="min-h-screen bg-store-charcoal font-sans flex flex-col text-white selection:bg-store-accent/30 selection:text-white">
+        <div className="flex min-h-screen flex-col bg-guest-bg font-sans text-sm font-normal leading-normal text-guest-text antialiased selection:bg-store-accent/25 selection:text-guest-text sm:text-base">
             <Head title={title ? `${title} — Mall Store` : 'Mall Store'} />
 
-            {/* Background Texture */}
-            <div className="fixed inset-0 bg-grid opacity-[0.03] pointer-events-none z-0" />
-
-            {/* Navbar */}
             <GuestNavbar />
 
-            {/* Main Content — pt-[88px] aligns with sticky navbar height */}
-            <main className="flex-grow pt-[88px] relative z-10 animate-fade-in">
+            <main className="relative z-10 flex-grow animate-fade-in pt-[88px]">
                 {flash?.error && (
                     <div className="section-container pb-4">
-                        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/25 text-[10px] font-bold text-red-400 uppercase tracking-wide leading-relaxed">
+                        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium leading-normal text-red-800 sm:p-4">
                             {flash.error}
                         </div>
                     </div>
                 )}
                 {flash?.success && (
                     <div className="section-container pb-4">
-                        <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/25 text-[10px] font-bold text-green-400 uppercase tracking-wide leading-relaxed">
+                        <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold leading-snug text-green-900">
                             {flash.success}
                         </div>
                     </div>
                 )}
                 {flash?.info && (
                     <div className="section-container pb-4">
-                        <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/25 text-[10px] font-bold text-sky-300 uppercase tracking-wide leading-relaxed">
+                        <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm font-medium leading-normal text-sky-900 sm:p-4">
                             {flash.info}
                         </div>
                     </div>
                 )}
-                {/* Optional page heading for inner pages (Catalog, TrackInvoice etc.) */}
                 {title && (
-                    <div className="section-container pt-10 pb-6">
-                        <div className="space-y-1">
+                    <div className="section-container pb-4 pt-6 sm:pb-5 sm:pt-8">
+                        <div className="space-y-0.5">
                             <h1 className="section-heading">{title}</h1>
                             {subtitle && (
                                 <p className="section-subtext">{subtitle}</p>
@@ -58,7 +50,6 @@ export default function GuestLayout({ children, title, subtitle }) {
                 {children}
             </main>
 
-            {/* Footer */}
             <GuestFooter />
         </div>
     );

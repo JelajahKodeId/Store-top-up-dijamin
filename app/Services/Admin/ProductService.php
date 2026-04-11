@@ -17,6 +17,16 @@ class ProductService
         return trim($value);
     }
 
+    private function normalizedTelegramUrl(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        $v = trim($value);
+
+        return $v === '' ? null : $v;
+    }
+
     /**
      * Create new product with dynamic fields and durations
      */
@@ -28,6 +38,7 @@ class ProductService
                 'slug' => $data['slug'],
                 'description' => $data['description'] ?? null,
                 'image' => $this->normalizedImage($data['image'] ?? null),
+                'telegram_group_invite_url' => $this->normalizedTelegramUrl($data['telegram_group_invite_url'] ?? null),
                 'status' => $data['status'],
             ]);
 
@@ -58,6 +69,7 @@ class ProductService
                 'slug' => $data['slug'],
                 'description' => $data['description'] ?? null,
                 'image' => $this->normalizedImage($data['image'] ?? null),
+                'telegram_group_invite_url' => $this->normalizedTelegramUrl($data['telegram_group_invite_url'] ?? null),
                 'status' => $data['status'],
             ]);
 

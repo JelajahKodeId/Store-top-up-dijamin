@@ -18,48 +18,46 @@ export default function GuestNavbar() {
     const CloseIcon = AppIcons.close;
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 py-2 bg-store-charcoal/80 backdrop-blur-xl border-b border-white/5 shadow-2xl">
+        <nav className="fixed left-0 right-0 top-0 z-50 bg-white/90 py-2 shadow-md backdrop-blur-xl">
             <div className="section-container">
-                <div className="flex items-center justify-between h-12">
-                    {/* Brand */}
+                <div className="flex h-12 items-center justify-between">
                     <div className="flex items-center gap-12">
-                        <AppLogo href="/" size="md" theme="light" />
+                        <AppLogo href="/" size="md" theme="dark" />
 
-                        <div className="hidden lg:flex items-center gap-4">
+                        <div className="hidden items-center gap-4 lg:flex">
                             {navLinks.map((link) => {
                                 const Icon = AppIcons[link.icon] || AppIcons.globe;
                                 return (
                                     <Link
                                         key={link.label}
                                         href={link.href}
-                                        className="group flex items-center gap-3 px-5 py-2.5 rounded-2xl text-sm font-bold text-white/60 hover:text-store-accent hover:bg-white/5 transition-all duration-300"
+                                        className="group flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-guest-muted transition-all duration-300 hover:bg-guest-elevated hover:text-store-accent"
                                     >
-                                        <div className="text-white/30 group-hover:text-store-accent transition-colors">
+                                        <div className="text-guest-subtle transition-colors group-hover:text-store-accent">
                                             <Icon size={18} strokeWidth={2.5} />
                                         </div>
-                                        <span className="uppercase tracking-widest text-[10px] font-black">{link.label}</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide">{link.label}</span>
                                     </Link>
                                 );
                             })}
                         </div>
                     </div>
 
-                    {/* Right Side */}
                     <div className="flex items-center gap-4">
-                        <div className="hidden sm:flex items-center gap-4">
+                        <div className="hidden items-center gap-4 sm:flex">
                             {auth?.user && (
                                 <Link href={route('admin.dashboard')}>
-                                    <Button variant="dark" className="px-6 py-3 rounded-2xl bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-widest text-white hover:bg-store-accent hover:text-store-dark transition-all shadow-lg">
+                                    <Button variant="dark" className="rounded-2xl border border-guest-border bg-guest-text px-6 py-3 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition-all hover:bg-store-accent hover:text-guest-text">
                                         Admin Panel
                                     </Button>
                                 </Link>
                             )}
                         </div>
 
-                        {/* Mobile Toggle */}
                         <button
+                            type="button"
                             onClick={() => setMobileOpen(!mobileOpen)}
-                            className="lg:hidden w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-all"
+                            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-guest-border bg-guest-elevated text-guest-text transition-all hover:bg-white lg:hidden"
                         >
                             {mobileOpen ? <CloseIcon size={24} /> : <MenuIcon size={24} />}
                         </button>
@@ -67,24 +65,23 @@ export default function GuestNavbar() {
                 </div>
             </div>
 
-            {/* Mobile Menu Overlay */}
-            <div className={`lg:hidden fixed inset-0 top-[88px] bg-store-charcoal/98 backdrop-blur-3xl transition-all duration-500 ease-spring ${mobileOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
+            <div className={`fixed inset-0 top-[88px] z-40 bg-white/98 backdrop-blur-xl transition-all duration-500 ease-spring lg:hidden ${mobileOpen ? 'pointer-events-auto translate-x-0 opacity-100' : 'pointer-events-none translate-x-full opacity-0'
                 }`}>
-                <div className="section-container py-12 space-y-4">
+                <div className="section-container space-y-3 py-8">
                     {navLinks.map((link) => (
                         <Link
                             key={link.label}
                             href={link.href}
                             onClick={() => setMobileOpen(false)}
-                            className="flex items-center justify-between p-6 rounded-[2rem] bg-white/5 border border-white/5 text-xl font-black text-white uppercase tracking-wide hover:bg-store-accent hover:text-store-dark transition-all group"
+                            className="group flex items-center justify-between rounded-2xl border border-guest-border bg-guest-surface p-4 text-base font-bold uppercase tracking-wide text-guest-text shadow-sm transition-all hover:border-store-accent/40 hover:bg-guest-elevated"
                         >
                             <span className="flex items-center gap-4">
-                                <span className="text-store-accent group-hover:text-store-dark transition-colors">
-                                    <AppIcons.arrowRight size={24} />
+                                <span className="text-store-accent transition-colors group-hover:text-store-accent-dark">
+                                    <AppIcons.arrowRight size={18} />
                                 </span>
                                 {link.label}
                             </span>
-                            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center opacity-20 group-hover:opacity-100">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-guest-border opacity-40 transition-opacity group-hover:opacity-100">
                                 <AppIcons.chevronRight size={16} />
                             </div>
                         </Link>

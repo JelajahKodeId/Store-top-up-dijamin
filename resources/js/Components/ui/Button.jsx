@@ -6,6 +6,8 @@ const variants = {
     secondary: 'bg-white/5 text-white hover:bg-white/10 border border-white/10 shadow-sm',
     dark: 'bg-store-charcoal text-white hover:bg-black border border-white/5 shadow-lux',
     ghost: 'bg-transparent text-white/40 hover:bg-white/5 hover:text-white',
+    guestGhost:
+        'bg-transparent text-guest-muted hover:bg-guest-elevated hover:text-guest-text border border-transparent',
     danger: 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white shadow-sm shadow-red-500/10',
     outline: 'bg-transparent border border-white/20 text-white hover:border-store-accent hover:text-store-accent transition-all'
 };

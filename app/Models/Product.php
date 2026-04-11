@@ -13,6 +13,7 @@ class Product extends Model
         'slug',
         'description',
         'image',
+        'telegram_group_invite_url',
         'status',
     ];
 
@@ -75,6 +76,11 @@ class Product extends Model
     public function keys(): HasMany
     {
         return $this->hasMany(ProductKey::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class);
     }
 
     public function scopeActive($query)

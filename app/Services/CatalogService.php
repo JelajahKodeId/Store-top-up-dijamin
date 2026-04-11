@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Product;
 use App\Models\Banner;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Collection;
 
 class CatalogService
@@ -43,6 +43,7 @@ class CatalogService
                 'durations' => fn ($q) => $q->where('is_active', true)
                     ->withCount(['keys as available_keys_count' => fn ($q) => $q->where('status', 'available')]),
                 'fields' => fn ($q) => $q->orderBy('sort_order'),
+                'reviews' => fn ($q) => $q->where('is_published', true)->orderByDesc('created_at')->limit(50),
             ])
             ->first();
     }
