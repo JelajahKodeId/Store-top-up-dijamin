@@ -23,6 +23,7 @@ export default function ProductIndex({ products, filters }) {
         description: '',
         image: '',
         image_file: null,
+        telegram_group_invite_url: '',
         status: 'active',
         fields: [],
         durations: [{ name: '', duration_days: '', price: '', is_active: true }],
@@ -44,6 +45,7 @@ export default function ProductIndex({ products, filters }) {
             description: product.description || '',
             image: product.image || '',
             image_file: null,
+            telegram_group_invite_url: product.telegram_group_invite_url || '',
             status: product.status,
             fields: product.fields || [],
             durations: product.durations || [],
@@ -308,6 +310,13 @@ export default function ProductIndex({ products, filters }) {
                                         <option value="active">Aktif (Tampil di Toko)</option>
                                         <option value="inactive">Draft (Sembunyikan)</option>
                                     </Select>
+                                    <Input
+                                        label="Link undangan grup Telegram (opsional)"
+                                        value={data.telegram_group_invite_url}
+                                        onChange={e => setData('telegram_group_invite_url', e.target.value)}
+                                        error={errors.telegram_group_invite_url}
+                                        placeholder="https://t.me/+xxxx atau https://t.me/joinchat/…"
+                                    />
                                     <div className="p-4 bg-admin-bg rounded-2xl border border-store-border border-dashed text-center">
                                         <p className="text-[10px] font-bold text-store-subtle uppercase tracking-tight">Ketik Nama untuk auto-slug</p>
                                     </div>

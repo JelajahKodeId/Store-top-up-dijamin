@@ -64,6 +64,8 @@ import {
     ListChecks,
     ReceiptText,
     Layers,
+    Download,
+    Star,
 } from 'lucide-react';
 
 /**
@@ -162,6 +164,8 @@ export const AppIcons = {
     listChecks: ListChecks, // summary/konfirmasi
     receipt: ReceiptText,  // ringkasan pembayaran
     layers: Layers,        // paket/tier
+    download: Download,    // unduh / undangan Telegram, dll.
+    star: Star,              // rating (hindari karakter unicode bintang)
 };
 
 /**

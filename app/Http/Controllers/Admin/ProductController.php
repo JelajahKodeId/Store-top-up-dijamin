@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
 use App\Http\Requests\Admin\ProductRequest;
 use App\Http\Resources\Admin\ProductResource;
+use App\Models\Product;
+use App\Services\Admin\ProductService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -14,7 +16,7 @@ class ProductController extends Controller
 {
     protected $productService;
 
-    public function __construct(\App\Services\Admin\ProductService $productService)
+    public function __construct(ProductService $productService)
     {
         $this->productService = $productService;
     }
@@ -24,15 +26,15 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        \Illuminate\Support\Facades\Gate::authorize('viewAny', Product::class);
+        Gate::authorize('viewAny', Product::class);
         $query = Product::with(['durations', 'fields'])
             ->withCount(['keys as keys_count' => fn ($q) => $q->where('status', 'available')])
             ->latest()
             ->orderByDesc('id');
 
         if ($request->search) {
-            $query->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('slug', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%')
+                ->orWhere('slug', 'like', '%'.$request->search.'%');
         }
 
         if ($request->status) {
@@ -70,7 +72,7 @@ class ProductController extends Controller
      */
     public function store(ProductRequest $request)
     {
-        \Illuminate\Support\Facades\Gate::authorize('create', Product::class);
+        Gate::authorize('create', Product::class);
 
         $validated = $this->mergeUploadedProductImage($request, $request->validated(), null);
         $this->productService->createProduct($validated);
@@ -83,13 +85,14 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        \Illuminate\Support\Facades\Gate::authorize('view', $product);
+        Gate::authorize('view', $product);
 
         $product->load([
             'durations' => fn ($q) => $q->orderByDesc('id')->withCount([
                 'keys as available_keys_count' => fn ($q) => $q->where('status', 'available'),
             ]),
             'fields' => fn ($q) => $q->orderByDesc('id'),
+            'reviews' => fn ($q) => $q->orderByDesc('created_at'),
         ]);
 
         return Inertia::render('Admin/Products/Show', [
@@ -102,7 +105,7 @@ class ProductController extends Controller
      */
     public function update(ProductRequest $request, Product $product)
     {
-        \Illuminate\Support\Facades\Gate::authorize('update', $product);
+        Gate::authorize('update', $product);
 
         $previous = $product->getRawOriginal('image');
         $validated = $this->mergeUploadedProductImage($request, $request->validated(), $previous);
@@ -116,10 +119,11 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        \Illuminate\Support\Facades\Gate::authorize('delete', $product);
-        
+        Gate::authorize('delete', $product);
+
         try {
             $this->productService->deleteProduct($product);
+
             return back()->with('success', 'Produk berhasil dihapus.');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());

@@ -12,6 +12,14 @@ class ProductRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $tg = $this->input('telegram_group_invite_url');
+        if ($tg === '' || $tg === null) {
+            $this->merge(['telegram_group_invite_url' => null]);
+        }
+    }
+
     public function rules(): array
     {
         $id = $this->route('product')?->id;
@@ -22,8 +30,9 @@ class ProductRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'image' => ['nullable', 'string', 'max:2048'],
             'image_file' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'telegram_group_invite_url' => ['nullable', 'string', 'max:2048', 'url'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
-            
+
             // Fields validation
             'fields' => ['nullable', 'array'],
             'fields.*.id' => ['nullable', 'exists:product_fields,id'],

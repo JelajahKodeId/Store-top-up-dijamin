@@ -18,16 +18,15 @@
 
     html,
     body {
-        @apply font-sans antialiased;
-        background-color: theme('colors.store-charcoal');
-        color: theme('colors.store-subtle');
+        @apply font-sans antialiased bg-guest-bg text-guest-text;
+        font-size: 16px;
         scroll-behavior: smooth;
         overflow-x: hidden;
     }
 
     ::selection {
-        background-color: rgba(250, 204, 21, .3);
-        color: theme('colors.store-charcoal');
+        background-color: rgba(250, 204, 21, .35);
+        color: theme('colors.guest-text');
     }
 
     h1,
@@ -36,15 +35,12 @@
     h4,
     h5,
     h6 {
-        @apply font-bold;
-        color: theme('colors.white');
+        @apply font-bold text-guest-text;
         font-style: normal;
-        /* tracking disesuaikan per-ukuran di komponen; base tidak force tracking-tight */
     }
 
     p {
-        @apply font-medium leading-relaxed;
-        color: theme('colors.store-muted');
+        @apply text-sm font-normal leading-normal text-guest-muted sm:text-[15px];
     }
 
     /* Custom Transitions */
@@ -173,8 +169,8 @@
 @layer utilities {
     .bg-grid {
         background-image:
-            linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
         background-size: 24px 24px;
     }
 
@@ -217,15 +213,14 @@
 
     /* ── Guest Section Typography ── */
     .section-heading {
-        @apply font-bebas font-bold text-white uppercase;
-        /* leading-[1.05]: cukup rapat untuk display heading, tidak tercekik seperti leading-none/[0.9] */
+        @apply font-bebas font-bold uppercase text-guest-text;
         line-height: 1.05;
-        font-size: clamp(2rem, 4vw, 3rem);
-        letter-spacing: 0.01em;
+        font-size: clamp(1.875rem, 4vw, 2.75rem);
+        letter-spacing: 0.02em;
     }
 
     .section-subtext {
-        @apply text-sm text-store-subtle font-medium leading-relaxed;
+        @apply text-sm font-normal leading-normal text-guest-muted sm:text-[15px];
     }
 
     .label-chip {

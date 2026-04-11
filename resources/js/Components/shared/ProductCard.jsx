@@ -2,73 +2,81 @@ import { Link } from '@inertiajs/react';
 import { AppIcons } from '@/Components/shared/AppIcon';
 import { formatPrice, productImageSrc } from '@/utils/guest';
 
-// Placeholder abu-abu jika gambar tidak ada
-const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500' viewBox='0 0 400 500'%3E%3Crect width='400' height='500' fill='%232C2F3C'/%3E%3Ctext x='200' y='260' font-family='sans-serif' font-size='40' fill='%234a4d5e' text-anchor='middle'%3E%3F%3C/text%3E%3C/svg%3E";
+const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500' viewBox='0 0 400 500'%3E%3Crect width='400' height='500' fill='%23E4E4E7'/%3E%3Ctext x='200' y='260' font-family='sans-serif' font-size='40' fill='%23A1A1AA' text-anchor='middle'%3E%3F%3C/text%3E%3C/svg%3E";
 
 export default function ProductCard({ product }) {
     const activeDurations     = product.durations?.filter(d => d.is_active !== false) ?? [];
-    // Ambil harga terendah dari semua durasi aktif
     const prices              = activeDurations.map(d => Number(d.price)).filter(p => p > 0);
     const lowestPrice         = prices.length > 0 ? Math.min(...prices) : 0;
     const hasMultipleDurations = activeDurations.length > 1;
 
-    // Stok habis hanya jika SEMUA durasi punya available_keys_count === 0 (bukan menggunakan fallback 1)
     const hasStockData  = activeDurations.some(d => d.available_keys_count !== undefined);
     const isOutOfStock  = hasStockData
         ? activeDurations.every(d => (d.available_keys_count ?? 0) === 0)
-        : false; // kalau data stok belum dimuat, default tidak habis
+        : false;
 
     const href = isOutOfStock ? undefined : `/products/${product.slug ?? product.id}`;
 
+    const tgUrl = product.telegram_group_invite_url?.trim?.() || product.telegram_group_invite_url;
+
     return (
-        <div className={`group flex flex-col bg-store-charcoal-light rounded-xl overflow-hidden border transition-all duration-300 shadow-md ${
-            isOutOfStock
-                ? 'border-white/5 opacity-60'
-                : 'border-white/5 hover:border-store-accent/30 hover:-translate-y-0.5'
+        <div className={`group flex flex-col overflow-hidden rounded-xl bg-guest-surface shadow-md transition-all duration-300 ${
+            isOutOfStock ? 'opacity-60' : 'hover:-translate-y-0.5 hover:shadow-lg'
         }`}>
-            {/* Gambar */}
-            <Link
-                href={href ?? '#'}
-                onClick={!href ? (e) => e.preventDefault() : undefined}
-                className="relative aspect-[4/5] overflow-hidden block"
-            >
-                <img
-                    src={productImageSrc(product) || PLACEHOLDER}
-                    alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    onError={(e) => { e.target.src = PLACEHOLDER; }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-store-charcoal/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative aspect-[4/5] overflow-hidden">
+                <Link
+                    href={href ?? '#'}
+                    onClick={!href ? (e) => e.preventDefault() : undefined}
+                    className="absolute inset-0 z-0 block"
+                >
+                    <img
+                        src={productImageSrc(product) || PLACEHOLDER}
+                        alt={product.name}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => { e.target.src = PLACEHOLDER; }}
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                </Link>
 
                 {isOutOfStock ? (
-                    <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-red-500/20 backdrop-blur-sm border border-red-500/20 text-red-400">
+                    <div className="pointer-events-none absolute right-2 top-2 z-[1] flex items-center gap-1 rounded-md bg-red-50 px-1.5 py-0.5 text-red-600 shadow-sm backdrop-blur-sm">
                         <AppIcons.close size={8} strokeWidth={3} />
-                        <span className="text-[8px] font-bold uppercase">Habis</span>
+                        <span className="text-xs font-semibold uppercase">Habis</span>
                     </div>
                 ) : (
-                    <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm border border-white/10 text-store-accent">
+                    <div className="pointer-events-none absolute right-2 top-2 z-[1] flex items-center gap-1 rounded-md bg-white/95 px-1.5 py-0.5 text-amber-700 shadow-sm backdrop-blur-sm">
                         <AppIcons.speed size={8} strokeWidth={3} />
-                        <span className="text-[8px] font-bold uppercase">Instan</span>
+                        <span className="text-xs font-semibold uppercase">Instan</span>
                     </div>
                 )}
-            </Link>
 
-            {/* Konten */}
-            <div className="p-3 flex flex-col flex-grow">
+                {tgUrl && (
+                    <button
+                        type="button"
+                        title="Undang grup Telegram"
+                        onClick={() => window.open(tgUrl, '_blank', 'noopener,noreferrer')}
+                        className="absolute bottom-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-[#0088cc] text-white shadow-md transition-transform hover:scale-105 active:scale-95"
+                    >
+                        <AppIcons.download size={16} strokeWidth={2.5} />
+                    </button>
+                )}
+            </div>
+
+            <div className="flex flex-grow flex-col p-3">
                 <Link
                     href={href ?? '#'}
                     onClick={!href ? (e) => e.preventDefault() : undefined}
                 >
-                    <h3 className="text-sm font-bold text-white font-bebas tracking-wide mb-1 group-hover:text-store-accent transition-colors truncate leading-tight">
+                    <h3 className="mb-1 truncate font-bebas text-base font-bold leading-tight tracking-wide text-guest-text transition-colors group-hover:text-store-accent-dark">
                         {product.name}
                     </h3>
                 </Link>
 
                 <div className="mb-3">
                     {hasMultipleDurations && (
-                        <p className="text-[7px] font-bold text-white/20 uppercase tracking-widest mb-0.5">Mulai dari</p>
+                        <p className="mb-0.5 text-xs font-semibold uppercase tracking-wide text-guest-subtle">Mulai dari</p>
                     )}
-                    <span className="text-base font-bold text-white font-bebas tracking-tight">
+                    <span className="font-bebas text-base font-bold tracking-tight text-guest-text">
                         {lowestPrice > 0 ? formatPrice(lowestPrice) : '—'}
                     </span>
                 </div>
@@ -79,11 +87,12 @@ export default function ProductCard({ product }) {
                         onClick={!href ? (e) => e.preventDefault() : undefined}
                     >
                         <button
+                            type="button"
                             disabled={isOutOfStock}
-                            className={`w-full text-[9px] font-bold uppercase tracking-widest py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all border ${
+                            className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-semibold uppercase tracking-wide shadow-sm transition-all ${
                                 isOutOfStock
-                                    ? 'bg-white/5 text-white/20 border-white/5 cursor-not-allowed'
-                                    : 'bg-white/5 hover:bg-store-accent text-white hover:text-store-dark border-white/5 hover:border-store-accent'
+                                    ? 'cursor-not-allowed bg-guest-elevated text-guest-subtle'
+                                    : 'bg-guest-elevated text-guest-text hover:bg-store-accent hover:text-guest-text hover:shadow-md'
                             }`}
                         >
                             {isOutOfStock ? (

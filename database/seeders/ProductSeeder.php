@@ -18,26 +18,26 @@ class ProductSeeder extends Seeder
             // GBOX — External gaming tool dengan binding HWID
             // ─────────────────────────────────────────────────────────
             [
-                'name'        => 'GBOX',
-                'slug'        => 'gbox',
+                'name' => 'GBOX',
+                'slug' => 'gbox',
                 'description' => '<p><strong>GBOX</strong> adalah external gaming tool premium yang memberikan keuntungan kompetitif dalam game favorit kamu.</p><ul><li>✅ Auto-update otomatis</li><li>✅ Bypass anti-cheat terbaru</li><li>✅ Dukungan 24/7 via Discord</li><li>✅ License binding ke HWID</li></ul>',
-                'image'       => 'https://placehold.co/600x800/0a0a0a/00ff88?text=GBOX',
-                'fields'      => [
+                'image' => 'https://placehold.co/600x800/0a0a0a/00ff88?text=GBOX',
+                'fields' => [
                     [
-                        'name'        => 'hwid',
-                        'label'       => 'HWID (Hardware ID)',
-                        'type'        => 'text',
+                        'name' => 'hwid',
+                        'label' => 'HWID (Hardware ID)',
+                        'type' => 'text',
                         'placeholder' => 'Contoh: A1B2C3D4E5F6-78901234',
-                        'validation'  => 'required|string|min:10|max:100',
+                        'validation' => 'required|string|min:10|max:100',
                         'is_required' => true,
-                        'sort_order'  => 1,
+                        'sort_order' => 1,
                     ],
                 ],
                 'durations' => [
                     ['name' => '1 Hari (Trial)',    'duration_days' => 1,  'price' => 15000,  'keys_count' => 10],
                     ['name' => '7 Hari (Weekly)',   'duration_days' => 7,  'price' => 65000,  'keys_count' => 15],
                     ['name' => '30 Hari (Monthly)', 'duration_days' => 30, 'price' => 200000, 'keys_count' => 20],
-                    ['name' => '90 Hari (Quarterly)','duration_days'=> 90, 'price' => 500000, 'keys_count' => 10],
+                    ['name' => '90 Hari (Quarterly)', 'duration_days' => 90, 'price' => 500000, 'keys_count' => 10],
                 ],
             ],
 
@@ -45,28 +45,28 @@ class ProductSeeder extends Seeder
             // DRIP CLIENT — Private game client dengan lisensi per perangkat
             // ─────────────────────────────────────────────────────────
             [
-                'name'        => 'DRIP CLIENT',
-                'slug'        => 'drip-client',
+                'name' => 'DRIP CLIENT',
+                'slug' => 'drip-client',
                 'description' => '<p><strong>DRIP CLIENT</strong> adalah private gaming client eksklusif dengan fitur terlengkap dan undetected rate tertinggi di kelasnya.</p><ul><li>✅ Loader privat — tidak ada di publik</li><li>✅ Support multi-game</li><li>✅ Update harian</li><li>✅ HWID lock per device</li></ul>',
-                'image'       => 'https://placehold.co/600x800/0a0a0a/7c3aed?text=DRIP+CLIENT',
-                'fields'      => [
+                'image' => 'https://placehold.co/600x800/0a0a0a/7c3aed?text=DRIP+CLIENT',
+                'fields' => [
                     [
-                        'name'        => 'hwid',
-                        'label'       => 'HWID (Hardware ID)',
-                        'type'        => 'text',
+                        'name' => 'hwid',
+                        'label' => 'HWID (Hardware ID)',
+                        'type' => 'text',
                         'placeholder' => 'Contoh: B2C3D4E5F6A1-23456789',
-                        'validation'  => 'required|string|min:10|max:100',
+                        'validation' => 'required|string|min:10|max:100',
                         'is_required' => true,
-                        'sort_order'  => 1,
+                        'sort_order' => 1,
                     ],
                     [
-                        'name'        => 'discord_username',
-                        'label'       => 'Discord Username',
-                        'type'        => 'text',
+                        'name' => 'discord_username',
+                        'label' => 'Discord Username',
+                        'type' => 'text',
                         'placeholder' => 'Contoh: username#1234',
-                        'validation'  => 'nullable|string|max:50',
+                        'validation' => 'nullable|string|max:50',
                         'is_required' => false,
-                        'sort_order'  => 2,
+                        'sort_order' => 2,
                     ],
                 ],
                 'durations' => [
@@ -81,25 +81,25 @@ class ProductSeeder extends Seeder
             // FLUORITE — Premium gaming software dengan email binding
             // ─────────────────────────────────────────────────────────
             [
-                'name'        => 'FLUORITE',
-                'slug'        => 'fluorite',
+                'name' => 'FLUORITE',
+                'slug' => 'fluorite',
                 'description' => '<p><strong>FLUORITE</strong> adalah premium gaming software generasi terbaru. Dikembangkan oleh tim developer berpengalaman dengan arsitektur kernel-level yang canggih.</p><ul><li>✅ Kernel-level protection bypass</li><li>✅ Stream-proof & screenshot-proof</li><li>✅ Update setiap hari</li><li>✅ Support via ticket system</li></ul>',
-                'image'       => 'https://placehold.co/600x800/0a0a0a/06b6d4?text=FLUORITE',
-                'fields'      => [
+                'image' => 'https://placehold.co/600x800/0a0a0a/06b6d4?text=FLUORITE',
+                'fields' => [
                     [
-                        'name'        => 'email',
-                        'label'       => 'Email Aktivasi',
-                        'type'        => 'email',
+                        'name' => 'email',
+                        'label' => 'Email Aktivasi',
+                        'type' => 'email',
                         'placeholder' => 'email@kamu.com',
-                        'validation'  => 'required|email|max:150',
+                        'validation' => 'required|email|max:150',
                         'is_required' => true,
-                        'sort_order'  => 1,
+                        'sort_order' => 1,
                     ],
                 ],
                 'durations' => [
                     ['name' => '7 Hari (Weekly)',    'duration_days' => 7,   'price' => 75000,   'keys_count' => 15],
                     ['name' => '30 Hari (Monthly)',  'duration_days' => 30,  'price' => 220000,  'keys_count' => 20],
-                    ['name' => '90 Hari (Quarterly)','duration_days' => 90,  'price' => 550000,  'keys_count' => 10],
+                    ['name' => '90 Hari (Quarterly)', 'duration_days' => 90,  'price' => 550000,  'keys_count' => 10],
                     ['name' => 'Lifetime',           'duration_days' => 0,   'price' => 1200000, 'keys_count' => 5],
                 ],
             ],
@@ -109,10 +109,11 @@ class ProductSeeder extends Seeder
             $product = Product::updateOrCreate(
                 ['slug' => $pData['slug']],
                 [
-                    'name'        => $pData['name'],
+                    'name' => $pData['name'],
                     'description' => $pData['description'],
-                    'image'       => $pData['image'],
-                    'status'      => 'active',
+                    'image' => $pData['image'],
+                    'telegram_group_invite_url' => $pData['telegram_group_invite_url'] ?? null,
+                    'status' => 'active',
                 ]
             );
 
@@ -139,24 +140,24 @@ class ProductSeeder extends Seeder
                 $toCreate = $keysCount - $existingCount;
                 for ($i = 0; $i < $toCreate; $i++) {
                     $prefix = match ($product->slug) {
-                        'gbox'        => 'GBOX',
+                        'gbox' => 'GBOX',
                         'drip-client' => 'DRIP',
-                        'fluorite'    => 'FLUO',
-                        default       => 'KEY',
+                        'fluorite' => 'FLUO',
+                        default => 'KEY',
                     };
 
                     // Format: GBOX-XXXX-XXXX-XXXX-XXXX
-                    $keyCode = $prefix . '-'
-                        . strtoupper(Str::random(4)) . '-'
-                        . strtoupper(Str::random(4)) . '-'
-                        . strtoupper(Str::random(4)) . '-'
-                        . strtoupper(Str::random(4));
+                    $keyCode = $prefix.'-'
+                        .strtoupper(Str::random(4)).'-'
+                        .strtoupper(Str::random(4)).'-'
+                        .strtoupper(Str::random(4)).'-'
+                        .strtoupper(Str::random(4));
 
                     ProductKey::create([
-                        'product_id'          => $product->id,
+                        'product_id' => $product->id,
                         'product_duration_id' => $duration->id,
-                        'key_code'            => $keyCode,
-                        'status'              => 'available',
+                        'key_code' => $keyCode,
+                        'status' => 'available',
                     ]);
                 }
             }

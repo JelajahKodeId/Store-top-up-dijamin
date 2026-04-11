@@ -32,7 +32,7 @@ function CountdownTimer({ expiredAt }) {
     if (!expiredAt) return null;
 
     return (
-        <div className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest ${expired ? 'text-red-400' : 'text-yellow-400'}`}>
+        <div className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide ${expired ? 'text-red-600' : 'text-amber-700'}`}>
             <AppIcons.clock size={13} />
             {expired ? 'Waktu pembayaran habis' : `Bayar sebelum: ${timeLeft}`}
         </div>
@@ -74,60 +74,59 @@ export default function OrderStatus({ order, flash, app_env }) {
         <GuestLayout title="Status Pesanan" subtitle={`Invoice #${order.invoice_code}`}>
             <Head title={`Status Pesanan #${order.invoice_code} — Mall Store`} />
 
-            <div className="section-container pb-40">
-                <div className="max-w-xl mx-auto space-y-5">
+            <div className="section-container pb-12 sm:pb-16">
+                <div className="mx-auto max-w-xl space-y-4">
 
                     {/* Flash success message */}
                     {flash?.success && (
-                        <div className="p-4 rounded-2xl bg-green-400/10 border border-green-400/20 flex items-center gap-3">
-                            <AppIcons.success_circle size={16} className="text-green-400 flex-shrink-0" />
-                            <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest">{flash.success}</p>
+                        <div className="flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 p-4">
+                            <AppIcons.success_circle size={16} className="flex-shrink-0 text-green-600" />
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-green-800">{flash.success}</p>
                         </div>
                     )}
 
                     {flash?.error && (
-                        <div className="p-4 rounded-2xl bg-red-400/10 border border-red-400/25 flex items-center gap-3">
-                            <AppIcons.error size={16} className="text-red-400 flex-shrink-0" />
-                            <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest leading-relaxed">{flash.error}</p>
+                        <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+                            <AppIcons.error size={16} className="flex-shrink-0 text-red-600" />
+                            <p className="text-[10px] font-bold uppercase tracking-wide leading-normal text-red-800">{flash.error}</p>
                         </div>
                     )}
 
                     {order.status === 'unpaid' && order.needs_payment_help && (
-                        <div className="p-4 rounded-2xl bg-amber-400/10 border border-amber-400/25 space-y-2">
-                            <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
+                        <div className="space-y-2 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide text-amber-800">
                                 <AppIcons.help size={14} /> Pembayaran belum siap
                             </p>
-                            <p className="text-[10px] text-white/50 font-medium leading-relaxed">
+                            <p className="text-[10px] font-medium leading-normal text-guest-muted">
                                 Sesi bayar tidak bisa dibuka (misalnya kunci Midtrans atau URL pembayaran kosong). Simpan invoice{' '}
-                                <span className="font-mono text-white/70">{order.invoice_code}</span> dan hubungi CS bantuan.
+                                <span className="font-mono text-guest-text">{order.invoice_code}</span> dan hubungi CS bantuan.
                             </p>
                         </div>
                     )}
 
                     {/* Status Hero Card */}
-                    <div className={`p-8 rounded-3xl border ${cfg.bg} ${cfg.border} relative overflow-hidden`}>
-                        <div className="absolute top-0 right-0 w-48 h-48 rounded-full blur-[80px] pointer-events-none opacity-20"
-                            style={{ background: cfg.dot.replace('bg-', '') }} />
+                    <div className={`relative overflow-hidden rounded-2xl border p-5 shadow-soft sm:p-6 md:p-7 ${cfg.bg} ${cfg.border}`}>
+                        <div className={`pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full blur-[80px] opacity-25 ${cfg.dot}`} />
 
                         <div className="relative z-10 flex items-start gap-5">
-                            <div className={`w-14 h-14 rounded-2xl ${cfg.bg} border ${cfg.border} flex items-center justify-center flex-shrink-0`}>
+                            <div className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl border bg-guest-surface ${cfg.border}`}>
                                 <StatusIcon size={26} className={cfg.color} strokeWidth={2} />
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <div className="min-w-0 flex-1">
+                                <div className="mb-1 flex flex-wrap items-center gap-2">
                                     {cfg.pulse && (
-                                        <span className={`w-2 h-2 rounded-full ${cfg.dot} animate-pulse flex-shrink-0`} />
+                                        <span className={`h-2 w-2 flex-shrink-0 animate-pulse rounded-full ${cfg.dot}`} />
                                     )}
-                                    <span className={`text-[10px] font-bold uppercase tracking-widest ${cfg.color}`}>
+                                    <span className={`text-[10px] font-bold uppercase tracking-wide ${cfg.color}`}>
                                         {cfg.title}
                                     </span>
                                     {order.midtrans_is_sandbox && (
-                                        <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/30 text-[8px] font-bold text-amber-400 uppercase tracking-widest">
+                                        <span className="rounded-md border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-amber-900">
                                             Sandbox
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-[11px] text-white/50 font-medium leading-relaxed">
+                                <p className="text-[11px] font-medium leading-normal text-guest-muted">
                                     {cfg.desc}
                                 </p>
                                 {order.payment_expired_at && order.status === 'unpaid' && (
@@ -141,36 +140,36 @@ export default function OrderStatus({ order, flash, app_env }) {
 
                     {/* ── Key Delivery Card (hanya tampil jika success) ───────── */}
                     {isSuccess && (
-                        <div className="p-6 rounded-3xl bg-green-400/5 border border-green-400/25 space-y-5 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-[60px] bg-green-400/10 pointer-events-none" />
+                        <div className="relative space-y-5 overflow-hidden rounded-3xl border border-green-200 bg-green-50/80 p-6 shadow-soft">
+                            <div className="pointer-events-none absolute right-0 top-0 h-40 w-40 rounded-full bg-green-300/30 blur-[60px]" />
 
                             <div className="relative z-10">
                                 {/* Header */}
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-10 h-10 rounded-xl bg-green-400/15 border border-green-400/30 flex items-center justify-center flex-shrink-0">
-                                        <AppIcons.key size={18} className="text-green-400" strokeWidth={2} />
+                                <div className="mb-4 flex items-center gap-3">
+                                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-green-300 bg-guest-surface">
+                                        <AppIcons.key size={18} className="text-green-700" strokeWidth={2} />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-green-400">Key / Lisensi Tersedia</p>
-                                        <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest mt-0.5">
+                                        <p className="text-sm font-bold text-green-800">Key / Lisensi Tersedia</p>
+                                        <p className="mt-0.5 text-sm font-bold uppercase tracking-wide text-guest-subtle">
                                             Dikirim langsung ke WhatsApp Anda
                                         </p>
                                     </div>
                                 </div>
 
                                 {/* Info privasi */}
-                                <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2 mb-4">
+                                <div className="mb-4 space-y-2 rounded-2xl border border-guest-border bg-guest-surface p-4">
                                     <div className="flex items-start gap-2.5">
-                                        <AppIcons.shield size={13} className="text-green-400/60 flex-shrink-0 mt-0.5" />
-                                        <p className="text-[11px] font-medium text-white/40 leading-relaxed">
+                                        <AppIcons.shield size={13} className="mt-0.5 flex-shrink-0 text-green-600/80" />
+                                        <p className="text-[11px] font-medium leading-normal text-guest-muted">
                                             Untuk menjaga privasi, key tidak ditampilkan di halaman ini.
                                             Key lisensi sudah dikirimkan secara eksklusif ke WhatsApp Anda.
                                         </p>
                                     </div>
                                     {order.whatsapp && (
                                         <div className="flex items-center gap-2 pt-1">
-                                            <AppIcons.phone size={11} className="text-white/30" />
-                                            <span className="text-[10px] font-mono font-bold text-white/50">{order.whatsapp}</span>
+                                            <AppIcons.phone size={11} className="text-guest-subtle" />
+                                            <span className="text-[10px] font-mono font-bold text-guest-text">{order.whatsapp}</span>
                                         </div>
                                     )}
                                 </div>
@@ -188,105 +187,136 @@ export default function OrderStatus({ order, flash, app_env }) {
                                         <AppIcons.arrowRight size={14} strokeWidth={2.5} />
                                     </a>
                                 ) : (
-                                    <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest text-center p-3">
+                                    <p className="p-3 text-center text-sm font-medium text-guest-muted">
                                         Key telah dikirim via WhatsApp. Periksa chat Anda.
                                     </p>
                                 )}
+
+                                {(() => {
+                                    const seen = new Set();
+                                    const rows = (order.items ?? []).filter((it) => {
+                                        if (!it.product_slug || seen.has(it.product_slug)) return false;
+                                        seen.add(it.product_slug);
+                                        return true;
+                                    });
+                                    if (!rows.length) return null;
+                                    return (
+                                        <div className="mt-5 space-y-3 rounded-2xl border border-guest-border bg-guest-surface p-4">
+                                            <p className="text-sm font-semibold text-guest-text">Beri ulasan pembelian</p>
+                                            <p className="text-sm leading-normal text-guest-muted">
+                                                Bagikan rating untuk produk yang Anda beli. Invoice Anda sudah terisi otomatis di form.
+                                            </p>
+                                            <div className="flex flex-col gap-2">
+                                                {rows.map((it) => (
+                                                    <Link
+                                                        key={it.product_slug}
+                                                        href={`/products/${it.product_slug}?invoice=${encodeURIComponent(order.invoice_code)}`}
+                                                        className="flex items-center justify-center gap-2 rounded-xl bg-store-accent/15 px-4 py-3 text-sm font-semibold text-amber-950 transition-colors hover:bg-store-accent/25"
+                                                    >
+                                                        <AppIcons.star size={16} className="shrink-0 text-amber-600" strokeWidth={2.5} />
+                                                        <span className="truncate">Ulasan: {it.product_name}</span>
+                                                        <AppIcons.arrowRight size={14} className="shrink-0" strokeWidth={2.5} />
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
                     )}
 
                     {/* Invoice & Info */}
-                    <div className="rounded-3xl bg-store-charcoal-light/30 border border-white/5 overflow-hidden">
+                    <div className="overflow-hidden rounded-3xl border border-guest-border bg-guest-surface shadow-soft">
                         {/* Header invoice */}
-                        <div className="px-6 py-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
+                        <div className="flex items-center justify-between border-b border-guest-border bg-guest-elevated px-6 py-4">
                             <div>
-                                <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest mb-0.5">Nomor Invoice</p>
-                                <p className="text-lg font-bold text-white font-bebas tracking-wide">{order.invoice_code}</p>
+                                <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-guest-subtle">Nomor Invoice</p>
+                                <p className="font-bebas text-lg font-bold tracking-wide text-guest-text">{order.invoice_code}</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest mb-0.5">Tanggal</p>
-                                <p className="text-[10px] font-bold text-white/60">{order.created_at}</p>
+                                <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-guest-subtle">Tanggal</p>
+                                <p className="text-[10px] font-bold text-guest-muted">{order.created_at}</p>
                             </div>
                         </div>
 
                         {/* Row info */}
-                        <div className="divide-y divide-white/5">
+                        <div className="divide-y divide-guest-border">
                             {order.whatsapp && (
-                                <div className="px-6 py-3 flex items-center justify-between gap-4">
-                                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest flex-shrink-0">WhatsApp</span>
-                                    <span className="text-xs font-bold text-white font-mono">{order.whatsapp}</span>
+                                <div className="flex items-center justify-between gap-4 px-6 py-3">
+                                    <span className="flex-shrink-0 text-sm font-bold uppercase tracking-wide text-guest-subtle">WhatsApp</span>
+                                    <span className="font-mono text-xs font-bold text-guest-text">{order.whatsapp}</span>
                                 </div>
                             )}
                             {order.customer_name && (
-                                <div className="px-6 py-3 flex items-center justify-between gap-4">
-                                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest flex-shrink-0">Nama</span>
-                                    <span className="text-xs font-bold text-white">{order.customer_name}</span>
+                                <div className="flex items-center justify-between gap-4 px-6 py-3">
+                                    <span className="flex-shrink-0 text-sm font-bold uppercase tracking-wide text-guest-subtle">Nama</span>
+                                    <span className="text-xs font-bold text-guest-text">{order.customer_name}</span>
                                 </div>
                             )}
                             {(order.payment_method_label || order.payment_method) && (
-                                <div className="px-6 py-3 flex items-center justify-between gap-4">
-                                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest flex-shrink-0">Metode Bayar</span>
-                                    <span className="text-xs font-bold text-white flex items-center gap-1.5 text-right">
-                                        <AppIcons.wallet size={11} className="text-store-accent flex-shrink-0" />
+                                <div className="flex items-center justify-between gap-4 px-6 py-3">
+                                    <span className="flex-shrink-0 text-sm font-bold uppercase tracking-wide text-guest-subtle">Metode Bayar</span>
+                                    <span className="flex items-center gap-1.5 text-right text-xs font-bold text-guest-text">
+                                        <AppIcons.wallet size={11} className="flex-shrink-0 text-store-accent" />
                                         {order.payment_method_label || order.payment_method}
                                     </span>
                                 </div>
                             )}
                             {order.payment_gateway && (
-                                <div className="px-6 py-3 flex items-center justify-between gap-4">
-                                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest flex-shrink-0">Gateway</span>
-                                    <span className="text-[10px] font-bold text-white/60 font-mono uppercase">{order.payment_gateway}</span>
+                                <div className="flex items-center justify-between gap-4 px-6 py-3">
+                                    <span className="flex-shrink-0 text-sm font-bold uppercase tracking-wide text-guest-subtle">Gateway</span>
+                                    <span className="font-mono text-[10px] font-bold uppercase text-guest-muted">{order.payment_gateway}</span>
                                 </div>
                             )}
                         </div>
                     </div>
 
                     {/* Items */}
-                    <div className="rounded-3xl bg-store-charcoal-light/30 border border-white/5 overflow-hidden">
-                        <div className="px-6 py-3 bg-white/[0.02] border-b border-white/5">
-                            <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest">Produk yang Dipesan</p>
+                    <div className="overflow-hidden rounded-3xl border border-guest-border bg-guest-surface shadow-soft">
+                        <div className="border-b border-guest-border bg-guest-elevated px-6 py-3">
+                            <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Produk yang Dipesan</p>
                         </div>
 
                         {order.items?.map((item, i) => (
-                            <div key={i} className="px-6 py-4 border-b border-white/5 last:border-0 flex items-center justify-between gap-4">
+                            <div key={i} className="flex items-center justify-between gap-4 border-b border-guest-border px-6 py-4 last:border-0">
                                 <div className="min-w-0">
-                                    <p className="text-sm font-bold text-white truncate">{item.product_name}</p>
-                                    <p className="text-[9px] text-white/40 font-bold uppercase tracking-widest mt-0.5">
+                                    <p className="truncate text-sm font-bold text-guest-text">{item.product_name}</p>
+                                    <p className="mt-0.5 text-sm font-bold uppercase tracking-wide text-guest-muted">
                                         {item.duration_name} × {item.quantity}
                                     </p>
                                 </div>
-                                <p className="text-sm font-bold text-store-accent font-bebas flex-shrink-0">
+                                <p className="flex-shrink-0 font-bebas text-sm font-bold text-store-accent">
                                     {formatPrice(item.price * item.quantity)}
                                 </p>
                             </div>
                         ))}
 
                         {/* Total */}
-                        <div className="px-6 py-4 bg-white/[0.02] space-y-2">
+                        <div className="space-y-2 bg-guest-elevated px-6 py-4">
                             {order.discount_amount > 0 && (
                                 <div className="flex items-center justify-between">
-                                    <p className="text-[9px] font-bold text-green-400/60 uppercase tracking-widest flex items-center gap-1">
+                                    <p className="flex items-center gap-1 text-sm font-bold uppercase tracking-wide text-green-700">
                                         <AppIcons.tag size={9} /> Diskon
                                     </p>
-                                    <p className="text-xs font-bold text-green-400">-{formatPrice(order.discount_amount)}</p>
+                                    <p className="text-xs font-bold text-green-700">-{formatPrice(order.discount_amount)}</p>
                                 </div>
                             )}
                             <div className="flex items-center justify-between">
-                                <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Total Pembayaran</p>
-                                <p className="text-xl font-bold text-store-accent font-bebas">{formatPrice(order.total_price)}</p>
+                                <p className="text-sm font-bold uppercase tracking-wide text-guest-subtle">Total Pembayaran</p>
+                                <p className="font-bebas text-xl font-bold text-store-accent">{formatPrice(order.total_price)}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Midtrans Snap (prioritas) */}
                     {order.status === 'unpaid' && order.midtrans_snap_token && order.midtrans_client_key && order.midtrans_snap_js && (
-                        <div className="p-6 rounded-3xl bg-yellow-400/5 border border-yellow-400/20 space-y-4">
-                            <p className="text-[9px] font-bold text-yellow-400/60 uppercase tracking-widest flex items-center gap-1.5">
+                        <div className="space-y-4 rounded-3xl border border-amber-200 bg-amber-50/80 p-6 shadow-soft">
+                            <p className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-amber-900">
                                 <AppIcons.wallet size={11} strokeWidth={2.5} />
                                 Lanjutkan Pembayaran (Midtrans)
                             </p>
-                            <p className="text-[10px] text-white/40 font-medium leading-relaxed">
+                            <p className="text-[10px] font-medium leading-normal text-guest-muted">
                                 QRIS, transfer VA, kartu, dan e-wallet dipilih di jendela pembayaran Midtrans.
                             </p>
                             <Button
@@ -331,36 +361,38 @@ export default function OrderStatus({ order, flash, app_env }) {
 
                     {/* Pak Kasir Direct Details (VA / QRIS) */}
                     {order.status === 'unpaid' && order.pak_kasir_details && (
-                        <div className="p-6 rounded-3xl bg-store-accent/5 border border-store-accent/20 space-y-5 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] bg-store-accent/10 pointer-events-none" />
+                        <div className="relative space-y-5 overflow-hidden rounded-3xl border border-guest-border bg-guest-surface p-6 shadow-soft">
+                            <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-full bg-store-accent/15 blur-[60px]" />
 
                             <div className="relative z-10">
-                                <p className="text-[10px] font-bold text-store-accent uppercase tracking-[0.2em] mb-4">
+                                <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-store-accent">
                                     Instruksi Pembayaran
                                 </p>
 
                                 {order.pak_kasir_details.is_qris ? (
                                     <div className="flex flex-col items-center gap-4">
-                                        <div className="p-4 bg-white rounded-2xl border-4 border-white shadow-xl">
+                                        <div className="rounded-2xl border-4 border-guest-border bg-white p-4 shadow-card">
                                             <img
                                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(order.pak_kasir_details.number)}`}
                                                 alt="QRIS Code"
-                                                className="w-48 h-48 block mx-auto"
+                                                className="mx-auto block h-48 w-48"
                                             />
                                         </div>
-                                        <div className="text-center space-y-1">
-                                            <p className="text-xs font-bold text-white">QRIS All Payment</p>
-                                            <p className="text-[10px] text-white/40 font-medium leading-relaxed">
+                                        <div className="space-y-1 text-center">
+                                            <p className="text-xs font-bold text-guest-text">QRIS All Payment</p>
+                                            <p className="text-[10px] font-medium leading-normal text-guest-muted">
                                                 Scan QR di atas menggunakan aplikasi m-banking atau e-wallet (Gojek, Dana, Shopee, dll).
                                             </p>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-1.5 group">
-                                            <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest">Nomor {order.pak_kasir_details.method?.toUpperCase() || 'VA'}</p>
+                                        <div className="group space-y-1.5 rounded-2xl border border-guest-border bg-guest-elevated p-5">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">
+                                                Nomor {order.pak_kasir_details.method?.toUpperCase() || 'VA'}
+                                            </p>
                                             <div className="flex items-center justify-between gap-4">
-                                                <p className="text-2xl font-bold text-white font-mono tracking-wider break-all leading-tight">
+                                                <p className="break-all font-mono text-2xl font-bold leading-tight tracking-wider text-guest-text">
                                                     {order.pak_kasir_details.number}
                                                 </p>
                                                 <button
@@ -373,17 +405,17 @@ export default function OrderStatus({ order, flash, app_env }) {
                                                         document.body.removeChild(el);
                                                         alert('Nomor berhasil disalin!');
                                                     }}
-                                                    className="p-3 rounded-xl bg-white/5 hover:bg-store-accent hover:text-store-dark transition-all text-white/40 group-hover:text-white/60 active:scale-95 flex-shrink-0"
+                                                    className="flex-shrink-0 rounded-xl border border-guest-border bg-guest-surface p-3 text-guest-muted transition-all hover:border-store-accent hover:bg-store-accent hover:text-store-dark active:scale-95"
                                                 >
                                                     <AppIcons.copy size={18} />
                                                 </button>
                                             </div>
                                         </div>
 
-                                        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                                        <div className="rounded-2xl border border-guest-border bg-guest-elevated p-4">
                                             <div className="flex items-center justify-between">
-                                                <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest">Total Bayar</p>
-                                                <p className="text-lg font-bold text-store-accent font-bebas">{formatPrice(order.pak_kasir_details.total_payment)}</p>
+                                                <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Total Bayar</p>
+                                                <p className="font-bebas text-lg font-bold text-store-accent">{formatPrice(order.pak_kasir_details.total_payment)}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -394,8 +426,8 @@ export default function OrderStatus({ order, flash, app_env }) {
 
                     {/* Payment URL (Tripay / redirect lain, jika tidak pakai Snap) */}
                     {order.payment_url && order.status === 'unpaid' && !order.midtrans_snap_token && (
-                        <div className="p-6 rounded-3xl bg-yellow-400/5 border border-yellow-400/20 space-y-4">
-                            <p className="text-[9px] font-bold text-yellow-400/60 uppercase tracking-widest flex items-center gap-1.5">
+                        <div className="space-y-4 rounded-3xl border border-amber-200 bg-amber-50/80 p-6 shadow-soft">
+                            <p className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-amber-900">
                                 <AppIcons.wallet size={11} strokeWidth={2.5} />
                                 Lanjutkan Pembayaran
                             </p>
@@ -414,12 +446,12 @@ export default function OrderStatus({ order, flash, app_env }) {
 
                     {/* Pak Kasir Simulation (Development Only) */}
                     {order.status === 'unpaid' && order.payment_gateway === 'pak_kasir' && app_env === 'local' && (
-                        <div className="p-6 rounded-3xl bg-blue-400/5 border border-blue-400/20 space-y-4">
-                            <p className="text-[9px] font-bold text-blue-400/60 uppercase tracking-widest flex items-center gap-1.5">
+                        <div className="space-y-4 rounded-3xl border border-blue-200 bg-blue-50/80 p-6 shadow-soft">
+                            <p className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-blue-900">
                                 <AppIcons.refresh size={11} strokeWidth={2.5} />
                                 Simulasi Pembayaran (Pak Kasir)
                             </p>
-                            <p className="text-[10px] text-white/40 font-medium leading-relaxed">
+                            <p className="text-[10px] font-medium leading-normal text-guest-muted">
                                 Klik tombol di bawah untuk mensimulasikan status <b>PAID</b> via API Pak Kasir.
                             </p>
                             <Link href={route('webhooks.pak-kasir-simulate', order.invoice_code)}>
@@ -432,16 +464,16 @@ export default function OrderStatus({ order, flash, app_env }) {
 
                     {/* Auto-refresh indicator */}
                     {shouldPoll && (
-                        <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-blue-400/5 border border-blue-400/15">
+                        <div className="flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50/60 px-4 py-3">
                             <div className="flex items-center gap-2">
-                                <AppIcons.refresh size={12} className="text-blue-400/60 animate-spin" style={{ animationDuration: '3s' }} />
-                                <span className="text-[9px] font-bold text-blue-400/60 uppercase tracking-widest">
+                                <AppIcons.refresh size={12} className="animate-spin text-blue-700" style={{ animationDuration: '3s' }} />
+                                <span className="text-sm font-bold uppercase tracking-wide text-blue-900">
                                     Status diperbarui otomatis
                                 </span>
                             </div>
                             <button
                                 onClick={refresh}
-                                className="text-[8px] font-bold text-blue-400/50 uppercase tracking-widest hover:text-blue-400 transition-colors flex items-center gap-1"
+                                className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-blue-700 transition-colors hover:text-blue-900"
                             >
                                 {countdown}s <AppIcons.refresh size={9} />
                             </button>
@@ -451,12 +483,12 @@ export default function OrderStatus({ order, flash, app_env }) {
                     {/* Navigasi */}
                     <div className="flex items-center gap-3">
                         <Link href={route('home')} className="flex-1">
-                            <Button variant="ghost" className="w-full py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest">
+                            <Button variant="guestGhost" className="w-full rounded-xl border border-guest-border py-2.5 text-[10px] font-bold uppercase tracking-wide">
                                 Kembali ke Beranda
                             </Button>
                         </Link>
                         <Link href={route('track-invoice')}>
-                            <Button variant="ghost" className="py-2.5 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest">
+                            <Button variant="guestGhost" className="rounded-xl border border-guest-border px-4 py-2.5 text-[10px] font-bold uppercase tracking-wide">
                                 Lacak Lagi
                             </Button>
                         </Link>
@@ -468,20 +500,20 @@ export default function OrderStatus({ order, flash, app_env }) {
                             href={`${csWaLink}?text=${encodeURIComponent(`Halo CS, saya butuh bantuan untuk pesanan ${order.invoice_code}`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center gap-3 justify-center hover:bg-white/[0.04] hover:border-store-accent/20 transition-all group"
+                            className="group flex items-center justify-center gap-3 rounded-2xl border border-guest-border bg-guest-surface p-5 shadow-soft transition-all hover:border-store-accent/30 hover:bg-guest-elevated"
                         >
-                            <AppIcons.help size={15} className="text-store-accent group-hover:scale-110 transition-transform" />
-                            <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest text-center">
+                            <AppIcons.help size={15} className="text-store-accent transition-transform group-hover:scale-110" />
+                            <p className="text-center text-sm font-bold uppercase tracking-wide text-guest-subtle">
                                 Butuh bantuan? Hubungi CS via WhatsApp — invoice{' '}
-                                <span className="text-white/60 group-hover:text-store-accent transition-colors">{order.invoice_code}</span>
+                                <span className="text-guest-text transition-colors group-hover:text-store-accent">{order.invoice_code}</span>
                             </p>
                         </a>
                     ) : (
-                        <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center gap-3 justify-center">
+                        <div className="flex items-center justify-center gap-3 rounded-2xl border border-guest-border bg-guest-surface p-5 shadow-soft">
                             <AppIcons.help size={15} className="text-store-accent" />
-                            <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest text-center">
+                            <p className="text-center text-sm font-bold uppercase tracking-wide text-guest-subtle">
                                 Butuh bantuan? Hubungi Customer Service dengan menyertakan invoice{' '}
-                                <span className="text-white/60">{order.invoice_code}</span>
+                                <span className="text-guest-text">{order.invoice_code}</span>
                             </p>
                         </div>
                     )}

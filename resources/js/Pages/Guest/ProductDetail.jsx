@@ -1,7 +1,8 @@
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { AppIcons } from '@/Components/shared/AppIcon';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import GuestInput from '@/Components/guest/GuestInput';
 import { formatPrice, productImageSrc } from '@/utils/guest';
 
@@ -26,60 +27,174 @@ const FALLBACK_BY_GATEWAY = {
     ],
 };
 
-const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Crect width='300' height='400' fill='%232C2F3C'/%3E%3C/svg%3E";
+const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Crect width='300' height='400' fill='%23E4E4E7'/%3E%3C/svg%3E";
+
+function StarsDisplay({ rating, size = 16 }) {
+    const r = Math.round(Number(rating) || 0);
+    const Star = AppIcons.star;
+    return (
+        <span className="inline-flex items-center gap-0.5" role="img" aria-label={`${r} dari 5 bintang`}>
+            {[1, 2, 3, 4, 5].map((i) => (
+                <Star
+                    key={i}
+                    size={size}
+                    strokeWidth={2}
+                    className={i <= r ? 'fill-amber-500 text-amber-600' : 'fill-none text-zinc-400'}
+                />
+            ))}
+        </span>
+    );
+}
+
+function RatingPicker({ value, onChange, disabled }) {
+    const Star = AppIcons.star;
+    return (
+        <div className="flex flex-wrap items-center gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                    key={n}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onChange(n)}
+                    className="rounded-lg p-1.5 transition-colors hover:bg-zinc-100 disabled:opacity-40"
+                    aria-label={`${n} bintang`}
+                >
+                    <Star
+                        size={26}
+                        strokeWidth={2}
+                        className={value >= n ? 'fill-amber-500 text-amber-600' : 'fill-none text-zinc-400'}
+                    />
+                </button>
+            ))}
+        </div>
+    );
+}
+
+function ReviewCard({ review }) {
+    const name = (review.author_name || 'Pembeli').trim() || 'Pembeli';
+    const initial = name.charAt(0).toUpperCase();
+    const ratingNum = Math.round(Number(review.rating) || 0);
+
+    return (
+        <li className="rounded-2xl border border-guest-border bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex gap-3 sm:gap-4">
+                <div
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-base font-black text-white shadow-inner"
+                    aria-hidden
+                >
+                    {initial}
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="text-base font-bold text-zinc-900">{name}</span>
+                        <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-black uppercase tracking-wide text-amber-900">
+                            {ratingNum}/5
+                        </span>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <StarsDisplay rating={review.rating} size={16} />
+                        <span className="text-sm font-semibold text-zinc-700">{ratingNum} bintang</span>
+                        {review.created_at && (
+                            <span className="text-xs font-medium text-zinc-500">· {review.created_at}</span>
+                        )}
+                    </div>
+                    <p className="mt-2 text-sm leading-normal text-zinc-800 sm:text-[15px]">{review.body}</p>
+                </div>
+            </div>
+        </li>
+    );
+}
 
 // ── Baris info modal ──────────────────────────────────────────────────────────
 function ConfirmRow({ label, value, mono = false, accent = false }) {
     return (
-        <div className="flex items-start justify-between gap-4 py-2.5 border-b border-white/5 last:border-0">
-            <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest flex-shrink-0 pt-0.5">{label}</span>
-            <span className={`text-xs font-bold text-right leading-snug ${mono ? 'font-mono' : ''} ${accent ? 'text-store-accent' : 'text-white'}`}>
-                {value || <span className="text-white/20 italic">-</span>}
+        <div className="flex flex-col gap-1 border-b border-guest-border py-2.5 last:border-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <span className="shrink-0 pt-0.5 text-xs font-semibold uppercase tracking-wide text-guest-subtle">{label}</span>
+            <span className={`break-words text-sm font-semibold leading-snug sm:max-w-[65%] sm:text-right ${mono ? 'font-mono' : ''} ${accent ? 'text-store-accent' : 'text-guest-text'}`}>
+                {value || <span className="italic text-guest-subtle">-</span>}
             </span>
         </div>
     );
 }
 
-// ── Modal Konfirmasi — slide up dari bawah di mobile ─────────────────────────
+// ── Modal Konfirmasi — portal + kunci scroll; selalu di tengah (mobile & desktop) ─
 function ConfirmModal({ open, onClose, onConfirm, processing, data, product, selectedDuration, voucherInfo, paymentMethods = [] }) {
-    if (!open) return null;
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+        const html = document.documentElement;
+        const body = document.body;
+        const prevHtml = html.style.overflow;
+        const prevBody = body.style.overflow;
+        html.style.overflow = 'hidden';
+        body.style.overflow = 'hidden';
+
+        const onKey = (e) => {
+            if (e.key === 'Escape' && !processing) {
+                onClose();
+            }
+        };
+        document.addEventListener('keydown', onKey);
+
+        return () => {
+            document.removeEventListener('keydown', onKey);
+            html.style.overflow = prevHtml;
+            body.style.overflow = prevBody;
+        };
+    }, [open, onClose, processing]);
+
+    if (!open) {
+        return null;
+    }
+
     const paymentLabel = paymentMethods.find(m => m.code === data.payment_method)?.label ?? data.payment_method;
     const originalPrice = selectedDuration?.price ?? 0;
     const discountAmount = voucherInfo?.valid ? voucherInfo.discount_amount : 0;
     const finalPrice = voucherInfo?.valid ? voucherInfo.final_price : originalPrice;
     const hasDiscount = discountAmount > 0;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-            <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative z-10 w-full sm:max-w-md bg-store-charcoal border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col">
-
-                {/* Handle bar mobile */}
-                <div className="flex justify-center pt-3 pb-1 sm:hidden">
-                    <div className="w-10 h-1 rounded-full bg-white/20" />
-                </div>
-
+    const modal = (
+        <div
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-order-title"
+        >
+            <button
+                type="button"
+                className="absolute inset-0 cursor-default border-0 bg-black/40 p-0 backdrop-blur-sm"
+                onClick={onClose}
+                aria-label="Tutup"
+            />
+            <div
+                className="relative z-10 mx-auto flex h-auto min-h-0 w-full max-w-md max-h-[min(85dvh,calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem))] flex-col overflow-hidden rounded-3xl border border-guest-border bg-guest-surface shadow-lux sm:max-h-[min(90dvh,44rem)]"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
-                <div className="px-5 pt-4 pb-3 sm:px-6 sm:pt-6 border-b border-white/5 flex items-center justify-between flex-shrink-0">
-                    <div>
-                        <h3 className="text-xl font-bold text-white font-bebas uppercase tracking-wide">Konfirmasi Pesanan</h3>
-                        <p className="text-[9px] font-bold text-white/25 uppercase tracking-widest mt-0.5">
+                <div className="flex shrink-0 items-center justify-between border-b border-guest-border bg-guest-elevated px-5 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-5">
+                    <div className="min-w-0 pr-2">
+                        <h3 id="confirm-order-title" className="font-bebas text-xl font-bold uppercase tracking-wide text-guest-text">
+                            Konfirmasi Pesanan
+                        </h3>
+                        <p className="mt-0.5 text-sm font-bold uppercase tracking-wide text-guest-subtle">
                             Pastikan semua detail sudah benar
                         </p>
                     </div>
                     <button
+                        type="button"
                         onClick={onClose}
-                        className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-guest-border bg-guest-surface text-guest-muted transition-colors hover:bg-guest-elevated hover:text-guest-text"
                     >
                         <AppIcons.close size={14} />
                     </button>
                 </div>
 
-                {/* Body — scrollable */}
-                <div className="px-5 sm:px-6 py-2 overflow-y-auto flex-1">
-                    <div className="py-3 border-b border-white/5">
-                        <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest mb-1">Produk</p>
-                        <p className="text-base font-bold text-white font-bebas tracking-wide">{product.name}</p>
+                {/* Body — satu-satunya area scroll; min-h-0 wajib untuk flex */}
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 py-2 [-webkit-overflow-scrolling:touch] sm:px-6">
+                    <div className="border-b border-guest-border py-3">
+                        <p className="mb-1 text-xs font-bold uppercase tracking-wide text-guest-subtle">Produk</p>
+                        <p className="font-bebas text-base font-bold tracking-wide text-guest-text">{product.name}</p>
                     </div>
                     <ConfirmRow label="Layanan" value={selectedDuration?.name} />
                     <ConfirmRow label="Durasi" value={selectedDuration ? (selectedDuration.duration_days > 0 ? `${selectedDuration.duration_days} Hari` : 'Seumur Hidup') : '-'} />
@@ -87,8 +202,8 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                     <ConfirmRow label="Bayar Via" value={paymentLabel} />
                     {(product.fields || []).length > 0 && (
                         <>
-                            <div className="pt-3 pb-1">
-                                <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest">Data Produk</p>
+                            <div className="pb-1 pt-3">
+                                <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Data Produk</p>
                             </div>
                             {product.fields.map((field) => (
                                 <ConfirmRow key={field.id} label={field.label} value={data.fields[field.id] || '-'} mono />
@@ -97,56 +212,58 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                     )}
 
                     {/* Breakdown harga */}
-                    <div className="mt-3 pt-3 border-t border-white/5 space-y-1.5">
+                    <div className="mt-3 space-y-1.5 border-t border-guest-border pt-3">
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Harga</span>
-                            <span className={`text-xs font-bold ${hasDiscount ? 'text-white/30 line-through' : 'text-store-accent'}`}>
+                            <span className="text-sm font-bold uppercase tracking-wide text-guest-subtle">Harga</span>
+                            <span className={`text-xs font-bold ${hasDiscount ? 'text-guest-subtle line-through' : 'text-store-accent'}`}>
                                 {formatPrice(originalPrice)}
                             </span>
                         </div>
                         {hasDiscount && (
                             <>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-green-400/70 uppercase tracking-widest flex items-center gap-1">
+                                    <span className="flex items-center gap-1 text-sm font-bold uppercase tracking-wide text-green-700">
                                         <AppIcons.tag size={9} /> Voucher <span className="font-mono">{data.voucher_code}</span>
                                     </span>
-                                    <span className="text-xs font-bold text-green-400">-{formatPrice(discountAmount)}</span>
+                                    <span className="text-xs font-bold text-green-700">-{formatPrice(discountAmount)}</span>
                                 </div>
-                                <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
-                                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Total Bayar</span>
-                                    <span className="text-xl font-bold text-store-accent font-bebas">{formatPrice(finalPrice)}</span>
+                                <div className="flex items-center justify-between border-t border-guest-border pt-1.5">
+                                    <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Total Bayar</span>
+                                    <span className="font-bebas text-xl font-bold text-store-accent">{formatPrice(finalPrice)}</span>
                                 </div>
                             </>
                         )}
                         {!hasDiscount && (
-                            <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
-                                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Total Bayar</span>
-                                <span className="text-xl font-bold text-store-accent font-bebas">{formatPrice(originalPrice)}</span>
+                            <div className="flex items-center justify-between border-t border-guest-border pt-1.5">
+                                <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Total Bayar</span>
+                                <span className="font-bebas text-xl font-bold text-store-accent">{formatPrice(originalPrice)}</span>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Footer — sticky */}
-                <div className="px-5 sm:px-6 py-4 border-t border-white/5 space-y-3 flex-shrink-0 bg-store-charcoal">
-                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest text-center">
+                {/* Footer — tidak ikut scroll; safe area iOS */}
+                <div className="shrink-0 space-y-3 border-t border-guest-border bg-guest-elevated px-5 py-4 sm:px-6">
+                    <p className="text-center text-xs font-bold uppercase tracking-wide text-guest-subtle">
                         Key akan dikirim ke nomor WhatsApp Anda
                     </p>
                     <div className="grid grid-cols-2 gap-2.5">
                         <button
+                            type="button"
                             onClick={onClose}
                             disabled={processing}
-                            className="py-3.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold text-white/50 uppercase tracking-widest hover:bg-white/10 transition-colors disabled:opacity-40"
+                            className="rounded-xl border border-guest-border bg-guest-surface py-3.5 text-sm font-bold uppercase tracking-wide text-guest-muted transition-colors hover:bg-guest-elevated disabled:opacity-40"
                         >
                             Koreksi
                         </button>
                         <button
+                            type="button"
                             onClick={onConfirm}
                             disabled={processing}
-                            className="py-3.5 rounded-xl bg-store-accent hover:brightness-110 text-store-dark text-[10px] font-bold uppercase tracking-widest shadow-accent-glow transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                            className="flex items-center justify-center gap-2 rounded-xl bg-store-accent py-3.5 text-sm font-bold uppercase tracking-wide text-store-dark shadow-accent-glow transition-all hover:brightness-110 disabled:opacity-40"
                         >
                             {processing ? (
-                                <><span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" /> Memproses...</>
+                                <><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" /> Memproses...</>
                             ) : (
                                 <><AppIcons.listChecks size={13} strokeWidth={3} /> Konfirmasi & Bayar</>
                             )}
@@ -155,27 +272,28 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                 </div>
             </div>
         </div>
-        , document.body
     );
+
+    return createPortal(modal, document.body);
 }
 
 // ── Step header ───────────────────────────────────────────────────────────────
 function StepHeader({ step, icon, title, subtitle, color = 'accent' }) {
     const palette = {
-        accent: 'bg-store-accent/10 border-store-accent/20 text-store-accent',
-        purple: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
-        blue: 'bg-blue-500/10   border-blue-500/20   text-blue-400',
+        accent: 'border-store-accent/25 bg-store-accent/10 text-store-accent',
+        purple: 'border-purple-200 bg-purple-50 text-purple-700',
+        blue: 'border-blue-200 bg-blue-50 text-blue-700',
     };
     const Icon = AppIcons[icon] ?? AppIcons.clipboard;
     return (
-        <div className="flex items-center gap-3 mb-4">
-            <div className={`w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0 ${palette[color]}`}>
+        <div className="mb-4 flex items-center gap-3">
+            <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border ${palette[color]}`}>
                 <Icon size={15} strokeWidth={2.5} />
             </div>
             <div>
-                <span className="text-[7px] font-black text-white/20 uppercase tracking-[0.25em]">Langkah {step}</span>
-                <h3 className="text-base font-bold text-white font-bebas tracking-wide uppercase leading-tight">{title}</h3>
-                {subtitle && <p className="text-white/20 text-[8px] font-bold uppercase tracking-widest">{subtitle}</p>}
+                <span className="text-xs font-black uppercase tracking-[0.25em] text-guest-subtle">Langkah {step}</span>
+                <h3 className="font-bebas text-base font-bold uppercase leading-tight tracking-wide text-guest-text">{title}</h3>
+                {subtitle && <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">{subtitle}</p>}
             </div>
         </div>
     );
@@ -192,13 +310,13 @@ function RelatedProductRow({ product }) {
     return (
         <Link
             href={href}
-            className={`group flex items-center gap-3 p-3 rounded-xl border transition-all duration-150 ${inStock
-                    ? 'border-white/5 hover:border-white/15 hover:bg-white/[0.03]'
-                    : 'border-white/[0.03] opacity-50 pointer-events-none'
+            className={`group flex items-center gap-3 rounded-xl border p-3 transition-all duration-150 ${inStock
+                    ? 'border-guest-border hover:border-guest-subtle hover:bg-guest-elevated'
+                    : 'pointer-events-none border-guest-border/60 opacity-50'
                 }`}
         >
             {/* Thumbnail kecil */}
-            <div className="w-10 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-white/5">
+            <div className="h-12 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-guest-border">
                 <img
                     src={productImageSrc(product) || PLACEHOLDER}
                     alt={product.name}
@@ -208,30 +326,30 @@ function RelatedProductRow({ product }) {
             </div>
 
             {/* Info */}
-            <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold text-white/80 group-hover:text-white truncate transition-colors leading-snug">
+            <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-bold leading-snug text-guest-text transition-colors group-hover:text-store-accent">
                     {product.name}
                 </p>
                 {lowestPrice > 0 ? (
-                    <p className="text-[10px] font-bold text-store-accent font-bebas leading-none mt-0.5">
-                        {hasMultiple && <span className="text-white/20 font-sans text-[7px] normal-case mr-0.5">ab</span>}
+                    <p className="mt-0.5 font-bebas text-sm font-bold leading-none text-store-accent">
+                        {hasMultiple && <span className="mr-0.5 font-sans text-xs font-normal normal-case text-guest-subtle">ab</span>}
                         {formatPrice(lowestPrice)}
                     </p>
                 ) : (
-                    <p className="text-[9px] text-white/20 uppercase tracking-widest font-bold">—</p>
+                    <p className="text-sm font-bold uppercase tracking-wide text-guest-subtle">—</p>
                 )}
             </div>
 
             {/* Stock + arrow */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex flex-shrink-0 items-center gap-2">
                 {inStock ? (
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400/70" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
                 ) : (
-                    <span className="text-[7px] font-bold text-red-400/50 uppercase">Habis</span>
+                    <span className="text-xs font-bold uppercase text-red-500">Habis</span>
                 )}
                 <AppIcons.arrowRight
                     size={11}
-                    className="text-white/15 group-hover:text-store-accent group-hover:translate-x-0.5 transition-all"
+                    className="text-guest-subtle transition-all group-hover:translate-x-0.5 group-hover:text-store-accent"
                 />
             </div>
         </Link>
@@ -242,15 +360,66 @@ function RelatedProductRow({ product }) {
 function InfoPill({ icon, label }) {
     const Icon = AppIcons[icon];
     return (
-        <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 border border-white/8 text-[8px] font-bold text-white/40 uppercase tracking-widest">
-            {Icon && <Icon size={9} />} {label}
+        <span className="flex items-center gap-1 rounded-lg border border-guest-border bg-guest-elevated px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-guest-muted">
+            {Icon && <Icon size={12} strokeWidth={2} />} {label}
         </span>
     );
 }
 
 // ── Main Page ────────────────────────────────────────────────────────────────
-export default function ProductDetail({ product, related = [], paymentChannels = [], checkoutGateway = 'mock', midtransSandboxMode = false }) {
+export default function ProductDetail({
+    product,
+    related = [],
+    paymentChannels = [],
+    checkoutGateway = 'mock',
+    midtransSandboxMode = false,
+    reviewInvoice = null,
+}) {
     const { flash } = usePage().props;
+    const reviews = product.reviews ?? [];
+    const reviewAvg = useMemo(() => {
+        if (!reviews.length) return null;
+        const sum = reviews.reduce((acc, r) => acc + Number(r.rating), 0);
+        return Math.round((sum / reviews.length) * 10) / 10;
+    }, [reviews]);
+
+    const reviewForm = useForm({
+        author_name: '',
+        rating: 5,
+        body: '',
+        invoice_code: reviewInvoice ?? '',
+    });
+
+    const reviewFormAnchorRef = useRef(null);
+    const [showReviewForm, setShowReviewForm] = useState(() => Boolean(reviewInvoice));
+
+    useEffect(() => {
+        if (reviewInvoice) {
+            reviewForm.setData('invoice_code', reviewInvoice);
+            setShowReviewForm(true);
+        }
+        // Sinkronkan query ?invoice=… ke form (bukan dependency reviewForm)
+    }, [reviewInvoice]);
+
+    const openReviewForm = useCallback(() => {
+        setShowReviewForm(true);
+        requestAnimationFrame(() => {
+            reviewFormAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+    }, []);
+
+    const submitReview = (e) => {
+        e.preventDefault();
+        reviewForm.post(route('products.reviews.store', product.slug), {
+            preserveScroll: true,
+            onSuccess: () => {
+                reviewForm.reset();
+                if (reviewInvoice) {
+                    reviewForm.setData('invoice_code', reviewInvoice);
+                }
+            },
+        });
+    };
     const fallbackList = FALLBACK_BY_GATEWAY[checkoutGateway] || FALLBACK_BY_GATEWAY.mock;
     const PAYMENT_METHODS = paymentChannels.length > 0
         ? paymentChannels.map(ch => ({ code: ch.code, label: ch.label, fee: ch.fee ?? 0, fee_pct: ch.fee_pct ?? 0, icon_url: ch.icon_url ?? null }))
@@ -337,7 +506,7 @@ export default function ProductDetail({ product, related = [], paymentChannels =
 
             {flash?.error && (
                 <div className="section-container pt-4">
-                    <div className="p-4 rounded-2xl bg-red-500/15 border border-red-500/25 text-[10px] font-bold text-red-400 uppercase tracking-wide leading-relaxed">
+                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium leading-normal text-red-800">
                         {flash.error}
                     </div>
                 </div>
@@ -355,13 +524,13 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                 paymentMethods={PAYMENT_METHODS}
             />
 
-            <div className="section-container pb-24">
+            <div className="section-container overflow-x-hidden pb-12 sm:pb-16">
                 {midtransSandboxMode && (
-                    <div className="mb-4 p-3 rounded-2xl bg-amber-400/10 border border-amber-400/25">
-                        <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">
+                    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3">
+                        <p className="text-xs font-bold uppercase tracking-wide text-amber-900 sm:text-sm">
                             Mode sandbox Midtrans
                         </p>
-                        <p className="text-[11px] text-white/45 font-medium leading-relaxed mt-1">
+                        <p className="mt-1 text-sm font-medium leading-normal text-guest-muted sm:text-[15px]">
                             Pembayaran uji saja; gunakan kartu dan skenario dari dokumentasi Midtrans sandbox. Bukan uang sungguhan.
                         </p>
                     </div>
@@ -371,48 +540,48 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                 <div className="flex flex-col lg:flex-row gap-4 lg:gap-10 items-start">
 
                     {/* ── Detail Produk: tampil di semua screen ─────────── */}
-                    <div className="w-full lg:w-72 xl:w-80 lg:flex-shrink-0 space-y-3 lg:sticky lg:top-28">
+                    <div className="w-full space-y-3 lg:sticky lg:top-28 lg:w-72 lg:flex-shrink-0 xl:w-80">
 
                         {/* Gambar — landscape di mobile, portrait di desktop */}
-                        <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-store-charcoal-light group">
+                        <div className="group relative overflow-hidden rounded-2xl bg-guest-surface shadow-lg">
                             {/* Mobile: header image landscape + nama overlay */}
                             <div className="lg:hidden">
-                                <div className="relative h-36 sm:h-44 overflow-hidden">
+                                <div className="relative h-36 overflow-hidden sm:h-44">
                                     <img
                                         src={productImageSrc(product) || PLACEHOLDER}
                                         alt={product.name}
-                                        className="w-full h-full object-cover"
+                                        className="h-full w-full object-cover"
                                         onError={(e) => { e.target.src = PLACEHOLDER; }}
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-store-charcoal via-store-charcoal/40 to-transparent" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
                                     {!hasStock && (
-                                        <span className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-red-500/80 text-white text-[8px] font-bold uppercase tracking-widest">Habis</span>
+                                        <span className="absolute left-3 top-3 rounded-lg bg-red-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white">Habis</span>
                                     )}
                                 </div>
                                 {/* Nama + harga di bawah gambar (dalam card) */}
-                                <div className="px-4 pt-3 pb-4">
-                                    <h1 className="text-2xl font-bold text-white font-bebas tracking-wide leading-tight mb-1">
+                                <div className="px-4 pb-4 pt-3">
+                                    <h1 className="mb-1 font-bebas text-2xl font-bold leading-tight tracking-wide text-guest-text">
                                         {product.name}
                                     </h1>
                                     {lowestPrice > 0 && lowestPrice < Infinity && (
-                                        <div className="flex items-baseline gap-2 mb-3">
-                                            <p className="text-[7px] font-bold text-white/20 uppercase tracking-widest">
+                                        <div className="mb-3 flex items-baseline gap-2">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">
                                                 {(product.durations?.length ?? 0) > 1 ? 'Mulai dari' : 'Harga'}
                                             </p>
-                                            <p className="text-xl font-bold text-store-accent font-bebas leading-none">
+                                            <p className="font-bebas text-xl font-bold leading-none text-store-accent">
                                                 {formatPrice(lowestPrice)}
                                             </p>
                                         </div>
                                     )}
-                                    <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="flex flex-wrap items-center gap-2">
                                         {hasStock ? (
-                                            <span className="flex items-center gap-1 text-[8px] font-bold text-green-400 uppercase tracking-widest">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                                            <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                                                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
                                                 {totalStock} Tersedia
                                             </span>
                                         ) : (
-                                            <span className="flex items-center gap-1 text-[8px] font-bold text-red-400 uppercase tracking-widest">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> Habis
+                                            <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-red-600">
+                                                <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Habis
                                             </span>
                                         )}
                                         <InfoPill icon="speed" label="Instan" />
@@ -428,106 +597,124 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                                     <img
                                         src={productImageSrc(product) || PLACEHOLDER}
                                         alt={product.name}
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                                         onError={(e) => { e.target.src = PLACEHOLDER; }}
                                     />
                                 </div>
-                                <div className="absolute inset-0 bg-gradient-to-t from-store-charcoal/80 via-transparent to-transparent" />
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
                                 {!hasStock && (
-                                    <div className="absolute top-3 left-3">
-                                        <span className="px-2.5 py-1 rounded-lg bg-red-500/80 text-white text-[8px] font-bold uppercase tracking-widest">Habis</span>
+                                    <div className="absolute left-3 top-3">
+                                        <span className="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white">Habis</span>
                                     </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Ringkasan rating (semua layar) */}
+                        <div className="flex items-center gap-4 rounded-2xl border border-guest-border bg-guest-elevated px-4 py-3.5 shadow-sm">
+                            <StarsDisplay rating={reviewAvg != null ? Math.round(reviewAvg) : 0} size={18} />
+                            <div className="min-w-0 flex-1">
+                                {reviewAvg != null ? (
+                                    <>
+                                        <div className="flex flex-wrap items-baseline gap-2">
+                                            <span className="font-bebas text-2xl font-bold text-zinc-900">{reviewAvg}</span>
+                                            <span className="text-sm font-semibold text-zinc-700">dari 5</span>
+                                        </div>
+                                        <p className="text-sm font-medium text-zinc-600">Berdasarkan {reviews.length} ulasan pembeli</p>
+                                    </>
+                                ) : (
+                                    <p className="text-sm font-semibold text-zinc-700">Belum ada ulasan — jadilah pembeli pertama yang berbagi pengalaman.</p>
                                 )}
                             </div>
                         </div>
 
                         {/* Deskripsi */}
                         {product.description && (
-                            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                            <div className="rounded-2xl border border-guest-border bg-guest-surface p-4 shadow-soft">
                                 <div
-                                    className="text-white/40 text-xs leading-relaxed"
+                                    className="text-sm leading-normal text-guest-muted sm:text-[15px] [&_a]:text-store-accent [&_strong]:text-guest-text"
                                     dangerouslySetInnerHTML={{ __html: product.description }}
                                 />
                             </div>
                         )}
 
                         {/* Info rows */}
-                        <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden divide-y divide-white/5">
+                        <div className="divide-y divide-guest-border overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
                             {/* Mobile: 2×2 grid untuk 4 baris utama */}
-                            <div className="lg:hidden grid grid-cols-2 divide-x divide-white/5">
-                                <div className="px-3 py-2.5 flex items-center gap-2">
-                                    <AppIcons.boxes size={12} className="text-white/25 flex-shrink-0" />
+                            <div className="grid grid-cols-2 divide-x divide-guest-border lg:hidden">
+                                <div className="flex items-center gap-2 px-3 py-2.5">
+                                    <AppIcons.boxes size={12} className="flex-shrink-0 text-guest-subtle" />
                                     <div>
-                                        <p className="text-[7px] font-bold text-white/20 uppercase tracking-widest">Stok</p>
+                                        <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Stok</p>
                                         {hasStock ? (
-                                            <p className="text-[10px] font-bold text-green-400">{totalStock} Lisensi</p>
+                                            <p className="text-sm font-bold text-green-700">{totalStock} Lisensi</p>
                                         ) : (
-                                            <p className="text-[10px] font-bold text-red-400">Habis</p>
+                                            <p className="text-sm font-bold text-red-600">Habis</p>
                                         )}
                                     </div>
                                 </div>
-                                <div className="px-3 py-2.5 flex items-center gap-2">
-                                    <AppIcons.speed size={12} className="text-white/25 flex-shrink-0" />
+                                <div className="flex items-center gap-2 px-3 py-2.5">
+                                    <AppIcons.speed size={12} className="flex-shrink-0 text-guest-subtle" />
                                     <div>
-                                        <p className="text-[7px] font-bold text-white/20 uppercase tracking-widest">Pengiriman</p>
-                                        <p className="text-[10px] font-bold text-white">Instan</p>
+                                        <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Pengiriman</p>
+                                        <p className="text-sm font-bold text-guest-text">Instan</p>
                                     </div>
                                 </div>
-                                <div className="px-3 py-2.5 flex items-center gap-2 border-t border-white/5">
-                                    <AppIcons.phone size={12} className="text-white/25 flex-shrink-0" />
+                                <div className="flex items-center gap-2 border-t border-guest-border px-3 py-2.5">
+                                    <AppIcons.phone size={12} className="flex-shrink-0 text-guest-subtle" />
                                     <div>
-                                        <p className="text-[7px] font-bold text-white/20 uppercase tracking-widest">Notifikasi</p>
-                                        <p className="text-[10px] font-bold text-white">Via WhatsApp</p>
+                                        <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Notifikasi</p>
+                                        <p className="text-sm font-bold text-guest-text">Via WhatsApp</p>
                                     </div>
                                 </div>
-                                <div className="px-3 py-2.5 flex items-center gap-2 border-t border-white/5">
-                                    <AppIcons.shield size={12} className="text-white/25 flex-shrink-0" />
+                                <div className="flex items-center gap-2 border-t border-guest-border px-3 py-2.5">
+                                    <AppIcons.shield size={12} className="flex-shrink-0 text-guest-subtle" />
                                     <div>
-                                        <p className="text-[7px] font-bold text-white/20 uppercase tracking-widest">Keamanan</p>
-                                        <p className="text-[10px] font-bold text-green-400 flex items-center gap-1">
-                                            <span className="w-1 h-1 rounded-full bg-green-400 animate-pulse" /> Terjamin
+                                        <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Keamanan</p>
+                                        <p className="flex items-center gap-1 text-sm font-bold text-green-700">
+                                            <span className="h-1 w-1 animate-pulse rounded-full bg-green-500" /> Terjamin
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Desktop: list rows */}
-                            <div className="hidden lg:block divide-y divide-white/5">
-                                <div className="px-4 py-3 flex items-center justify-between">
+                            <div className="hidden divide-y divide-guest-border lg:block">
+                                <div className="flex items-center justify-between px-4 py-3">
                                     <div className="flex items-center gap-2">
-                                        <AppIcons.boxes size={13} className="text-white/30" />
-                                        <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Stok</span>
+                                        <AppIcons.boxes size={13} className="text-guest-muted" />
+                                        <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Stok</span>
                                     </div>
                                     {hasStock ? (
                                         <div className="text-right">
-                                            <p className="text-[11px] font-bold text-green-400">{totalStock} Lisensi</p>
-                                            <p className="text-[7px] font-bold text-white/20 uppercase">{activeDurationsCount} paket aktif</p>
+                                            <p className="text-base font-bold text-green-700">{totalStock} Lisensi</p>
+                                            <p className="text-xs font-bold uppercase text-guest-subtle">{activeDurationsCount} paket aktif</p>
                                         </div>
                                     ) : (
-                                        <span className="text-[10px] font-bold text-red-400">Habis</span>
+                                        <span className="text-sm font-bold text-red-600">Habis</span>
                                     )}
                                 </div>
-                                <div className="px-4 py-3 flex items-center justify-between">
+                                <div className="flex items-center justify-between px-4 py-3">
                                     <div className="flex items-center gap-2">
-                                        <AppIcons.speed size={13} className="text-white/30" />
-                                        <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Pengiriman</span>
+                                        <AppIcons.speed size={13} className="text-guest-muted" />
+                                        <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Pengiriman</span>
                                     </div>
-                                    <span className="text-[10px] font-bold text-white">Otomatis Instan</span>
+                                    <span className="text-sm font-bold text-guest-text">Otomatis Instan</span>
                                 </div>
-                                <div className="px-4 py-3 flex items-center justify-between">
+                                <div className="flex items-center justify-between px-4 py-3">
                                     <div className="flex items-center gap-2">
-                                        <AppIcons.phone size={13} className="text-white/30" />
-                                        <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Notifikasi</span>
+                                        <AppIcons.phone size={13} className="text-guest-muted" />
+                                        <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Notifikasi</span>
                                     </div>
-                                    <span className="text-[10px] font-bold text-white">Via WhatsApp</span>
+                                    <span className="text-sm font-bold text-guest-text">Via WhatsApp</span>
                                 </div>
-                                <div className="px-4 py-3 flex items-center justify-between">
+                                <div className="flex items-center justify-between px-4 py-3">
                                     <div className="flex items-center gap-2">
-                                        <AppIcons.shield size={13} className="text-white/30" />
-                                        <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Keamanan</span>
+                                        <AppIcons.shield size={13} className="text-guest-muted" />
+                                        <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Keamanan</span>
                                     </div>
-                                    <span className="text-[10px] font-bold text-green-400 flex items-center gap-1">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Terjamin
+                                    <span className="flex items-center gap-1 text-sm font-bold text-green-700">
+                                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" /> Terjamin
                                     </span>
                                 </div>
                             </div>
@@ -535,20 +722,20 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                             {/* Ketersediaan paket — semua screen */}
                             {product.durations && product.durations.length > 0 && (
                                 <div className="px-4 py-3">
-                                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                    <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-guest-subtle">
                                         <AppIcons.layers size={10} /> Ketersediaan Paket
                                     </p>
-                                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-x-4 gap-y-1.5">
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 lg:grid-cols-1">
                                         {product.durations.map(d => (
                                             <div key={d.id} className="flex items-center justify-between">
-                                                <span className="text-[9px] font-bold text-white/50 truncate max-w-[55%]">{d.name}</span>
+                                                <span className="max-w-[55%] truncate text-sm font-bold text-guest-muted">{d.name}</span>
                                                 {d.available_keys_count > 0 ? (
-                                                    <span className="text-[8px] font-bold text-green-400 flex items-center gap-1">
-                                                        <span className="w-1 h-1 rounded-full bg-green-400" />
+                                                    <span className="flex items-center gap-1 text-xs font-bold text-green-700">
+                                                        <span className="h-1 w-1 rounded-full bg-green-500" />
                                                         {d.available_keys_count} stok
                                                     </span>
                                                 ) : (
-                                                    <span className="text-[8px] font-bold text-red-400/60">Habis</span>
+                                                    <span className="text-xs font-bold text-red-600">Habis</span>
                                                 )}
                                             </div>
                                         ))}
@@ -563,9 +750,9 @@ export default function ProductDetail({ product, related = [], paymentChannels =
 
                         {/* Banner stok habis */}
                         {!hasStock && (
-                            <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20 flex items-center gap-3">
-                                <AppIcons.help size={15} className="text-red-400 flex-shrink-0" />
-                                <p className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest">
+                            <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+                                <AppIcons.help size={15} className="flex-shrink-0 text-red-600" />
+                                <p className="text-sm font-bold uppercase tracking-wide text-red-800">
                                     Stok habis — tidak tersedia saat ini.
                                 </p>
                             </div>
@@ -573,7 +760,7 @@ export default function ProductDetail({ product, related = [], paymentChannels =
 
                         {/* ── STEP 1: Dynamic fields ─── */}
                         {hasFields && (
-                            <div className="p-4 sm:p-6 rounded-2xl bg-store-charcoal-light/30 border border-white/5">
+                            <div className="rounded-2xl border border-guest-border bg-guest-surface p-4 shadow-soft sm:p-6">
                                 <StepHeader step={1} icon="clipboard" title="Data Produk" subtitle="Isi informasi yang dibutuhkan" color="accent" />
                                 <div className="space-y-3">
                                     {product.fields.map((field) => (
@@ -595,9 +782,9 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                         )}
 
                         {/* ── STEP 2: Pilih Paket ─────── */}
-                        <div className="p-4 sm:p-6 rounded-2xl bg-store-charcoal-light/30 border border-white/5">
+                        <div className="rounded-2xl border border-guest-border bg-guest-surface p-4 shadow-soft sm:p-6">
                             <StepHeader step={step2} icon="layers" title="Pilih Paket" subtitle="Pilih durasi dan harga" color="purple" />
-                            <div className="grid grid-cols-3 gap-1.5">
+                            <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3">
                                 {product.durations?.map((duration) => {
                                     const outOfStock = duration.available_keys_count === 0;
                                     const isSelected = selectedDuration?.id === duration.id;
@@ -607,30 +794,30 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                                             type="button"
                                             onClick={() => handleSelectDuration(duration)}
                                             disabled={outOfStock}
-                                            className={`p-2.5 rounded-xl border-2 transition-all duration-200 text-left ${outOfStock
-                                                    ? 'bg-white/[0.02] border-white/5 opacity-40 cursor-not-allowed'
+                                            className={`rounded-xl border-2 p-2.5 text-left transition-all duration-200 ${outOfStock
+                                                    ? 'cursor-not-allowed border-guest-border bg-guest-elevated opacity-50'
                                                     : isSelected
-                                                        ? 'bg-store-accent/10 border-store-accent shadow-accent-glow'
-                                                        : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.98]'
+                                                        ? 'border-store-accent bg-store-accent/10 shadow-accent-glow'
+                                                        : 'border-guest-border bg-guest-elevated hover:border-guest-subtle hover:bg-guest-surface active:scale-[0.98]'
                                                 }`}
                                         >
-                                            <p className={`text-[7px] font-bold uppercase tracking-widest mb-0.5 truncate ${outOfStock ? 'text-white/20' : isSelected ? 'text-store-accent' : 'text-white/20'
+                                            <p className={`mb-0.5 truncate text-xs font-bold uppercase tracking-wide ${outOfStock ? 'text-guest-subtle' : isSelected ? 'text-store-accent' : 'text-guest-subtle'
                                                 }`}>
                                                 {duration.duration_days > 0 ? `${duration.duration_days}H` : 'Lifetime'}
                                             </p>
-                                            <p className={`text-xs font-bold font-bebas uppercase leading-none mb-1 truncate ${outOfStock ? 'text-white/30' : 'text-white'
+                                            <p className={`mb-1 truncate font-bebas text-xs font-bold uppercase leading-none ${outOfStock ? 'text-guest-subtle' : 'text-guest-text'
                                                 }`}>
                                                 {duration.name}
                                             </p>
                                             <div className="flex items-center justify-between gap-1">
-                                                <span className={`text-xs font-bold font-bebas leading-none ${outOfStock ? 'text-white/20' : 'text-store-accent'}`}>
+                                                <span className={`font-bebas text-xs font-bold leading-none ${outOfStock ? 'text-guest-subtle' : 'text-store-accent'}`}>
                                                     {formatPrice(duration.price)}
                                                 </span>
-                                                {isSelected && !outOfStock && <AppIcons.check size={10} strokeWidth={3} className="text-store-accent flex-shrink-0" />}
-                                                {outOfStock && <span className="text-[6px] font-bold text-red-400/60 uppercase">Habis</span>}
+                                                {isSelected && !outOfStock && <AppIcons.check size={10} strokeWidth={3} className="flex-shrink-0 text-store-accent" />}
+                                                {outOfStock && <span className="text-[6px] font-bold uppercase text-red-500">Habis</span>}
                                             </div>
                                             {!outOfStock && duration.available_keys_count > 0 && duration.available_keys_count <= 5 && (
-                                                <p className="text-[6px] font-bold text-yellow-400/60 uppercase mt-0.5">
+                                                <p className="mt-0.5 text-[6px] font-bold uppercase text-amber-700">
                                                     Sisa {duration.available_keys_count}
                                                 </p>
                                             )}
@@ -641,7 +828,7 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                         </div>
 
                         {/* ── STEP 3: Detail Order ─────── */}
-                        <div className="p-4 sm:p-6 rounded-2xl bg-store-charcoal-light/30 border border-white/5 space-y-4">
+                        <div className="space-y-4 rounded-2xl border border-guest-border bg-guest-surface p-4 shadow-soft sm:p-6">
                             <StepHeader step={step3} icon="receipt" title="Detail Order" subtitle="Lengkapi informasi pemesanan" color="blue" />
 
                             {/* WhatsApp */}
@@ -679,8 +866,7 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                                         type="button"
                                         onClick={checkVoucher}
                                         disabled={!data.voucher_code.trim() || !selectedDuration || voucherLoading}
-                                        className="flex-shrink-0 px-4 py-3 rounded-xl border text-[9px] font-bold uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed
-                                            bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white hover:border-white/20"
+                                        className="flex-shrink-0 rounded-xl border border-guest-border bg-guest-elevated px-4 py-3 text-sm font-bold uppercase tracking-wide text-guest-muted transition-all hover:border-store-accent/40 hover:bg-guest-surface hover:text-guest-text disabled:cursor-not-allowed disabled:opacity-30"
                                     >
                                         {voucherLoading ? (
                                             <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
@@ -690,9 +876,9 @@ export default function ProductDetail({ product, related = [], paymentChannels =
 
                                 {/* Feedback voucher */}
                                 {voucherInfo && (
-                                    <div className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border text-[10px] font-bold uppercase tracking-widest ${voucherInfo.valid
-                                            ? 'bg-green-400/5 border-green-400/20 text-green-400'
-                                            : 'bg-red-400/5 border-red-400/20 text-red-400'
+                                    <div className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold uppercase tracking-wide ${voucherInfo.valid
+                                            ? 'border-green-200 bg-green-50 text-green-800'
+                                            : 'border-red-200 bg-red-50 text-red-800'
                                         }`}>
                                         {voucherInfo.valid
                                             ? <AppIcons.check size={13} className="flex-shrink-0 mt-0.5" strokeWidth={3} />
@@ -704,7 +890,7 @@ export default function ProductDetail({ product, related = [], paymentChannels =
 
                                 {/* Hint: pilih paket dulu sebelum cek voucher */}
                                 {!selectedDuration && data.voucher_code.trim() && (
-                                    <p className="text-[9px] font-bold text-yellow-400/50 uppercase tracking-widest flex items-center gap-1 px-1">
+                                    <p className="flex items-center gap-1 px-1 text-sm font-bold uppercase tracking-wide text-amber-700">
                                         <AppIcons.layers size={10} /> Pilih paket dulu untuk mengecek voucher
                                     </p>
                                 )}
@@ -713,10 +899,10 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                             {/* Metode Pembayaran */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 px-1">
-                                    <AppIcons.wallet size={11} className="text-white/30" />
-                                    <span className="text-[9px] font-black text-white/35 uppercase tracking-[0.25em]">Metode Pembayaran</span>
+                                    <AppIcons.wallet size={11} className="text-guest-muted" />
+                                    <span className="text-sm font-black uppercase tracking-[0.25em] text-guest-muted">Metode Pembayaran</span>
                                 </label>
-                                <div className="grid grid-cols-4 gap-1.5">
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                                     {PAYMENT_METHODS.map((method) => {
                                         const isSelected = data.payment_method === method.code;
                                         return (
@@ -724,9 +910,9 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                                                 key={method.code}
                                                 type="button"
                                                 onClick={() => setData('payment_method', method.code)}
-                                                className={`py-2 rounded-xl border transition-all text-[8px] font-bold uppercase tracking-wide active:scale-95 ${isSelected
-                                                        ? 'bg-store-accent/10 border-store-accent text-store-accent'
-                                                        : 'bg-white/[0.03] border-white/5 text-white/35 hover:border-white/20 hover:text-white/70'
+                                                className={`flex min-h-[3.25rem] items-center justify-center rounded-xl border px-1 py-2 text-center text-xs font-semibold uppercase leading-snug tracking-wide transition-all active:scale-[0.98] sm:text-sm ${isSelected
+                                                        ? 'border-store-accent bg-store-accent/10 text-store-accent'
+                                                        : 'border-guest-border bg-guest-elevated text-guest-muted hover:border-guest-subtle hover:text-guest-text'
                                                     }`}
                                             >
                                                 {method.label}
@@ -738,9 +924,9 @@ export default function ProductDetail({ product, related = [], paymentChannels =
 
                             {/* Error global */}
                             {errors.error && (
-                                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2">
-                                    <AppIcons.help size={13} className="text-red-400 flex-shrink-0" />
-                                    <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest">{errors.error}</p>
+                                <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
+                                    <AppIcons.help size={13} className="flex-shrink-0 text-red-600" />
+                                    <p className="text-sm font-bold uppercase tracking-wide text-red-800">{errors.error}</p>
                                 </div>
                             )}
 
@@ -749,32 +935,32 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                                 const hasVoucherDiscount = voucherInfo?.valid && voucherInfo.discount_amount > 0;
                                 const displayPrice = hasVoucherDiscount ? voucherInfo.final_price : selectedDuration.price;
                                 return (
-                                    <div className={`p-3.5 rounded-xl border transition-colors ${hasVoucherDiscount
-                                            ? 'bg-green-400/5 border-green-400/20'
-                                            : 'bg-white/[0.03] border-white/5'
+                                    <div className={`rounded-xl border p-3.5 transition-colors ${hasVoucherDiscount
+                                            ? 'border-green-200 bg-green-50/80'
+                                            : 'border-guest-border bg-guest-elevated'
                                         }`}>
                                         {hasVoucherDiscount && (
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[8px] font-bold text-white/25 uppercase tracking-widest line-through">
+                                            <div className="mb-2 flex items-center justify-between">
+                                                <span className="text-xs font-bold uppercase tracking-wide text-guest-subtle line-through">
                                                     {formatPrice(selectedDuration.price)}
                                                 </span>
-                                                <span className="text-[8px] font-bold text-green-400 uppercase tracking-widest flex items-center gap-1">
+                                                <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-green-800">
                                                     <AppIcons.tag size={9} /> -{formatPrice(voucherInfo.discount_amount)}
                                                 </span>
                                             </div>
                                         )}
                                         <div className="flex items-center justify-between gap-4">
                                             <div>
-                                                <p className="text-[7px] font-bold text-white/20 uppercase tracking-widest mb-0.5">Total Bayar</p>
-                                                <p className="text-2xl font-bold text-store-accent font-bebas leading-none">
+                                                <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-guest-subtle">Total Bayar</p>
+                                                <p className="font-bebas text-2xl font-bold leading-none text-store-accent">
                                                     {formatPrice(displayPrice)}
                                                 </p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-[8px] font-bold text-green-400 uppercase flex items-center justify-end gap-1 mb-0.5">
+                                                <p className="mb-0.5 flex items-center justify-end gap-1 text-xs font-bold uppercase text-green-700">
                                                     <AppIcons.speed size={8} /> Instan
                                                 </p>
-                                                <p className="text-[7px] text-white/20 uppercase">
+                                                <p className="text-xs uppercase text-guest-subtle">
                                                     {PAYMENT_METHODS.find(m => m.code === data.payment_method)?.label}
                                                 </p>
                                             </div>
@@ -785,12 +971,12 @@ export default function ProductDetail({ product, related = [], paymentChannels =
 
                             {/* Hint mengapa disabled */}
                             {!selectedDuration && (
-                                <p className="text-[9px] font-bold text-yellow-400/40 uppercase tracking-widest text-center flex items-center justify-center gap-1.5">
+                                <p className="flex items-center justify-center gap-1.5 text-center text-sm font-bold uppercase tracking-wide text-amber-700">
                                     <AppIcons.layers size={10} /> Pilih paket terlebih dahulu
                                 </p>
                             )}
                             {selectedDuration && !data.whatsapp.trim() && (
-                                <p className="text-[9px] font-bold text-yellow-400/40 uppercase tracking-widest text-center flex items-center justify-center gap-1.5">
+                                <p className="flex items-center justify-center gap-1.5 text-center text-sm font-bold uppercase tracking-wide text-amber-700">
                                     <AppIcons.phone size={10} /> Masukkan nomor WhatsApp
                                 </p>
                             )}
@@ -800,16 +986,146 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                                 type="button"
                                 onClick={handleSubmitClick}
                                 disabled={!canSubmit}
-                                className="w-full bg-store-accent hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-store-dark font-black uppercase tracking-widest py-4 rounded-xl transition-all shadow-accent-glow flex items-center justify-center gap-2.5 text-[11px]"
+                                className="w-full bg-store-accent hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-store-dark font-black uppercase tracking-wide py-4 rounded-xl transition-all shadow-accent-glow flex items-center justify-center gap-2.5 text-base"
                             >
                                 Cek & Konfirmasi Pesanan
                                 <AppIcons.arrowRight size={14} strokeWidth={3} />
                             </button>
 
-                            <p className="text-center text-[7px] text-white/15 uppercase tracking-widest">
+                            <p className="text-center text-xs uppercase tracking-wide text-guest-subtle">
                                 Detail pesanan akan ditampilkan sebelum dikonfirmasi
                             </p>
                         </div>
+                    </div>
+                </div>
+
+                {/* ── Telegram + Ulasan ───────────────────────────────────── */}
+                <div className="mt-8 space-y-5 sm:mt-10">
+                    {product.telegram_group_invite_url?.trim?.() && (
+                        <div className="flex flex-col gap-3 rounded-2xl bg-sky-50 p-5 shadow-md sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#0088cc] text-white shadow-sm">
+                                    <AppIcons.download size={20} strokeWidth={2.5} />
+                                </div>
+                                <div>
+                                    <p className="font-bebas text-lg font-bold uppercase tracking-wide text-guest-text">Grup Telegram</p>
+                                    <p className="text-base text-guest-muted">Gabung komunitas untuk info & bantuan terkait produk ini.</p>
+                                </div>
+                            </div>
+                            <a
+                                href={product.telegram_group_invite_url.trim()}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0088cc] px-5 py-3 text-sm font-black uppercase tracking-wide text-white shadow-md transition-all hover:brightness-110"
+                            >
+                                Buka undangan
+                                <AppIcons.arrowRight size={12} strokeWidth={3} />
+                            </a>
+                        </div>
+                    )}
+
+                    <div className="rounded-2xl border border-guest-border bg-guest-surface p-5 shadow-lg sm:p-8">
+                        <div className="mb-6 border-b border-guest-border pb-6">
+                            <h2 className="font-bebas text-2xl font-bold uppercase tracking-wide text-zinc-900">Ulasan pembeli</h2>
+                            <p className="mt-2 text-sm leading-normal text-zinc-700 sm:text-[15px]">
+                                Di bawah ini tampil <strong className="font-bold text-zinc-900">nama penulis</strong>,{' '}
+                                <strong className="font-bold text-zinc-900">nilai rating</strong>, dan isi ulasan.
+                                Menulis ulasan hanya untuk pembeli dengan pesanan <strong className="font-bold text-zinc-900">berhasil (selesai)</strong> — gunakan link dari halaman status pesanan, atau buka form di bawah jika Anda sudah punya nomor invoice.
+                            </p>
+                        </div>
+
+                        {reviews.length > 0 ? (
+                            <ul className="mb-8 space-y-4">
+                                {reviews.map((r) => (
+                                    <ReviewCard key={r.id} review={r} />
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="mb-8 text-base font-medium text-zinc-700">Belum ada ulasan untuk produk ini.</p>
+                        )}
+
+                        {!showReviewForm && (
+                            <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 p-5 text-center sm:p-6">
+                                <p className="text-sm font-semibold text-zinc-800">Sudah selesai membayar untuk produk ini?</p>
+                                <p className="mt-1 text-sm text-zinc-600">Buka form ulasan di sini atau lewat tombol &quot;Beri ulasan&quot; di halaman status pesanan (lebih praktis).</p>
+                                <button
+                                    type="button"
+                                    onClick={openReviewForm}
+                                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-5 py-3 text-sm font-black uppercase tracking-wide text-white shadow-md transition-all hover:bg-zinc-800"
+                                >
+                                    <AppIcons.star size={16} strokeWidth={2} className="text-amber-300" />
+                                    Tulis ulasan (pembeli)
+                                </button>
+                            </div>
+                        )}
+
+                        {showReviewForm && (
+                            <div ref={reviewFormAnchorRef} className="scroll-mt-24">
+                                <form onSubmit={submitReview} className="space-y-5 rounded-2xl border border-guest-border bg-white p-4 shadow-sm sm:p-6">
+                                    <div className="flex flex-col gap-2 border-b border-guest-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <p className="text-xs font-black uppercase tracking-wide text-zinc-900">Form ulasan pembeli</p>
+                                        {!reviewInvoice && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowReviewForm(false)}
+                                                className="text-left text-xs font-bold uppercase tracking-wide text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline"
+                                            >
+                                                Tutup form
+                                            </button>
+                                        )}
+                                    </div>
+                                    <GuestInput
+                                        label="Nomor invoice"
+                                        icon="receipt"
+                                        type="text"
+                                        value={reviewForm.data.invoice_code}
+                                        onChange={(e) => reviewForm.setData('invoice_code', e.target.value.toUpperCase())}
+                                        error={reviewForm.errors.invoice_code}
+                                        placeholder="Contoh: INV-XXXXXXXXXXXX"
+                                        required
+                                    />
+                                    <GuestInput
+                                        label="Nama tampilan"
+                                        icon="profile"
+                                        type="text"
+                                        value={reviewForm.data.author_name}
+                                        onChange={(e) => reviewForm.setData('author_name', e.target.value)}
+                                        error={reviewForm.errors.author_name}
+                                        placeholder="Nama yang tampil di ulasan"
+                                        required
+                                    />
+                                    <div className="space-y-2">
+                                        <span className="ml-2 text-xs font-black uppercase tracking-wide text-zinc-800">Rating</span>
+                                        <RatingPicker
+                                            value={reviewForm.data.rating}
+                                            onChange={(n) => reviewForm.setData('rating', n)}
+                                            disabled={reviewForm.processing}
+                                        />
+                                        {reviewForm.errors.rating && (
+                                            <p className="ml-2 text-sm font-medium text-red-600">{reviewForm.errors.rating}</p>
+                                        )}
+                                    </div>
+                                    <GuestInput
+                                        label="Ulasan"
+                                        icon="pencil"
+                                        type="textarea"
+                                        rows={4}
+                                        value={reviewForm.data.body}
+                                        onChange={(e) => reviewForm.setData('body', e.target.value)}
+                                        error={reviewForm.errors.body}
+                                        placeholder="Ceritakan pengalaman Anda (minimal 10 karakter)."
+                                        required
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={reviewForm.processing}
+                                        className="w-full rounded-xl bg-store-accent py-4 text-sm font-bold uppercase tracking-wide text-store-dark shadow-accent-glow transition-all hover:brightness-110 disabled:opacity-40"
+                                    >
+                                        {reviewForm.processing ? 'Mengirim…' : 'Kirim ulasan'}
+                                    </button>
+                                </form>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -817,21 +1133,21 @@ export default function ProductDetail({ product, related = [], paymentChannels =
                 {related.length > 0 && (
                     <div className="mt-10">
                         {/* Header */}
-                        <div className="flex items-center justify-between mb-2 px-1">
-                            <p className="text-[9px] font-black text-white/25 uppercase tracking-[0.25em] flex items-center gap-2">
-                                <AppIcons.layers size={11} className="text-white/20" />
+                        <div className="mb-2 flex items-center justify-between px-1">
+                            <p className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.25em] text-guest-muted">
+                                <AppIcons.layers size={11} className="text-guest-subtle" />
                                 Produk Lainnya
                             </p>
                             <Link
                                 href={route('catalog')}
-                                className="text-[8px] font-bold text-white/20 uppercase tracking-widest hover:text-store-accent transition-colors flex items-center gap-1"
+                                className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-guest-muted transition-colors hover:text-store-accent"
                             >
                                 Lihat Semua <AppIcons.arrowRight size={9} />
                             </Link>
                         </div>
 
                         {/* List */}
-                        <div className="rounded-2xl border border-white/5 overflow-hidden divide-y divide-white/[0.04]">
+                        <div className="divide-y divide-guest-border overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
                             {related.map((rp) => (
                                 <RelatedProductRow key={rp.id} product={rp} />
                             ))}

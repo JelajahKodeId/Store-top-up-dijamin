@@ -36,6 +36,14 @@ export default {
                 'admin-accent':        '#FACC15',
                 'admin-surface':       '#FFFFFF',
                 'admin-bg':            '#FAFAFA',
+                // ── Guest / publik (putih & abu) ───────────────────────────
+                'guest-bg':       '#F4F4F5',
+                'guest-surface':  '#FFFFFF',
+                'guest-elevated': '#FAFAFA',
+                'guest-border':   '#E4E4E7',
+                'guest-text':     '#18181B',
+                'guest-muted':    '#71717A',
+                'guest-subtle':   '#A1A1AA',
             },
             fontFamily: {
                 sans:  ['Outfit', ...defaultTheme.fontFamily.sans],
