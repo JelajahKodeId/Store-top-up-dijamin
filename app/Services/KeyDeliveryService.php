@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\OrderStatus;
 use App\Exceptions\InsufficientKeyStockException;
 use App\Models\Order;
-use App\Services\WhatsAppService;
 use App\Models\OrderKey;
 use App\Models\ProductKey;
 use Illuminate\Support\Facades\DB;
@@ -26,11 +25,13 @@ class KeyDeliveryService
     {
         if ($order->status !== OrderStatus::PAID) {
             Log::warning("KeyDelivery: Order #{$order->invoice_code} tidak dalam status PAID, dilewati.");
+
             return;
         }
 
         if ($order->is_sent) {
             Log::info("KeyDelivery: Order #{$order->invoice_code} sudah pernah dikirim, dilewati (idempotency guard).");
+
             return;
         }
 
@@ -44,7 +45,7 @@ class KeyDeliveryService
                 }
 
                 $order->update([
-                    'status'  => OrderStatus::SUCCESS,
+                    'status' => OrderStatus::SUCCESS,
                     'is_sent' => true,
                 ]);
             });
@@ -64,7 +65,7 @@ class KeyDeliveryService
             // Tandai order sebagai failed dan notify admin
             $order->update([
                 'status' => OrderStatus::FAILED,
-                'note'   => $e->getMessage(),
+                'note' => $e->getMessage(),
             ]);
 
             Log::error("KeyDelivery: Stok habis — {$e->getMessage()}");
@@ -103,15 +104,16 @@ class KeyDeliveryService
             }
 
             OrderKey::create([
-                'order_item_id'  => $item->id,
+                'order_item_id' => $item->id,
                 'product_key_id' => $key->id,
-                'key_code'       => $key->key_code,
-                'expired_at'     => $expiredAt,
-                'delivered_at'   => now(),
+                'key_code' => $key->key_code,
+                'expired_at' => $expiredAt,
+                'delivered_at' => now(),
             ]);
 
+            // Kurangi stok: key keluar dari pool `available` (tampil sebagai stok di katalog).
             $key->update([
-                'status'     => 'sold',
+                'status' => 'sold',
                 'expires_at' => $expiredAt,
             ]);
         }

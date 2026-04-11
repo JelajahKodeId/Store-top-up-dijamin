@@ -83,6 +83,11 @@ class Product extends Model
         return $this->hasMany(ProductReview::class);
     }
 
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'active');

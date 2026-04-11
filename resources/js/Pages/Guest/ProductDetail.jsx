@@ -4,7 +4,7 @@ import { AppIcons } from '@/Components/shared/AppIcon';
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import GuestInput from '@/Components/guest/GuestInput';
-import { formatPrice, productImageSrc } from '@/utils/guest';
+import { formatPrice, formatSoldCount, productImageSrc } from '@/utils/guest';
 
 function fieldIcon(field) {
     const n = (field.name || field.label || '').toLowerCase();
@@ -306,50 +306,51 @@ function RelatedProductRow({ product }) {
     const hasMultiple = (product.durations?.length ?? 0) > 1;
     const inStock = (product.total_available_count ?? 0) > 0 || product.durations?.some(d => (d.available_keys_count ?? 0) > 0);
     const href = route('products.show.public', product.slug);
+    const soldLabel = formatSoldCount(product.sold_count);
 
     return (
         <Link
             href={href}
-            className={`group flex items-center gap-3 rounded-xl border p-3 transition-all duration-150 ${inStock
-                    ? 'border-guest-border hover:border-guest-subtle hover:bg-guest-elevated'
-                    : 'pointer-events-none border-guest-border/60 opacity-50'
-                }`}
+            className={`group flex w-full items-center gap-3 px-4 py-3 transition-colors ${inStock
+                ? 'hover:bg-guest-elevated'
+                : 'pointer-events-none opacity-50'
+            }`}
         >
-            {/* Thumbnail kecil */}
-            <div className="h-12 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-guest-border">
+            <div className="h-11 w-9 flex-shrink-0 overflow-hidden rounded-lg border border-guest-border bg-guest-elevated">
                 <img
                     src={productImageSrc(product) || PLACEHOLDER}
                     alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => { e.target.src = PLACEHOLDER; }}
                 />
             </div>
 
-            {/* Info */}
-            <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-bold leading-snug text-guest-text transition-colors group-hover:text-store-accent">
+            <div className="min-w-0 flex-1 text-left">
+                <p className="truncate text-sm font-bold leading-snug text-guest-text transition-colors group-hover:text-store-accent sm:text-base">
                     {product.name}
                 </p>
-                {lowestPrice > 0 ? (
-                    <p className="mt-0.5 font-bebas text-sm font-bold leading-none text-store-accent">
-                        {hasMultiple && <span className="mr-0.5 font-sans text-xs font-normal normal-case text-guest-subtle">ab</span>}
-                        {formatPrice(lowestPrice)}
-                    </p>
-                ) : (
-                    <p className="text-sm font-bold uppercase tracking-wide text-guest-subtle">—</p>
-                )}
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    {lowestPrice > 0 ? (
+                        <p className="font-bebas text-sm font-bold leading-none text-store-accent">
+                            {hasMultiple && <span className="mr-0.5 font-sans text-[10px] font-semibold normal-case text-guest-subtle">dari </span>}
+                            {formatPrice(lowestPrice)}
+                        </p>
+                    ) : (
+                        <span className="text-xs font-bold uppercase tracking-wide text-guest-subtle">—</span>
+                    )}
+                    <span className="text-[11px] font-semibold text-guest-subtle">{soldLabel} terjual</span>
+                </div>
             </div>
 
-            {/* Stock + arrow */}
             <div className="flex flex-shrink-0 items-center gap-2">
                 {inStock ? (
-                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" title="Tersedia" />
                 ) : (
-                    <span className="text-xs font-bold uppercase text-red-500">Habis</span>
+                    <span className="text-[10px] font-bold uppercase text-red-500">Habis</span>
                 )}
                 <AppIcons.arrowRight
                     size={11}
-                    className="text-guest-subtle transition-all group-hover:translate-x-0.5 group-hover:text-store-accent"
+                    className="text-guest-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-store-accent"
                 />
             </div>
         </Link>
@@ -375,13 +376,25 @@ export default function ProductDetail({
     midtransSandboxMode = false,
     reviewInvoice = null,
 }) {
-    const { flash } = usePage().props;
+    const { flash, site } = usePage().props;
     const reviews = product.reviews ?? [];
     const reviewAvg = useMemo(() => {
         if (!reviews.length) return null;
         const sum = reviews.reduce((acc, r) => acc + Number(r.rating), 0);
         return Math.round((sum / reviews.length) * 10) / 10;
     }, [reviews]);
+
+    const csWaHref = useMemo(() => {
+        if (!site?.whatsapp) {
+            return null;
+        }
+        const digits = String(site.whatsapp).replace(/\D/g, '');
+        if (!digits) {
+            return null;
+        }
+        const text = `Halo, saya ingin bertanya tentang produk "${product.name}".`;
+        return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+    }, [site?.whatsapp, product.name]);
 
     const reviewForm = useForm({
         author_name: '',
@@ -403,10 +416,17 @@ export default function ProductDetail({
 
     const openReviewForm = useCallback(() => {
         setShowReviewForm(true);
-        requestAnimationFrame(() => {
-            reviewFormAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        });
     }, []);
+
+    useEffect(() => {
+        if (!showReviewForm) {
+            return undefined;
+        }
+        const t = window.setTimeout(() => {
+            reviewFormAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+        return () => window.clearTimeout(t);
+    }, [showReviewForm]);
 
     const submitReview = (e) => {
         e.preventDefault();
@@ -499,6 +519,156 @@ export default function ProductDetail({
     const totalStock = product.durations?.reduce((sum, d) => sum + (d.available_keys_count ?? 0), 0) ?? 0;
     const activeDurationsCount = product.durations?.filter(d => (d.available_keys_count ?? 0) > 0).length ?? 0;
     const lowestPrice = Math.min(...(product.durations?.map(d => Number(d.price)).filter(p => p > 0) ?? [0]));
+    const soldDisplay = formatSoldCount(product.sold_count);
+
+    const relatedBlock = related.length > 0 ? (
+        <section aria-labelledby="related-products-title" className="overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-guest-border bg-guest-elevated px-4 py-3 sm:px-5">
+                <h2 id="related-products-title" className="flex items-center gap-2 font-bebas text-lg font-bold uppercase tracking-wide text-guest-text">
+                    <AppIcons.layers size={14} className="text-guest-subtle" />
+                    Produk lainnya
+                </h2>
+                <Link
+                    href={route('catalog')}
+                    className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-guest-muted transition-colors hover:text-store-accent sm:text-xs"
+                >
+                    Lihat semua <AppIcons.arrowRight size={9} />
+                </Link>
+            </div>
+            <div className="divide-y divide-guest-border">
+                {related.map((rp) => (
+                    <RelatedProductRow key={rp.id} product={rp} />
+                ))}
+            </div>
+        </section>
+    ) : null;
+
+    const reviewsBlock = (
+        <section id="ulasan-pembeli" className="scroll-mt-28 overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
+            <div className="border-b border-guest-border bg-guest-elevated px-4 py-2.5 sm:px-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="flex items-center gap-2 font-bebas text-base font-bold uppercase tracking-wide text-guest-text sm:text-lg">
+                        <AppIcons.star size={14} strokeWidth={2} className="text-amber-500" />
+                        Ulasan pembeli
+                    </h2>
+                    {reviews.length > 0 ? (
+                        <span className="text-xs font-bold uppercase tracking-wide text-guest-muted">
+                            {reviews.length} ulasan
+                        </span>
+                    ) : (
+                        <span className="text-xs font-semibold text-guest-muted">Belum ada</span>
+                    )}
+                </div>
+            </div>
+            <div className="p-4 sm:p-5">
+                <p className="mb-4 text-sm leading-normal text-zinc-600 sm:text-[15px]">
+                    Nama penulis, nilai bintang, dan teks ulasan ditampilkan di bawah. Menulis ulasan hanya untuk pesanan{' '}
+                    <strong className="font-bold text-zinc-900">berhasil (selesai)</strong>
+                    — dari halaman status pesanan atau form di bawah.
+                </p>
+
+                {reviews.length > 0 ? (
+                    <ul className="mb-6 space-y-3 sm:space-y-4">
+                        {reviews.map((r) => (
+                            <ReviewCard key={r.id} review={r} />
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="mb-6 text-sm font-medium text-zinc-700">Belum ada ulasan untuk produk ini.</p>
+                )}
+
+                {!showReviewForm && (
+                    <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/90 p-4 text-center sm:p-5">
+                        <p className="text-sm font-semibold text-zinc-800">Sudah membayar untuk produk ini?</p>
+                        <p className="mt-1 text-xs leading-normal text-zinc-600 sm:text-sm">Gunakan tombol di halaman status pesanan atau buka form di bawah halaman.</p>
+                        <button
+                            type="button"
+                            onClick={openReviewForm}
+                            className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white shadow-sm transition-all hover:bg-zinc-800 sm:mt-4 sm:px-5 sm:py-3 sm:text-sm"
+                        >
+                            <AppIcons.star size={15} strokeWidth={2} className="text-amber-300" />
+                            Tulis ulasan (pembeli)
+                        </button>
+                    </div>
+                )}
+                {showReviewForm && (
+                    <p className="text-center text-xs font-medium text-zinc-600 sm:text-sm">
+                        Form ulasan ada di bagian bawah halaman.
+                        {!reviewInvoice && (
+                            <button
+                                type="button"
+                                onClick={() => setShowReviewForm(false)}
+                                className="ml-2 font-bold text-store-accent-dark underline-offset-2 hover:underline"
+                            >
+                                Tutup
+                            </button>
+                        )}
+                    </p>
+                )}
+            </div>
+        </section>
+    );
+
+    const reviewFormSection = showReviewForm ? (
+        <div ref={reviewFormAnchorRef} id="form-ulasan-pembeli" className="scroll-mt-28">
+            <div className="overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
+                <div className="border-b border-guest-border bg-guest-elevated px-4 py-3 sm:px-5">
+                    <p className="text-xs font-black uppercase tracking-wide text-zinc-900">Form ulasan pembeli</p>
+                </div>
+                <form onSubmit={submitReview} className="space-y-4 p-4 sm:space-y-5 sm:p-5">
+                    <GuestInput
+                        label="Nomor invoice"
+                        icon="receipt"
+                        type="text"
+                        value={reviewForm.data.invoice_code}
+                        onChange={(e) => reviewForm.setData('invoice_code', e.target.value.toUpperCase())}
+                        error={reviewForm.errors.invoice_code}
+                        placeholder="Contoh: INV-XXXXXXXXXXXX"
+                        required
+                    />
+                    <GuestInput
+                        label="Nama tampilan"
+                        icon="profile"
+                        type="text"
+                        value={reviewForm.data.author_name}
+                        onChange={(e) => reviewForm.setData('author_name', e.target.value)}
+                        error={reviewForm.errors.author_name}
+                        placeholder="Nama yang tampil di ulasan"
+                        required
+                    />
+                    <div className="space-y-2">
+                        <span className="ml-1 text-xs font-black uppercase tracking-wide text-zinc-800">Rating</span>
+                        <RatingPicker
+                            value={reviewForm.data.rating}
+                            onChange={(n) => reviewForm.setData('rating', n)}
+                            disabled={reviewForm.processing}
+                        />
+                        {reviewForm.errors.rating && (
+                            <p className="ml-1 text-sm font-medium text-red-600">{reviewForm.errors.rating}</p>
+                        )}
+                    </div>
+                    <GuestInput
+                        label="Ulasan"
+                        icon="pencil"
+                        type="textarea"
+                        rows={4}
+                        value={reviewForm.data.body}
+                        onChange={(e) => reviewForm.setData('body', e.target.value)}
+                        error={reviewForm.errors.body}
+                        placeholder="Ceritakan pengalaman Anda (minimal 10 karakter)."
+                        required
+                    />
+                    <button
+                        type="submit"
+                        disabled={reviewForm.processing}
+                        className="w-full rounded-xl bg-store-accent py-3.5 text-sm font-bold uppercase tracking-wide text-store-dark shadow-accent-glow transition-all hover:brightness-110 disabled:opacity-40 sm:py-4"
+                    >
+                        {reviewForm.processing ? 'Mengirim…' : 'Kirim ulasan'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    ) : null;
 
     return (
         <GuestLayout title={product.name}>
@@ -537,10 +707,10 @@ export default function ProductDetail({
                 )}
 
                 {/* ═══ MAIN LAYOUT ══════════════════════════════════════════ */}
-                <div className="flex flex-col lg:flex-row gap-4 lg:gap-10 items-start">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-10">
 
-                    {/* ── Detail Produk: tampil di semua screen ─────────── */}
-                    <div className="w-full space-y-3 lg:sticky lg:top-28 lg:w-72 lg:flex-shrink-0 xl:w-80">
+                    {/* ── Detail Produk: kiri desktop; atas mobile ──────── */}
+                    <div className="w-full space-y-3 lg:w-72 lg:flex-shrink-0 xl:w-80">
 
                         {/* Gambar — landscape di mobile, portrait di desktop */}
                         <div className="group relative overflow-hidden rounded-2xl bg-guest-surface shadow-lg">
@@ -584,6 +754,7 @@ export default function ProductDetail({
                                                 <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Habis
                                             </span>
                                         )}
+                                        <InfoPill icon="orders" label={`${soldDisplay} terjual`} />
                                         <InfoPill icon="speed" label="Instan" />
                                         <InfoPill icon="phone" label="Via WA" />
                                         <InfoPill icon="shield" label="Aman" />
@@ -610,24 +781,6 @@ export default function ProductDetail({
                             </div>
                         </div>
 
-                        {/* Ringkasan rating (semua layar) */}
-                        <div className="flex items-center gap-4 rounded-2xl border border-guest-border bg-guest-elevated px-4 py-3.5 shadow-sm">
-                            <StarsDisplay rating={reviewAvg != null ? Math.round(reviewAvg) : 0} size={18} />
-                            <div className="min-w-0 flex-1">
-                                {reviewAvg != null ? (
-                                    <>
-                                        <div className="flex flex-wrap items-baseline gap-2">
-                                            <span className="font-bebas text-2xl font-bold text-zinc-900">{reviewAvg}</span>
-                                            <span className="text-sm font-semibold text-zinc-700">dari 5</span>
-                                        </div>
-                                        <p className="text-sm font-medium text-zinc-600">Berdasarkan {reviews.length} ulasan pembeli</p>
-                                    </>
-                                ) : (
-                                    <p className="text-sm font-semibold text-zinc-700">Belum ada ulasan — jadilah pembeli pertama yang berbagi pengalaman.</p>
-                                )}
-                            </div>
-                        </div>
-
                         {/* Deskripsi */}
                         {product.description && (
                             <div className="rounded-2xl border border-guest-border bg-guest-surface p-4 shadow-soft">
@@ -637,6 +790,64 @@ export default function ProductDetail({
                                 />
                             </div>
                         )}
+
+                        {/* Ringkasan rating & WA — card kecil di bawah deskripsi */}
+                        <div
+                            className={`grid gap-2 ${csWaHref ? 'grid-cols-2' : 'grid-cols-1'}`}
+                            aria-label="Ringkasan ulasan dan kontak"
+                        >
+                            <a
+                                href="#ulasan-pembeli"
+                                className="group flex min-h-[5rem] flex-col justify-center rounded-xl border border-guest-border bg-guest-elevated px-2.5 py-2 shadow-sm transition-colors hover:border-amber-400/60 hover:bg-guest-surface sm:min-h-0 sm:px-3 sm:py-2.5"
+                            >
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <StarsDisplay rating={reviewAvg != null ? Math.round(reviewAvg) : 0} size={12} />
+                                    {reviewAvg != null ? (
+                                        <>
+                                            <span className="font-bebas text-base font-bold leading-none text-guest-text sm:text-lg">
+                                                {reviewAvg}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-guest-muted">/5</span>
+                                        </>
+                                    ) : (
+                                        <span className="text-[11px] font-bold text-guest-muted">Belum dinilai</span>
+                                    )}
+                                </div>
+                                <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-guest-subtle">
+                                    {reviews.length > 0 ? `${reviews.length} ulasan pembeli` : 'Belum ada ulasan'}
+                                </p>
+                                <p className="mt-0.5 flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-store-accent sm:text-[10px]">
+                                    Lihat ulasan
+                                    <AppIcons.arrowRight size={8} strokeWidth={3} className="transition-transform group-hover:translate-x-0.5" />
+                                </p>
+                            </a>
+                            {csWaHref && (
+                                <a
+                                    href={csWaHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex min-h-[5rem] flex-col justify-center rounded-xl border border-emerald-200/90 bg-emerald-50/90 px-2.5 py-2 shadow-sm transition-colors hover:border-emerald-400 hover:bg-emerald-50 sm:min-h-0 sm:px-3 sm:py-2.5"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#25D366] text-white shadow-sm sm:h-8 sm:w-8">
+                                            <AppIcons.phone size={12} strokeWidth={2.5} className="sm:hidden" />
+                                            <AppIcons.phone size={14} strokeWidth={2.5} className="hidden sm:block" />
+                                        </span>
+                                        <div className="min-w-0">
+                                            <p className="text-[9px] font-black uppercase tracking-wide text-emerald-900 sm:text-[10px]">
+                                                WhatsApp
+                                            </p>
+                                            <p className="truncate text-[11px] font-bold leading-tight text-guest-text sm:text-xs">
+                                                Tanya CS
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <p className="mt-1 text-[9px] font-semibold leading-snug text-emerald-900/85 sm:text-[10px]">
+                                        Chat produk ini
+                                    </p>
+                                </a>
+                            )}
+                        </div>
 
                         {/* Info rows */}
                         <div className="divide-y divide-guest-border overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
@@ -676,6 +887,13 @@ export default function ProductDetail({
                                         </p>
                                     </div>
                                 </div>
+                                <div className="col-span-2 flex items-center gap-2 border-t border-guest-border px-3 py-2.5 lg:hidden">
+                                    <AppIcons.orders size={12} className="flex-shrink-0 text-guest-subtle" />
+                                    <div>
+                                        <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Terjual</p>
+                                        <p className="text-sm font-bold text-guest-text">{soldDisplay} unit selesai</p>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Desktop: list rows */}
@@ -693,6 +911,13 @@ export default function ProductDetail({
                                     ) : (
                                         <span className="text-sm font-bold text-red-600">Habis</span>
                                     )}
+                                </div>
+                                <div className="flex items-center justify-between px-4 py-3">
+                                    <div className="flex items-center gap-2">
+                                        <AppIcons.orders size={13} className="text-guest-muted" />
+                                        <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Terjual</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-guest-text">{soldDisplay} unit selesai</span>
                                 </div>
                                 <div className="flex items-center justify-between px-4 py-3">
                                     <div className="flex items-center gap-2">
@@ -745,8 +970,8 @@ export default function ProductDetail({
                         </div>
                     </div>
 
-                    {/* ── KANAN: Form Order ─────────────────────────────── */}
-                    <div className="flex-1 min-w-0 space-y-3">
+                    {/* ── KANAN: Form Order (sticky di desktop) ─────────── */}
+                    <div className="min-w-0 flex-1 space-y-3 lg:sticky lg:top-28 lg:self-start">
 
                         {/* Banner stok habis */}
                         {!hasStock && (
@@ -999,161 +1224,39 @@ export default function ProductDetail({
                     </div>
                 </div>
 
-                {/* ── Telegram + Ulasan ───────────────────────────────────── */}
-                <div className="mt-8 space-y-5 sm:mt-10">
+                {/* Satu blok: Telegram → produk lain → ulasan → form (tanpa duplikasi) */}
+                <div className="mt-6 space-y-4 sm:mt-8 sm:space-y-5">
                     {product.telegram_group_invite_url?.trim?.() && (
-                        <div className="flex flex-col gap-3 rounded-2xl bg-sky-50 p-5 shadow-md sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-start gap-3">
-                                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#0088cc] text-white shadow-sm">
-                                    <AppIcons.download size={20} strokeWidth={2.5} />
+                        <div className="overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
+                            <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5">
+                                <div className="flex min-w-0 flex-1 items-start gap-3">
+                                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#0088cc] text-white shadow-sm">
+                                        <AppIcons.download size={18} strokeWidth={2.5} />
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="font-bebas text-lg font-bold uppercase tracking-wide text-guest-text">Grup Telegram</p>
+                                        <p className="mt-0.5 text-sm leading-normal text-guest-muted">
+                                            Gabung komunitas untuk info & bantuan produk ini.
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="font-bebas text-lg font-bold uppercase tracking-wide text-guest-text">Grup Telegram</p>
-                                    <p className="text-base text-guest-muted">Gabung komunitas untuk info & bantuan terkait produk ini.</p>
-                                </div>
+                                <a
+                                    href={product.telegram_group_invite_url.trim()}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex w-full flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0088cc] px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white shadow-sm transition-all hover:brightness-110 sm:w-auto sm:px-5 sm:py-3"
+                                >
+                                    Buka undangan
+                                    <AppIcons.arrowRight size={12} strokeWidth={3} />
+                                </a>
                             </div>
-                            <a
-                                href={product.telegram_group_invite_url.trim()}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0088cc] px-5 py-3 text-sm font-black uppercase tracking-wide text-white shadow-md transition-all hover:brightness-110"
-                            >
-                                Buka undangan
-                                <AppIcons.arrowRight size={12} strokeWidth={3} />
-                            </a>
                         </div>
                     )}
 
-                    <div className="rounded-2xl border border-guest-border bg-guest-surface p-5 shadow-lg sm:p-8">
-                        <div className="mb-6 border-b border-guest-border pb-6">
-                            <h2 className="font-bebas text-2xl font-bold uppercase tracking-wide text-zinc-900">Ulasan pembeli</h2>
-                            <p className="mt-2 text-sm leading-normal text-zinc-700 sm:text-[15px]">
-                                Di bawah ini tampil <strong className="font-bold text-zinc-900">nama penulis</strong>,{' '}
-                                <strong className="font-bold text-zinc-900">nilai rating</strong>, dan isi ulasan.
-                                Menulis ulasan hanya untuk pembeli dengan pesanan <strong className="font-bold text-zinc-900">berhasil (selesai)</strong> — gunakan link dari halaman status pesanan, atau buka form di bawah jika Anda sudah punya nomor invoice.
-                            </p>
-                        </div>
-
-                        {reviews.length > 0 ? (
-                            <ul className="mb-8 space-y-4">
-                                {reviews.map((r) => (
-                                    <ReviewCard key={r.id} review={r} />
-                                ))}
-                            </ul>
-                        ) : (
-                            <p className="mb-8 text-base font-medium text-zinc-700">Belum ada ulasan untuk produk ini.</p>
-                        )}
-
-                        {!showReviewForm && (
-                            <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 p-5 text-center sm:p-6">
-                                <p className="text-sm font-semibold text-zinc-800">Sudah selesai membayar untuk produk ini?</p>
-                                <p className="mt-1 text-sm text-zinc-600">Buka form ulasan di sini atau lewat tombol &quot;Beri ulasan&quot; di halaman status pesanan (lebih praktis).</p>
-                                <button
-                                    type="button"
-                                    onClick={openReviewForm}
-                                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-5 py-3 text-sm font-black uppercase tracking-wide text-white shadow-md transition-all hover:bg-zinc-800"
-                                >
-                                    <AppIcons.star size={16} strokeWidth={2} className="text-amber-300" />
-                                    Tulis ulasan (pembeli)
-                                </button>
-                            </div>
-                        )}
-
-                        {showReviewForm && (
-                            <div ref={reviewFormAnchorRef} className="scroll-mt-24">
-                                <form onSubmit={submitReview} className="space-y-5 rounded-2xl border border-guest-border bg-white p-4 shadow-sm sm:p-6">
-                                    <div className="flex flex-col gap-2 border-b border-guest-border pb-4 sm:flex-row sm:items-center sm:justify-between">
-                                        <p className="text-xs font-black uppercase tracking-wide text-zinc-900">Form ulasan pembeli</p>
-                                        {!reviewInvoice && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowReviewForm(false)}
-                                                className="text-left text-xs font-bold uppercase tracking-wide text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline"
-                                            >
-                                                Tutup form
-                                            </button>
-                                        )}
-                                    </div>
-                                    <GuestInput
-                                        label="Nomor invoice"
-                                        icon="receipt"
-                                        type="text"
-                                        value={reviewForm.data.invoice_code}
-                                        onChange={(e) => reviewForm.setData('invoice_code', e.target.value.toUpperCase())}
-                                        error={reviewForm.errors.invoice_code}
-                                        placeholder="Contoh: INV-XXXXXXXXXXXX"
-                                        required
-                                    />
-                                    <GuestInput
-                                        label="Nama tampilan"
-                                        icon="profile"
-                                        type="text"
-                                        value={reviewForm.data.author_name}
-                                        onChange={(e) => reviewForm.setData('author_name', e.target.value)}
-                                        error={reviewForm.errors.author_name}
-                                        placeholder="Nama yang tampil di ulasan"
-                                        required
-                                    />
-                                    <div className="space-y-2">
-                                        <span className="ml-2 text-xs font-black uppercase tracking-wide text-zinc-800">Rating</span>
-                                        <RatingPicker
-                                            value={reviewForm.data.rating}
-                                            onChange={(n) => reviewForm.setData('rating', n)}
-                                            disabled={reviewForm.processing}
-                                        />
-                                        {reviewForm.errors.rating && (
-                                            <p className="ml-2 text-sm font-medium text-red-600">{reviewForm.errors.rating}</p>
-                                        )}
-                                    </div>
-                                    <GuestInput
-                                        label="Ulasan"
-                                        icon="pencil"
-                                        type="textarea"
-                                        rows={4}
-                                        value={reviewForm.data.body}
-                                        onChange={(e) => reviewForm.setData('body', e.target.value)}
-                                        error={reviewForm.errors.body}
-                                        placeholder="Ceritakan pengalaman Anda (minimal 10 karakter)."
-                                        required
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={reviewForm.processing}
-                                        className="w-full rounded-xl bg-store-accent py-4 text-sm font-bold uppercase tracking-wide text-store-dark shadow-accent-glow transition-all hover:brightness-110 disabled:opacity-40"
-                                    >
-                                        {reviewForm.processing ? 'Mengirim…' : 'Kirim ulasan'}
-                                    </button>
-                                </form>
-                            </div>
-                        )}
-                    </div>
+                    {relatedBlock}
+                    {reviewsBlock}
+                    {reviewFormSection}
                 </div>
-
-                {/* ── Produk Lainnya (gaya list artikel terkait) ───────────── */}
-                {related.length > 0 && (
-                    <div className="mt-10">
-                        {/* Header */}
-                        <div className="mb-2 flex items-center justify-between px-1">
-                            <p className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.25em] text-guest-muted">
-                                <AppIcons.layers size={11} className="text-guest-subtle" />
-                                Produk Lainnya
-                            </p>
-                            <Link
-                                href={route('catalog')}
-                                className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-guest-muted transition-colors hover:text-store-accent"
-                            >
-                                Lihat Semua <AppIcons.arrowRight size={9} />
-                            </Link>
-                        </div>
-
-                        {/* List */}
-                        <div className="divide-y divide-guest-border overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
-                            {related.map((rp) => (
-                                <RelatedProductRow key={rp.id} product={rp} />
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
         </GuestLayout>
     );

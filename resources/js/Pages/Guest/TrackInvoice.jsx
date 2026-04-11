@@ -27,7 +27,6 @@ export default function TrackInvoice({ not_found = false, search_invoice = '' })
                     {/* ── Search Card ──────────────────────────────────── */}
                     <div className="relative overflow-hidden rounded-2xl border border-guest-border bg-guest-surface p-5 shadow-soft sm:p-6 md:p-7">
                         <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full bg-store-accent/10 blur-[60px]" />
-
                         <div className="relative z-10">
                             <div className="mb-8 flex items-center gap-4">
                                 <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-store-accent/25 bg-store-accent/10">
