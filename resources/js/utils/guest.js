@@ -10,6 +10,13 @@ export const formatPrice = (price) =>
         minimumFractionDigits: 0,
     }).format(price);
 
+/** Jumlah unit terjual (order sukses) — angka rapi untuk UI. */
+export function formatSoldCount(value) {
+    const n = Number(value);
+    const v = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+    return new Intl.NumberFormat('id-ID').format(v);
+}
+
 /**
  * URL untuk atribut src gambar produk.
  * Backend mengirim `image_url` (path /storage/... atau URL absolut); fallback ke `image` mentah.

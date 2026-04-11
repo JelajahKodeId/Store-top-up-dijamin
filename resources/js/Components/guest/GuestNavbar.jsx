@@ -1,17 +1,15 @@
 import { useState } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import AppLogo from '@/Components/shared/AppLogo';
 import { AppIcons } from '@/Components/shared/AppIcon';
-import Button from '@/Components/ui/Button';
 
 const navLinks = [
-    { label: 'Beranda',       href: '/',              icon: 'home'    },
-    { label: 'Katalog',       href: '/catalog',       icon: 'products'},
-    { label: 'Lacak Pesanan', href: '/track-invoice', icon: 'receipt' },
+    { label: 'Beranda',       href: '/',              icon: 'home'     },
+    { label: 'Katalog',       href: '/catalog',       icon: 'products' },
+    { label: 'Lacak Pesanan', href: '/track-invoice', icon: 'receipt'  },
 ];
 
 export default function GuestNavbar() {
-    const { auth } = usePage().props;
     const [mobileOpen, setMobileOpen] = useState(false);
 
     const MenuIcon = AppIcons.menu;
@@ -43,25 +41,13 @@ export default function GuestNavbar() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="hidden items-center gap-4 sm:flex">
-                            {auth?.user && (
-                                <Link href={route('admin.dashboard')}>
-                                    <Button variant="dark" className="rounded-2xl border border-guest-border bg-guest-text px-6 py-3 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition-all hover:bg-store-accent hover:text-guest-text">
-                                        Admin Panel
-                                    </Button>
-                                </Link>
-                            )}
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={() => setMobileOpen(!mobileOpen)}
-                            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-guest-border bg-guest-elevated text-guest-text transition-all hover:bg-white lg:hidden"
-                        >
-                            {mobileOpen ? <CloseIcon size={24} /> : <MenuIcon size={24} />}
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setMobileOpen(!mobileOpen)}
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl border border-guest-border bg-guest-elevated text-guest-text transition-all hover:bg-white lg:hidden"
+                    >
+                        {mobileOpen ? <CloseIcon size={24} /> : <MenuIcon size={24} />}
+                    </button>
                 </div>
             </div>
 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Setting;
+use App\Support\PaymentLabels;
 use App\Support\WhatsAppGateway;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -40,45 +41,70 @@ class WhatsAppService
         return is_string($env) && trim($env) !== '' ? trim($env) : null;
     }
 
+    protected function formatIdr(float|int|string|null $amount): string
+    {
+        return 'Rp '.number_format((float) $amount, 0, ',', '.');
+    }
+
     public function sendOrderCreated(Order $order): void
     {
-        $order->loadMissing(['items', 'fieldValues.field']);
+        $order->loadMissing(['items', 'fieldValues.field', 'payment']);
 
-        $productName = $order->items->first()?->product_name ?? '-';
-        $durationName = $order->items->first()?->duration_name ?? '-';
-        $totalPrice = 'Rp '.number_format((float) $order->total_price, 0, ',', '.');
         $discount = (float) ($order->discount_amount ?? 0);
+        $methodLabel = PaymentLabels::methodLabel($order->payment_method, $order->payment?->gateway);
+        $methodLine = $methodLabel !== '' ? $methodLabel : ($order->payment_method ?? '-');
+
+        $itemsText = '';
+        foreach ($order->items as $item) {
+            $qty = max(1, (int) $item->quantity);
+            $lineTotal = (float) $item->price * $qty;
+            $itemsText .= "\n  • {$item->product_name}\n";
+            $itemsText .= "    Paket: {$item->duration_name} × {$qty}\n";
+            $itemsText .= '    Subtotal: '.$this->formatIdr($lineTotal);
+        }
 
         $fieldsText = '';
         foreach ($order->fieldValues as $fv) {
             $label = $fv->field?->label ?? $fv->field?->name ?? 'Field';
-            $fieldsText .= "\n  {$label}: {$fv->value}";
+            $fieldsText .= "\n  • {$label}: {$fv->value}";
         }
 
         $paymentLine = $order->payment_url
-            ? "\n\n🔗 *Link Pembayaran:*\n{$order->payment_url}"
-            : '';
+            ? "\n\n🔗 *Link pembayaran:*\n{$order->payment_url}"
+            : "\n\n_Tunggu instruksi pembayaran di halaman status pesanan jika link belum tersedia._";
 
         $discountLine = $discount > 0
-            ? "\n💸 Diskon: -Rp ".number_format($discount, 0, ',', '.')
+            ? "\n💸 Diskon: -".$this->formatIdr($discount)
             : '';
 
-        $message = "🛒 *KONFIRMASI PESANAN*\n";
-        $message .= "━━━━━━━━━━━━━━━━━\n";
-        $message .= "📋 Invoice: *{$order->invoice_code}*\n";
-        $message .= "🎮 Produk: {$productName}\n";
-        $message .= "⏱ Paket: {$durationName}\n";
-        $message .= "💰 Harga: {$totalPrice}{$discountLine}\n";
-        $message .= "📱 WhatsApp: {$order->whatsapp_number}\n";
-        $message .= "💳 Metode: {$order->payment_method}";
-
-        if ($fieldsText) {
-            $message .= "\n\n📝 *Data Produk:*{$fieldsText}";
+        $expiryLine = '';
+        if ($order->payment_expired_at) {
+            $expiryLine = "\n⏰ *Batas bayar:* ".$order->payment_expired_at->timezone(config('app.timezone'))->format('d M Y, H:i').' WIB';
         }
 
-        $message .= "\n━━━━━━━━━━━━━━━━━";
+        $customerLine = '';
+        if ($order->customer_name) {
+            $customerLine = "\n👤 Nama: {$order->customer_name}";
+        }
+
+        $message = "🛒 *KONFIRMASI PESANAN*\n";
+        $message .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $message .= "📋 *Invoice:* {$order->invoice_code}\n";
+        $message .= '📅 Dibuat: '.$order->created_at->timezone(config('app.timezone'))->format('d M Y, H:i')." WIB\n";
+        $message .= "📱 WhatsApp: {$order->whatsapp_number}";
+        $message .= $customerLine;
+        $message .= "\n💳 *Metode bayar:* {$methodLine}";
+        $message .= "\n\n🛍️ *Rincian item:*{$itemsText}";
+        $message .= "\n\n💰 *Total dibayar:* ".$this->formatIdr($order->total_price).$discountLine;
+        $message .= $expiryLine;
+
+        if ($fieldsText !== '') {
+            $message .= "\n\n📝 *Data tambahan:*{$fieldsText}";
+        }
+
+        $message .= "\n━━━━━━━━━━━━━━━━━━━━";
         $message .= $paymentLine;
-        $message .= "\n\n_Segera selesaikan pembayaran sebelum waktu habis._";
+        $message .= "\n\n_Segera selesaikan pembayaran. Setelah lunas, key akan dikirim ke nomor WhatsApp ini._";
 
         if ($order->whatsapp_number) {
             $this->send($order->whatsapp_number, $message);
@@ -86,10 +112,10 @@ class WhatsAppService
 
         $admin = $this->resolveAdminNumber();
         if ($admin) {
-            $adminMsg = "🔔 *ORDER BARU MASUK*\n";
-            $adminMsg .= "📋 {$order->invoice_code} | {$productName} | {$totalPrice}\n";
-            $adminMsg .= "📱 {$order->whatsapp_number} | {$order->payment_method}";
-            if ($fieldsText) {
+            $adminMsg = "🔔 *ORDER BARU*\n";
+            $adminMsg .= "📋 {$order->invoice_code} — ".$this->formatIdr($order->total_price)."\n";
+            $adminMsg .= "📱 {$order->whatsapp_number} | {$methodLine}";
+            if ($fieldsText !== '') {
                 $adminMsg .= "\n📝 Data:{$fieldsText}";
             }
             $this->send($admin, $adminMsg);
@@ -98,29 +124,46 @@ class WhatsAppService
 
     public function sendKeyDelivered(Order $order): void
     {
-        $order->loadMissing(['items.orderKeys']);
+        $order->loadMissing(['items.orderKeys', 'payment']);
 
-        $productName = $order->items->first()?->product_name ?? '-';
-        $durationName = $order->items->first()?->duration_name ?? '-';
+        $methodLabel = PaymentLabels::methodLabel($order->payment_method, $order->payment?->gateway);
+        $methodLine = $methodLabel !== '' ? $methodLabel : ($order->payment_method ?? '-');
 
-        $keysText = '';
+        $blocks = '';
         foreach ($order->items as $item) {
-            foreach ($item->orderKeys as $key) {
-                $keysText .= "\n🔑 `{$key->key_code}`";
+            $qty = max(1, (int) $item->quantity);
+            $blocks .= "\n\n📦 *{$item->product_name}*\n";
+            $blocks .= "   Paket: {$item->duration_name} × {$qty}\n";
+            $blocks .= '   Subtotal: '.$this->formatIdr((float) $item->price * $qty)."\n";
+
+            if ($item->orderKeys->isEmpty()) {
+                $blocks .= "   _(Key tidak terlampir — hubungi CS.)_\n";
+
+                continue;
+            }
+
+            foreach ($item->orderKeys as $idx => $key) {
+                $n = $idx + 1;
+                $blocks .= "   🔑 Key {$n}: `{$key->key_code}`";
                 if ($key->expired_at) {
-                    $keysText .= "\n   ⏰ Berlaku: ".$key->expired_at->format('d M Y');
+                    $blocks .= "\n      ⏰ Aktif s/d: ".$key->expired_at->timezone(config('app.timezone'))->format('d M Y').' WIB';
                 }
+                $blocks .= "\n";
             }
         }
 
-        $message = "✅ *PESANAN SELESAI!*\n";
-        $message .= "━━━━━━━━━━━━━━━━━\n";
-        $message .= "📋 Invoice: *{$order->invoice_code}*\n";
-        $message .= "🎮 Produk: {$productName}\n";
-        $message .= "⏱ Paket: {$durationName}\n\n";
-        $message .= "*KEY / LISENSI ANDA:*{$keysText}\n\n";
-        $message .= "━━━━━━━━━━━━━━━━━\n";
-        $message .= '⚠️ Simpan key ini dengan aman. Jangan bagikan ke siapapun.';
+        $message = "✅ *PEMBAYARAN BERHASIL — KEY SIAP*\n";
+        $message .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $message .= "📋 *Invoice:* {$order->invoice_code}\n";
+        $message .= '📅 Selesai: '.now()->timezone(config('app.timezone'))->format('d M Y, H:i')." WIB\n";
+        $message .= "💳 Metode: {$methodLine}\n";
+        $message .= '💰 *Total:* '.$this->formatIdr($order->total_price);
+        $message .= "\n📱 Pembeli: {$order->whatsapp_number}";
+        $message .= "\n\n*KEY / LISENSI ANDA:*{$blocks}\n";
+        $message .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $message .= "ℹ️ Stok key untuk pesanan ini sudah dialokasikan dari inventori kami.\n";
+        $message .= "⚠️ *Simpan rahasia.* Jangan bagikan key ke orang lain. Simpan bukti di galeri Anda jika perlu.\n";
+        $message .= "\n_Terima kasih berbelanja di Mall Store._";
 
         if ($order->whatsapp_number) {
             $this->send($order->whatsapp_number, $message);
@@ -128,7 +171,11 @@ class WhatsAppService
 
         $admin = $this->resolveAdminNumber();
         if ($admin) {
-            $this->send($admin, "✅ Key terkirim: *{$order->invoice_code}*");
+            $keyCount = $order->items->sum(fn ($i) => $i->orderKeys->count());
+            $adminMsg = "✅ *Key terkirim ke pelanggan*\n";
+            $adminMsg .= "📋 {$order->invoice_code} | {$keyCount} key | ".$this->formatIdr($order->total_price)."\n";
+            $adminMsg .= "📱 {$order->whatsapp_number}";
+            $this->send($admin, $adminMsg);
         }
     }
 

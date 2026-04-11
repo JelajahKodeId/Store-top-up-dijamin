@@ -149,7 +149,7 @@ class CheckoutController extends Controller
 
             // Kirim notifikasi WA ke customer + admin (non-blocking, tidak menghentikan flow)
             try {
-                $this->whatsApp->sendOrderCreated($order->fresh(['items', 'fieldValues.field']));
+                $this->whatsApp->sendOrderCreated($order->fresh(['items', 'fieldValues.field', 'payment']));
             } catch (\Throwable $e) {
                 Log::warning("Checkout: WA notification gagal — {$e->getMessage()}");
             }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\OrderStatus;
 use App\Models\Banner;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Collection;
@@ -17,6 +18,9 @@ class CatalogService
         return Product::where('status', 'active')
             ->with(['durations' => fn ($q) => $q->where('is_active', true)
                 ->withCount(['keys as available_keys_count' => fn ($q) => $q->where('status', 'available')])])
+            ->withSum([
+                'orderItems as sold_count' => fn ($q) => $q->whereHas('order', fn ($oq) => $oq->where('status', OrderStatus::SUCCESS)),
+            ], 'quantity')
             ->latest()
             ->get();
     }
@@ -39,6 +43,9 @@ class CatalogService
         return Product::where('slug', $slug)
             ->where('status', 'active')
             ->withCount(['keys as total_available_count' => fn ($q) => $q->where('status', 'available')])
+            ->withSum([
+                'orderItems as sold_count' => fn ($q) => $q->whereHas('order', fn ($oq) => $oq->where('status', OrderStatus::SUCCESS)),
+            ], 'quantity')
             ->with([
                 'durations' => fn ($q) => $q->where('is_active', true)
                     ->withCount(['keys as available_keys_count' => fn ($q) => $q->where('status', 'available')]),
@@ -59,6 +66,9 @@ class CatalogService
             ->with(['durations' => fn ($q) => $q->where('is_active', true)
                 ->withCount(['keys as available_keys_count' => fn ($q) => $q->where('status', 'available')])])
             ->withCount(['keys as total_available_count' => fn ($q) => $q->where('status', 'available')])
+            ->withSum([
+                'orderItems as sold_count' => fn ($q) => $q->whereHas('order', fn ($oq) => $oq->where('status', OrderStatus::SUCCESS)),
+            ], 'quantity')
             ->latest()
             ->limit($limit)
             ->get();

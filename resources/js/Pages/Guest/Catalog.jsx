@@ -55,9 +55,9 @@ export default function Catalog({ products = [] }) {
                         ))}
                     </div>
                 ) : (
-                    <div className="rounded-2xl bg-guest-surface py-16 text-center shadow-lg sm:py-20">
-                        <div className="mx-auto mb-5 flex h-16 w-16 animate-pulse items-center justify-center rounded-2xl bg-guest-elevated text-guest-subtle shadow-inner sm:h-20 sm:w-20">
-                            <AppIcons.search size={40} strokeWidth={1.5} />
+                    <div className="rounded-2xl bg-guest-surface py-14 text-center shadow-lg sm:py-16">
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-guest-elevated text-guest-subtle shadow-inner sm:mb-5 sm:h-16 sm:w-16">
+                            <AppIcons.search size={36} strokeWidth={1.5} />
                         </div>
                         <h3 className="mb-1.5 font-bebas text-xl font-bold tracking-wide text-guest-muted sm:text-2xl">Produk Tidak Ditemukan</h3>
                         <p className="mx-auto max-w-sm text-sm leading-normal text-guest-muted sm:text-[15px]">
