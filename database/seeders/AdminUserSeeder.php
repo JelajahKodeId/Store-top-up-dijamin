@@ -17,7 +17,7 @@ class AdminUserSeeder extends Seeder
             ['email' => 'admin@gmail.com'],
             [
                 'name' => 'Super Admin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('dsadsadsa'),
                 'phone_number' => '08123456781',
                 'balance' => 1000000,
             ]
@@ -29,7 +29,7 @@ class AdminUserSeeder extends Seeder
             ['email' => 'member@gmail.com'],
             [
                 'name' => 'Regular Member',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('dsadsadsa'),
                 'phone_number' => '08123456782',
                 'balance' => 0,
             ]

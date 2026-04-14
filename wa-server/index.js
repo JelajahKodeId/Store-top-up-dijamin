@@ -106,7 +106,7 @@ function beginInitialize() {
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        headless: process.env.WA_HEADLESS === 'false' ? false : 'new',
+        headless: true,
         defaultViewport: null,
         ...(chromePath ? { executablePath: chromePath } : {}),
         args: [
@@ -129,6 +129,8 @@ const client = new Client({
             '--force-color-profile=srgb',
             '--metrics-recording-only',
             '--mute-audio',
+            '--no-zygote',
+            '--disable-dev-shm-usage',
         ],
     },
 });

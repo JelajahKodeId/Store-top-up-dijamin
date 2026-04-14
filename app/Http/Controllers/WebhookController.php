@@ -18,7 +18,8 @@ class WebhookController extends Controller
     public function __construct(
         protected PaymentGatewayInterface $paymentGateway,
         protected KeyDeliveryService $keyDeliveryService
-    ) {}
+    ) {
+    }
 
     /**
      * Notifikasi pembayaran dari gateway (Midtrans, Tripay, dll).
@@ -28,16 +29,16 @@ class WebhookController extends Controller
     {
         Log::debug('WebhookController: Incoming request', [
             'method' => $request->method(),
-            'url'    => $request->fullUrl(),
-            'ip'     => $request->ip(),
-            'headers'=> $request->headers->all(),
-            'body'   => $request->all(),
+            'url' => $request->fullUrl(),
+            'ip' => $request->ip(),
+            'headers' => $request->headers->all(),
+            'body' => $request->all(),
         ]);
 
         $parsed = $this->paymentGateway->verifyWebhook($request);
 
         if ($parsed === null) {
-            Log::warning('WebhookController: Webhook tidak valid dari '.$request->ip());
+            Log::warning('WebhookController: Webhook tidak valid dari ' . $request->ip());
 
             return response('Invalid signature', 403);
         }
@@ -47,7 +48,7 @@ class WebhookController extends Controller
 
         $payment = Payment::where('reference_id', $referenceId)->first();
 
-        if (! $payment) {
+        if (!$payment) {
             Log::warning("WebhookController: Payment dengan reference {$referenceId} tidak ditemukan");
 
             return response('Payment not found', 404);
@@ -99,10 +100,10 @@ class WebhookController extends Controller
         $amount = (int) round((float) $order->total_price);
 
         $response = \Illuminate\Support\Facades\Http::asJson()->post('https://app.pakasir.com/api/paymentsimulation', [
-            'project'  => config('services.pak_kasir.slug'),
+            'project' => config('services.pak_kasir.slug'),
             'order_id' => $invoiceCode,
-            'amount'   => $amount,
-            'api_key'  => config('services.pak_kasir.api_key'),
+            'amount' => $amount,
+            'api_key' => config('services.pak_kasir.api_key'),
         ]);
 
         if ($response->successful()) {

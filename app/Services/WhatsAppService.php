@@ -203,6 +203,21 @@ class WhatsAppService
         }
 
         try {
+            // Health check singkat ke /status untuk memastikan server siap
+            $healthReq = Http::timeout(5)->acceptJson();
+            if ($this->waServerSecret) {
+                $healthReq = $healthReq->withToken($this->waServerSecret);
+            }
+            $healthResponse = $healthReq->get("{$this->waServerUrl}/status");
+            
+            if (!$healthResponse->successful() || $healthResponse->json('status') !== 'ready') {
+                Log::warning('[WhatsApp] WA Server melapor tidak siap atau error.', [
+                    'status' => $healthResponse->json('status'),
+                    'http_code' => $healthResponse->status()
+                ]);
+                return false;
+            }
+
             $req = Http::timeout(25)->acceptJson()->asJson();
             if ($this->waServerSecret) {
                 $req = $req->withToken($this->waServerSecret);
@@ -222,16 +237,19 @@ class WhatsAppService
                     Log::info("WhatsApp: Terkirim ke {$target}.");
                 }
             } else {
-                Log::warning('WhatsApp: Gagal mengirim', [
+                Log::warning('WhatsApp: Gagal mengirim (API Error)', [
                     'target_suffix' => strlen($target) > 4 ? '***'.substr($target, -4) : '***',
                     'http_status' => $response->status(),
+                    'error' => $response->json('error')
                 ]);
             }
 
             return $ok;
         } catch (\Throwable $e) {
-            Log::error('WhatsApp: Exception saat mengirim', [
+            Log::error('WhatsApp: Exception saat menghubungi WA Server', [
                 'message' => $e->getMessage(),
+                'url' => $this->waServerUrl,
+                'suggestion' => 'Pastikan wa-server berjalan di port yang benar dan tidak terhalang firewall/container isolation.'
             ]);
 
             return false;
