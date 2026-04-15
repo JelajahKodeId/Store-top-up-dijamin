@@ -755,6 +755,12 @@ export default function ProductDetail({
                                             </span>
                                         )}
                                         <InfoPill icon="orders" label={`${soldDisplay} terjual`} />
+                                        {product.platform_type && (
+                                            <InfoPill
+                                                icon={product.platform_type === 'ios' ? 'ios' : 'android'}
+                                                label={product.platform_type === 'both' ? 'Mobile' : product.platform_type}
+                                            />
+                                        )}
                                         <InfoPill icon="speed" label="Instan" />
                                         <InfoPill icon="phone" label="Via WA" />
                                         <InfoPill icon="shield" label="Aman" />
@@ -865,6 +871,15 @@ export default function ProductDetail({
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 px-3 py-2.5">
+                                    <AppIcons.android size={12} className="flex-shrink-0 text-guest-subtle" />
+                                    <div>
+                                        <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Platform</p>
+                                        <p className="text-sm font-bold text-guest-text">
+                                            {product.platform_type === 'both' ? 'Mobile' : (product.platform_type || 'Universal')}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 border-t border-guest-border px-3 py-2.5">
                                     <AppIcons.speed size={12} className="flex-shrink-0 text-guest-subtle" />
                                     <div>
                                         <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Pengiriman</p>
@@ -911,6 +926,15 @@ export default function ProductDetail({
                                     ) : (
                                         <span className="text-sm font-bold text-red-600">Habis</span>
                                     )}
+                                </div>
+                                <div className="flex items-center justify-between px-4 py-3">
+                                    <div className="flex items-center gap-2">
+                                        <AppIcons.android size={13} className="text-guest-muted" />
+                                        <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Platform</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-guest-text">
+                                        {product.platform_type === 'both' ? 'Mobile (Android & iOS)' : (product.platform_type || 'Universal')}
+                                    </span>
                                 </div>
                                 <div className="flex items-center justify-between px-4 py-3">
                                     <div className="flex items-center gap-2">

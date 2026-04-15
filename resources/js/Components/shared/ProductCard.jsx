@@ -39,17 +39,32 @@ export default function ProductCard({ product }) {
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                 </Link>
 
-                {isOutOfStock ? (
-                    <div className="pointer-events-none absolute right-1.5 top-1.5 z-[1] inline-flex h-5 items-center gap-0.5 rounded-md bg-red-50 px-1.5 text-[8px] font-bold uppercase leading-none text-red-600 ring-1 ring-red-100">
-                        <AppIcons.close size={7} strokeWidth={3} className="shrink-0" />
-                        Habis
-                    </div>
-                ) : (
-                    <div className="pointer-events-none absolute right-1.5 top-1.5 z-[1] inline-flex h-5 items-center gap-0.5 rounded-md bg-white/95 px-1.5 text-[8px] font-bold uppercase leading-none text-amber-800 shadow-sm ring-1 ring-black/5">
-                        <AppIcons.speed size={7} strokeWidth={3} className="shrink-0" />
-                        Instan
-                    </div>
-                )}
+                <div className="pointer-events-none absolute right-1.5 top-1.5 z-[1] flex flex-col items-end gap-1">
+                    {isOutOfStock ? (
+                        <div className="inline-flex h-5 items-center gap-0.5 rounded-md bg-red-50 px-1.5 text-[8px] font-bold uppercase leading-none text-red-600 ring-1 ring-red-100">
+                            <AppIcons.close size={7} strokeWidth={3} className="shrink-0" />
+                            Habis
+                        </div>
+                    ) : (
+                        <div className="inline-flex h-5 items-center gap-0.5 rounded-md bg-white/95 px-1.5 text-[8px] font-bold uppercase leading-none text-amber-800 shadow-sm ring-1 ring-black/5">
+                            <AppIcons.speed size={7} strokeWidth={3} className="shrink-0" />
+                            Instan
+                        </div>
+                    )}
+                    {product.platform_type && (
+                        <div className="inline-flex h-5 items-center gap-1 rounded-md bg-black/80 px-1.5 text-[8px] font-bold uppercase leading-none text-white shadow-sm backdrop-blur-[2px]">
+                            {product.platform_type === 'android' && <AppIcons.android size={8} />}
+                            {product.platform_type === 'ios' && <AppIcons.ios size={8} />}
+                            {product.platform_type === 'both' && (
+                                <div className="flex items-center -space-x-1">
+                                    <AppIcons.android size={7} />
+                                    <AppIcons.ios size={7} />
+                                </div>
+                            )}
+                            <span>{product.platform_type === 'both' ? 'Mobile' : product.platform_type}</span>
+                        </div>
+                    )}
+                </div>
 
                 {tgUrl && (
                     <button

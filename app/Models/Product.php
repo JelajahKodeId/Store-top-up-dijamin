@@ -15,6 +15,7 @@ class Product extends Model
         'image',
         'telegram_group_invite_url',
         'status',
+        'platform_type',
     ];
 
     protected $appends = ['image_url'];
