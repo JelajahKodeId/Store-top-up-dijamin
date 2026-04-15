@@ -121,7 +121,7 @@ class KeyDeliveryService
             // Tentukan expired_at dari durasi produk (dalam hari)
             $expiredAt = null;
             if ($item->duration && $item->duration->duration_days > 0) {
-                $expiredAt = now()->addDays($item->duration->duration_days);
+                $expiredAt = now()->addDays((int) $item->duration->duration_days);
             }
 
             OrderKey::create([
