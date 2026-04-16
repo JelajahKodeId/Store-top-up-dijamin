@@ -207,8 +207,10 @@ class LandingController extends Controller
                 'duration_name' => $item->duration_name,
                 'price' => $item->price,
                 'quantity' => $item->quantity,
-                // Hanya jumlah key yang dikirim — key_code TIDAK dikirim ke web (privasi)
-                'keys_delivered' => $item->orderKeys->count(),
+                // Key list dikirim hanya jika status sudah PAID/SUCCESS
+                'keys' => ($order->status === OrderStatus::SUCCESS || $order->status === OrderStatus::PAID)
+                    ? $item->orderKeys->map(fn ($k) => ['key' => $k->key_code])
+                    : [],
             ]),
         ];
     }

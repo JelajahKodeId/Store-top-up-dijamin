@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\KeyDeliveryService;
+use App\Services\WhatsAppService;
 use App\Services\Payment\PaymentGatewayInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class WebhookController extends Controller
 {
     public function __construct(
         protected PaymentGatewayInterface $paymentGateway,
-        protected KeyDeliveryService $keyDeliveryService
+        protected KeyDeliveryService $keyDeliveryService,
+        protected WhatsAppService $whatsAppService
     ) {
     }
 
@@ -142,5 +144,77 @@ class WebhookController extends Controller
         $order->update(['status' => OrderStatus::FAILED, 'note' => "Pembayaran {$status} dari gateway."]);
 
         Log::info("WebhookController: Order #{$order->invoice_code} ditandai FAILED (gateway: {$status}).");
+    }
+
+    /**
+     * Endpoint untuk Semi-Bot WhatsApp.
+     * Menerima invoice_code dan whatsapp_number, lalu kirim ulang key jika valid.
+     */
+    public function waBot(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $secret = config('services.whatsapp.server_secret');
+        $auth = $request->header('Authorization');
+
+        if ($secret && $auth !== 'Bearer ' . $secret) {
+            Log::warning('WebhookController@waBot: Unauthorized access attempt', ['ip' => $request->ip()]);
+
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $invoiceCode = strtoupper(trim($request->input('invoice_code')));
+        $whatsappNumber = trim($request->input('whatsapp_number'));
+
+        if (empty($invoiceCode) || empty($whatsappNumber)) {
+            return response()->json(['message' => 'Format tidak valid.']);
+        }
+
+        $order = Order::where('invoice_code', $invoiceCode)->first();
+
+        if (! $order) {
+            return response()->json(['message' => "Pesanan dengan invoice *{$invoiceCode}* tidak ditemukan."]);
+        }
+
+        // Normalisasi nomor WA untuk perbandingan (menghilangkan prefix 62 atau 0)
+        $cleanRequestNum = preg_replace('/^62|^0/', '', $whatsappNumber);
+        $cleanOrderNum = preg_replace('/^62|^0/', '', $order->whatsapp_number);
+
+        if ($cleanRequestNum !== $cleanOrderNum) {
+            return response()->json([
+                'message' => "Maaf, nomor WhatsApp Anda tidak sesuai dengan data pemesan untuk invoice *{$invoiceCode}*.",
+            ]);
+        }
+
+        if ($order->status === OrderStatus::SUCCESS || $order->is_sent) {
+            $this->whatsAppService->sendKeyDelivered($order);
+
+            return response()->json([
+                'message' => "✅ Key untuk invoice *{$invoiceCode}* telah dikirim ulang ke nomor ini. Silakan cek pesan di atas.",
+            ]);
+        }
+
+        if ($order->status === OrderStatus::PAID) {
+            // Jika sudah bayar tapi belum terkirim (mungkin antrian), coba proses sekarang
+            try {
+                $this->keyDeliveryService->deliver($order);
+
+                return response()->json([
+                    'message' => "⏳ Pembayaran terdeteksi. Key sedang diproses dan akan segera dikirim ke nomor ini.",
+                ]);
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'message' => "❌ Terjadi kesalahan saat memproses order *{$invoiceCode}*. Silakan hubungi admin.",
+                ]);
+            }
+        }
+
+        if ($order->status === OrderStatus::EXPIRED || $order->status === OrderStatus::FAILED) {
+            return response()->json([
+                'message' => "❌ Invoice *{$invoiceCode}* sudah kedaluwarsa atau gagal. Silakan lakukan pemesanan ulang.",
+            ]);
+        }
+
+        return response()->json([
+            'message' => "📋 Invoice *{$invoiceCode}* belum dibayar. Silakan selesaikan pembayaran terlebih dahulu.",
+        ]);
     }
 }

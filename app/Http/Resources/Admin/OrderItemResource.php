@@ -19,7 +19,6 @@ class OrderItemResource extends JsonResource
                 return $this->orderKeys->map(fn ($k) => [
                     'id'           => $k->id,
                     'key_code'     => $k->key_code,
-                    'expired_at'   => $k->expired_at?->format('d M Y H:i'),
                     'delivered_at' => $k->delivered_at?->format('d M Y H:i'),
                 ]);
             }),

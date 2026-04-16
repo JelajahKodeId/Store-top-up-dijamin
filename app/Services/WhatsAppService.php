@@ -145,9 +145,6 @@ class WhatsAppService
             foreach ($item->orderKeys as $idx => $key) {
                 $n = $idx + 1;
                 $blocks .= "   🔑 Key {$n}: `{$key->key_code}`";
-                if ($key->expired_at) {
-                    $blocks .= "\n      ⏰ Aktif s/d: ".$key->expired_at->timezone(config('app.timezone'))->format('d M Y').' WIB';
-                }
                 $blocks .= "\n";
             }
         }
