@@ -5,39 +5,34 @@ import { formatPrice, formatSoldCount, productImageSrc } from '@/utils/guest';
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500' viewBox='0 0 400 500'%3E%3Crect width='400' height='500' fill='%23E4E4E7'/%3E%3Ctext x='200' y='260' font-family='sans-serif' font-size='40' fill='%23A1A1AA' text-anchor='middle'%3E%3F%3C/text%3E%3C/svg%3E";
 
 export default function ProductCard({ product }) {
-    const activeDurations     = product.durations?.filter(d => d.is_active !== false) ?? [];
-    const prices              = activeDurations.map(d => Number(d.price)).filter(p => p > 0);
-    const lowestPrice         = prices.length > 0 ? Math.min(...prices) : 0;
+    const activeDurations = product.durations?.filter((d) => d.is_active !== false) ?? [];
+    const prices = activeDurations.map((d) => Number(d.price)).filter((p) => p > 0);
+    const lowestPrice = prices.length > 0 ? Math.min(...prices) : 0;
     const hasMultipleDurations = activeDurations.length > 1;
 
-    const hasStockData  = activeDurations.some(d => d.available_keys_count !== undefined);
-    const isOutOfStock  = hasStockData
-        ? activeDurations.every(d => (d.available_keys_count ?? 0) === 0)
-        : false;
+    const hasStockData = activeDurations.some((d) => d.available_keys_count !== undefined);
+    const isOutOfStock = hasStockData ? activeDurations.every((d) => (d.available_keys_count ?? 0) === 0) : false;
 
-    const href = isOutOfStock ? undefined : `/products/${product.slug ?? product.id}`;
-
-    const tgUrl = product.telegram_group_invite_url?.trim?.() || product.telegram_group_invite_url;
+    const href = `/products/${product.slug ?? product.id}`;
     const soldLabel = formatSoldCount(product.sold_count);
+    const categoryLabel = product.game_category_label;
 
-    return (
-        <div className={`group flex h-full flex-col overflow-hidden rounded-md bg-guest-surface shadow-sm transition-all duration-300 ${
-            isOutOfStock ? 'opacity-60' : 'hover:-translate-y-0.5 hover:shadow'
-        }`}>
+    const cardClass = `group flex h-full flex-col overflow-hidden rounded-md bg-guest-surface shadow-sm transition-all duration-300 ${
+        isOutOfStock ? 'cursor-default opacity-60' : 'hover:-translate-y-0.5 hover:shadow'
+    }`;
+
+    const inner = (
+        <>
             <div className="relative aspect-[5/6] shrink-0 overflow-hidden bg-guest-elevated">
-                <Link
-                    href={href ?? '#'}
-                    onClick={!href ? (e) => e.preventDefault() : undefined}
-                    className="absolute inset-0 z-0 block"
-                >
-                    <img
-                        src={productImageSrc(product) || PLACEHOLDER}
-                        alt={product.name}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => { e.target.src = PLACEHOLDER; }}
-                    />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                </Link>
+                <img
+                    src={productImageSrc(product) || PLACEHOLDER}
+                    alt={product.name}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                        e.target.src = PLACEHOLDER;
+                    }}
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
                 <div className="pointer-events-none absolute right-1.5 top-1.5 z-[1] flex flex-col items-end gap-1">
                     {isOutOfStock ? (
@@ -66,28 +61,17 @@ export default function ProductCard({ product }) {
                     )}
                 </div>
 
-                {tgUrl && (
-                    <button
-                        type="button"
-                        title="Undang grup Telegram"
-                        onClick={() => window.open(tgUrl, '_blank', 'noopener,noreferrer')}
-                        className="absolute bottom-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[#0088cc] text-white shadow-md ring-2 ring-white/90 transition-transform hover:scale-105 active:scale-95"
-                    >
-                        <AppIcons.download size={11} strokeWidth={2.5} />
-                    </button>
+                {categoryLabel && (
+                    <div className="pointer-events-none absolute left-1.5 top-1.5 z-[1] max-w-[70%] truncate rounded-md bg-black/75 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-tight tracking-wide text-white shadow-sm backdrop-blur-sm">
+                        {categoryLabel}
+                    </div>
                 )}
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 pt-2 sm:px-2.5 sm:pb-2.5 sm:pt-2.5">
-                <Link
-                    href={href ?? '#'}
-                    onClick={!href ? (e) => e.preventDefault() : undefined}
-                    className="block shrink-0"
-                >
-                    <h3 className="line-clamp-2 min-h-[2.25rem] text-left font-bebas text-[11px] font-bold leading-tight tracking-wide text-guest-text transition-colors group-hover:text-store-accent-dark sm:min-h-[2.5rem] sm:text-xs">
-                        {product.name}
-                    </h3>
-                </Link>
+                <h3 className="line-clamp-2 min-h-[2.25rem] text-left font-bebas text-[11px] font-bold leading-tight tracking-wide text-guest-text transition-colors group-hover:text-store-accent-dark sm:min-h-[2.5rem] sm:text-xs">
+                    {product.name}
+                </h3>
 
                 <div className="mt-1.5 flex min-h-0 flex-1 flex-col">
                     <div className="shrink-0 space-y-0.5">
@@ -113,16 +97,24 @@ export default function ProductCard({ product }) {
                                 Habis
                             </div>
                         ) : (
-                            <Link href={href} className="block">
-                                <span className="flex w-full items-center justify-center gap-1 rounded-md bg-guest-elevated py-1.5 text-[9px] font-bold uppercase tracking-wide text-guest-text shadow-sm transition-all hover:bg-store-accent hover:shadow active:scale-[0.98] sm:py-2 sm:text-[10px]">
-                                    Detail
-                                    <AppIcons.arrowRight size={9} strokeWidth={3} className="shrink-0" />
-                                </span>
-                            </Link>
+                            <span className="flex w-full items-center justify-center gap-1.5 rounded-md bg-guest-elevated py-1.5 text-[9px] font-bold uppercase tracking-wide text-guest-text shadow-sm transition-all group-hover:bg-store-accent group-hover:text-store-dark group-hover:shadow sm:py-2 sm:text-[10px]">
+                                <AppIcons.download size={10} strokeWidth={2.5} className="shrink-0" />
+                                Download
+                            </span>
                         )}
                     </div>
                 </div>
             </div>
-        </div>
+        </>
+    );
+
+    if (isOutOfStock) {
+        return <div className={cardClass}>{inner}</div>;
+    }
+
+    return (
+        <Link href={href} className={cardClass}>
+            {inner}
+        </Link>
     );
 }

@@ -21,22 +21,51 @@ class LandingController extends Controller
     /**
      * Display the landing page with products.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $category = $this->resolveGameCategoryQuery($request);
+
         return Inertia::render('Guest/Home', [
-            'products' => $this->catalogService->getActiveProducts(),
+            'products' => $this->catalogService->getActiveProducts($category),
             'banners' => $this->catalogService->getActiveBanners(),
+            'gameCategories' => $this->catalogService->getActiveGameCategoriesForFilter(),
+            'filters' => [
+                'category' => $category,
+            ],
         ]);
     }
 
     /**
      * Display the catalog page.
      */
-    public function catalog(): Response
+    public function catalog(Request $request): Response
     {
+        $category = $this->resolveGameCategoryQuery($request);
+
         return Inertia::render('Guest/Catalog', [
-            'products' => $this->catalogService->getActiveProducts(),
+            'products' => $this->catalogService->getActiveProducts($category),
+            'gameCategories' => $this->catalogService->getActiveGameCategoriesForFilter(),
+            'filters' => [
+                'category' => $category,
+            ],
         ]);
+    }
+
+    /**
+     * Query `?category=mlbb` — aman untuk produksi (slug kecil, opsional).
+     */
+    protected function resolveGameCategoryQuery(Request $request): ?string
+    {
+        $raw = $request->query('category');
+        if (! is_string($raw)) {
+            return null;
+        }
+        $v = strtolower(trim($raw));
+        if ($v === '' || ! preg_match('/^[a-z0-9][a-z0-9_-]{0,39}$/', $v)) {
+            return null;
+        }
+
+        return $v;
     }
 
     /**

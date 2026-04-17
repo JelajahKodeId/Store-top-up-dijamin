@@ -2,10 +2,11 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\MemberTier;
 use App\Models\User;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class UserService
 {
@@ -16,15 +17,15 @@ class UserService
     {
         $query = User::with('roles')->latest()->orderByDesc('id');
 
-        if (!empty($filters['search'])) {
-            $query->where(function($q) use ($filters) {
-                $q->where('name', 'like', '%' . $filters['search'] . '%')
-                  ->orWhere('email', 'like', '%' . $filters['search'] . '%')
-                  ->orWhere('phone_number', 'like', '%' . $filters['search'] . '%');
+        if (! empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('name', 'like', '%'.$filters['search'].'%')
+                    ->orWhere('email', 'like', '%'.$filters['search'].'%')
+                    ->orWhere('phone_number', 'like', '%'.$filters['search'].'%');
             });
         }
 
-        if (!empty($filters['role'])) {
+        if (! empty($filters['role'])) {
             $query->role($filters['role']);
         }
 
@@ -37,11 +38,23 @@ class UserService
     public function createUser(array $data): User
     {
         return DB::transaction(function () use ($data) {
+            $tier = MemberTier::Standard;
+            if (($data['role'] ?? '') === 'member' && ! empty($data['member_tier'])) {
+                $tier = MemberTier::tryFrom((string) $data['member_tier']) ?? MemberTier::Standard;
+            }
+
+            $balance = 0;
+            if (($data['role'] ?? '') === 'member' && isset($data['balance']) && $data['balance'] !== null && $data['balance'] !== '') {
+                $balance = (float) $data['balance'];
+            }
+
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'phone_number' => $data['phone_number'] ?? null,
                 'password' => Hash::make($data['password']),
+                'member_tier' => $tier,
+                'balance' => $balance,
             ]);
 
             $user->assignRole($data['role']);
@@ -62,13 +75,27 @@ class UserService
                 'phone_number' => $data['phone_number'] ?? null,
             ]);
 
-            if (!empty($data['password'])) {
+            if (! empty($data['password'])) {
                 $user->update(['password' => Hash::make($data['password'])]);
             }
 
             $user->syncRoles($data['role']);
+            $user->refresh();
 
-            return $user;
+            if ($user->hasRole('member')) {
+                $memberPatch = [];
+                if (! empty($data['member_tier'])) {
+                    $memberPatch['member_tier'] = MemberTier::from((string) $data['member_tier']);
+                }
+                if (array_key_exists('balance', $data) && $data['balance'] !== null && $data['balance'] !== '') {
+                    $memberPatch['balance'] = (float) $data['balance'];
+                }
+                if ($memberPatch !== []) {
+                    $user->update($memberPatch);
+                }
+            }
+
+            return $user->refresh();
         });
     }
 

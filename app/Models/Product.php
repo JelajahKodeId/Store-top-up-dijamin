@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ProductGameCategory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,9 +17,10 @@ class Product extends Model
         'telegram_group_invite_url',
         'status',
         'platform_type',
+        'game_category',
     ];
 
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'game_category_label'];
 
     /**
      * Nilai kolom `image`: URL absolut, atau path relatif di disk public (mis. products/abc.jpg).
@@ -61,6 +63,13 @@ class Product extends Model
     {
         return Attribute::get(
             fn () => self::publicUrlForStoredImage($this->attributes['image'] ?? null)
+        );
+    }
+
+    protected function gameCategoryLabel(): Attribute
+    {
+        return Attribute::get(
+            fn () => ProductGameCategory::label($this->attributes['game_category'] ?? null)
         );
     }
 

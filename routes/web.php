@@ -12,11 +12,18 @@ use App\Http\Controllers\Admin\WhatsAppGatewayController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\Member\MemberAccountController;
+use App\Http\Controllers\Member\MemberDashboardController;
+use App\Http\Controllers\Member\MemberOrderController;
+use App\Http\Controllers\Member\MemberPackageController;
+use App\Http\Controllers\Member\MemberTopupController;
 use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WebhookController;
+use App\Models\MemberTierUpgrade;
 use App\Models\Order;
 use App\Models\Voucher;
+use App\Models\WalletTopup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -106,8 +113,35 @@ Route::get('/webhooks/pak-kasir-simulate/{invoice_code}', [WebhookController::cl
 Route::get('/mock-payment/{reference}', function (string $reference) {
     abort_unless(app()->environment(['local', 'testing']), 404);
 
-    // Ekstrak invoice code dari reference (hapus prefix MOCK-)
-    $invoiceCode = preg_replace('/^MOCK-/i', '', $reference);
+    // Ekstrak kode invoice dari reference (hapus prefix MOCK-)
+    $invoiceCode = strtoupper(preg_replace('/^MOCK-/i', '', $reference));
+
+    if (str_starts_with($invoiceCode, 'WTU-')) {
+        $topup = WalletTopup::where('invoice_code', $invoiceCode)->first();
+        if (! $topup) {
+            abort(404, 'Top up tidak ditemukan untuk referensi ini.');
+        }
+
+        return view('mock-wallet-topup', [
+            'topup' => $topup,
+            'invoiceCode' => $invoiceCode,
+            'reference' => $reference,
+        ]);
+    }
+
+    if (str_starts_with($invoiceCode, 'MPK-')) {
+        $upgrade = MemberTierUpgrade::where('invoice_code', $invoiceCode)->first();
+        if (! $upgrade) {
+            abort(404, 'Upgrade paket tidak ditemukan untuk referensi ini.');
+        }
+
+        return view('mock-member-tier', [
+            'upgrade' => $upgrade,
+            'invoiceCode' => $invoiceCode,
+            'reference' => $reference,
+        ]);
+    }
+
     $order = Order::where('invoice_code', $invoiceCode)
         ->with('items')
         ->first();
@@ -174,9 +208,27 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         ->only(['index', 'show', 'update']);
 });
 
+// ── Area member (landing / tema publik) ─────────────────────────────────────
+Route::middleware(['auth', 'verified', 'role:member'])->prefix('member')->name('member.')->group(function () {
+    Route::get('/', [MemberDashboardController::class, 'index'])->name('home');
+    Route::get('/paket', [MemberPackageController::class, 'index'])->name('packages.index');
+    Route::post('/paket', [MemberPackageController::class, 'store'])
+        ->middleware('throttle:member-packages')
+        ->name('packages.store');
+    Route::get('/paket/{invoice}', [MemberPackageController::class, 'show'])->name('packages.show');
+    Route::get('/pesanan', [MemberOrderController::class, 'index'])->name('orders.index');
+    Route::get('/pengaturan', [MemberAccountController::class, 'edit'])->name('settings.edit');
+    Route::patch('/pengaturan', [MemberAccountController::class, 'update'])->name('settings.update');
+    Route::get('/top-up', [MemberTopupController::class, 'index'])->name('topup.index');
+    Route::post('/top-up', [MemberTopupController::class, 'store'])
+        ->middleware('throttle:member-topup')
+        ->name('topup.store');
+    Route::get('/top-up/{invoice}', [MemberTopupController::class, 'show'])->name('topup.show');
+});
+
 // ── Authenticated (member + admin) ──────────────────────────────────────────
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Member dashboard — DashboardController@member menangani redirect ke admin jika role admin
+    // Legacy /dashboard → arahkan ke area yang sesuai role
     Route::get('/dashboard', [DashboardController::class, 'member'])->name('dashboard');
 });
 

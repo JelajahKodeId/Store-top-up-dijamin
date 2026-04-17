@@ -1270,7 +1270,8 @@ export default function ProductDetail({
                                     rel="noopener noreferrer"
                                     className="inline-flex w-full flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0088cc] px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white shadow-sm transition-all hover:brightness-110 sm:w-auto sm:px-5 sm:py-3"
                                 >
-                                    Buka undangan
+                                    <AppIcons.download size={14} strokeWidth={2.5} />
+                                    Download
                                     <AppIcons.arrowRight size={12} strokeWidth={3} />
                                 </a>
                             </div>

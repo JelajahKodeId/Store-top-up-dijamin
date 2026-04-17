@@ -60,7 +60,11 @@ class DashboardController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
+        if ($request->user()->hasRole('member')) {
+            return redirect()->route('member.home');
+        }
+
         return redirect()->route('home')
-            ->with('info', 'Area member belum tersedia. Lacak pesanan lewat menu Lacak Pesanan.');
+            ->with('error', 'Akun Anda belum memiliki role member. Hubungi administrator.');
     }
 }

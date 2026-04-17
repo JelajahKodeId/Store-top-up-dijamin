@@ -3,15 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Enums\OrderStatus;
+use App\Models\MemberTierUpgrade;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\User;
+use App\Models\WalletTopup;
 use App\Services\KeyDeliveryService;
-use App\Services\WhatsAppService;
 use App\Services\Payment\PaymentGatewayInterface;
+use App\Services\WhatsAppService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class WebhookController extends Controller
@@ -20,8 +25,7 @@ class WebhookController extends Controller
         protected PaymentGatewayInterface $paymentGateway,
         protected KeyDeliveryService $keyDeliveryService,
         protected WhatsAppService $whatsAppService
-    ) {
-    }
+    ) {}
 
     /**
      * Notifikasi pembayaran dari gateway (Midtrans, Tripay, dll).
@@ -40,7 +44,7 @@ class WebhookController extends Controller
         $parsed = $this->paymentGateway->verifyWebhook($request);
 
         if ($parsed === null) {
-            Log::warning('WebhookController: Webhook tidak valid dari ' . $request->ip());
+            Log::warning('WebhookController: Webhook tidak valid dari '.$request->ip());
 
             return response('Invalid signature', 403);
         }
@@ -50,45 +54,243 @@ class WebhookController extends Controller
 
         $payment = Payment::where('reference_id', $referenceId)->first();
 
-        if (!$payment) {
-            Log::warning("WebhookController: Payment dengan reference {$referenceId} tidak ditemukan");
+        if ($payment) {
+            // Validasi kecocokan nominal (Amount) untuk mencegah fraud
+            if (isset($parsed['raw']['amount']) || isset($parsed['raw']['gross_amount'])) {
+                $notified = (int) round((float) ($parsed['raw']['amount'] ?? $parsed['raw']['gross_amount']));
+                $expected = (int) round((float) $payment->amount);
+
+                if ($notified !== $expected) {
+                    Log::warning("WebhookController: Amount mismatch for {$referenceId} (Gateway: {$payment->gateway}, Notified: {$notified}, Expected: {$expected})");
+
+                    return response('Amount mismatch', 400);
+                }
+            }
+
+            $order = $payment->order;
+
+            if ($order->status !== OrderStatus::UNPAID) {
+                Log::info("WebhookController: Order #{$order->invoice_code} sudah diproses (status: {$order->status->value}), diabaikan.");
+
+                return response('OK', 200);
+            }
+
+            if ($status === 'pending') {
+                Log::info("WebhookController: Notifikasi pending untuk {$referenceId} — order tetap unpaid.");
+
+                return response('OK', 200);
+            }
+
+            if ($status === 'paid') {
+                $this->handlePaidWebhook($order, $payment, $parsed['raw']);
+            } elseif ($status === 'failed' || $status === 'expired') {
+                $this->handleFailedWebhook($order, $payment, $status);
+            }
+
+            return response('OK', 200);
+        }
+
+        $topup = WalletTopup::query()
+            ->where('gateway_payment_reference', $referenceId)
+            ->orWhere('invoice_code', $referenceId)
+            ->first();
+
+        if ($topup) {
+            if (isset($parsed['raw']['amount']) || isset($parsed['raw']['gross_amount'])) {
+                $notified = (int) round((float) ($parsed['raw']['amount'] ?? $parsed['raw']['gross_amount']));
+                $expected = (int) round((float) $topup->amount);
+
+                if ($notified !== $expected) {
+                    Log::warning("WebhookController: Topup amount mismatch for {$referenceId} (Notified: {$notified}, Expected: {$expected})");
+
+                    return response('Amount mismatch', 400);
+                }
+            }
+
+            if ($topup->status !== 'pending') {
+                Log::info("WebhookController: Topup #{$topup->invoice_code} sudah diproses ({$topup->status}), diabaikan.");
+
+                return response('OK', 200);
+            }
+
+            if ($status === 'pending') {
+                return response('OK', 200);
+            }
+
+            if ($status === 'paid') {
+                $this->handlePaidWalletTopup($topup, $parsed['raw']);
+            } elseif ($status === 'failed' || $status === 'expired') {
+                $topup->update([
+                    'status' => 'failed',
+                    'payload' => array_merge($topup->payload ?? [], ['gateway_status' => $status, 'webhook' => $parsed['raw']]),
+                ]);
+            }
+
+            return response('OK', 200);
+        }
+
+        $tierUpgrade = MemberTierUpgrade::query()
+            ->where('gateway_payment_reference', $referenceId)
+            ->orWhere('invoice_code', $referenceId)
+            ->first();
+
+        if (! $tierUpgrade) {
+            Log::warning("WebhookController: Payment / topup / upgrade dengan reference {$referenceId} tidak ditemukan");
 
             return response('Payment not found', 404);
         }
 
-        // Validasi kecocokan nominal (Amount) untuk mencegah fraud
         if (isset($parsed['raw']['amount']) || isset($parsed['raw']['gross_amount'])) {
             $notified = (int) round((float) ($parsed['raw']['amount'] ?? $parsed['raw']['gross_amount']));
-            $expected = (int) round((float) $payment->amount);
+            $expected = (int) round((float) $tierUpgrade->amount);
 
             if ($notified !== $expected) {
-                Log::warning("WebhookController: Amount mismatch for {$referenceId} (Gateway: {$payment->gateway}, Notified: {$notified}, Expected: {$expected})");
+                Log::warning("WebhookController: Tier upgrade amount mismatch for {$referenceId} (Notified: {$notified}, Expected: {$expected})");
 
                 return response('Amount mismatch', 400);
             }
         }
 
-        $order = $payment->order;
-
-        if ($order->status !== OrderStatus::UNPAID) {
-            Log::info("WebhookController: Order #{$order->invoice_code} sudah diproses (status: {$order->status->value}), diabaikan.");
+        if ($tierUpgrade->status !== 'pending') {
+            Log::info("WebhookController: Tier upgrade #{$tierUpgrade->invoice_code} sudah diproses ({$tierUpgrade->status}), diabaikan.");
 
             return response('OK', 200);
         }
 
         if ($status === 'pending') {
-            Log::info("WebhookController: Notifikasi pending untuk {$referenceId} — order tetap unpaid.");
-
             return response('OK', 200);
         }
 
         if ($status === 'paid') {
-            $this->handlePaidWebhook($order, $payment, $parsed['raw']);
+            $this->handlePaidMemberTierUpgrade($tierUpgrade, $parsed['raw']);
         } elseif ($status === 'failed' || $status === 'expired') {
-            $this->handleFailedWebhook($order, $payment, $status);
+            $tierUpgrade->update([
+                'status' => 'failed',
+                'payload' => array_merge($tierUpgrade->payload ?? [], ['gateway_status' => $status, 'webhook' => $parsed['raw']]),
+            ]);
         }
 
         return response('OK', 200);
+    }
+
+    /**
+     * Simulasi pembayaran sukses (order atau top up saldo) — hanya local/testing.
+     */
+    public function mock(string $invoice_code): RedirectResponse
+    {
+        abort_unless(app()->environment(['local', 'testing']), 404);
+
+        $invoice_code = strtoupper(trim($invoice_code));
+
+        if (str_starts_with($invoice_code, 'WTU-')) {
+            $topup = WalletTopup::where('invoice_code', $invoice_code)->firstOrFail();
+            $amount = (int) round((float) $topup->amount);
+            $sub = Request::create('/webhooks/payment', 'POST', [], [], [], [
+                'HTTP_X_CALLBACK_SIGNATURE' => 'mock',
+                'CONTENT_TYPE' => 'application/json',
+            ], json_encode([
+                'reference' => $topup->gateway_payment_reference,
+                'status' => 'paid',
+                'amount' => $amount,
+            ], JSON_THROW_ON_ERROR));
+
+            app()->handle($sub);
+
+            return redirect()->route('member.topup.show', $topup->invoice_code)
+                ->with('success', 'Top up berhasil (simulasi).');
+        }
+
+        if (str_starts_with($invoice_code, 'MPK-')) {
+            $upgrade = MemberTierUpgrade::where('invoice_code', $invoice_code)->firstOrFail();
+            $amount = (int) round((float) $upgrade->amount);
+            $sub = Request::create('/webhooks/payment', 'POST', [], [], [], [
+                'HTTP_X_CALLBACK_SIGNATURE' => 'mock',
+                'CONTENT_TYPE' => 'application/json',
+            ], json_encode([
+                'reference' => $upgrade->gateway_payment_reference,
+                'status' => 'paid',
+                'amount' => $amount,
+            ], JSON_THROW_ON_ERROR));
+
+            app()->handle($sub);
+
+            return redirect()->route('member.packages.show', $upgrade->invoice_code)
+                ->with('success', 'Paket berhasil diupgrade (simulasi).');
+        }
+
+        $order = Order::where('invoice_code', $invoice_code)->firstOrFail();
+        $payment = Payment::where('order_id', $order->id)->where('status', 'pending')->first();
+        if (! $payment) {
+            return redirect()->route('orders.status', $order->invoice_code)
+                ->with('info', 'Tidak ada pembayaran tertunda untuk invoice ini.');
+        }
+
+        $amount = (int) round((float) $payment->amount);
+        $sub = Request::create('/webhooks/payment', 'POST', [], [], [], [
+            'HTTP_X_CALLBACK_SIGNATURE' => 'mock',
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode([
+            'reference' => $payment->reference_id,
+            'status' => 'paid',
+            'amount' => $amount,
+        ], JSON_THROW_ON_ERROR));
+
+        app()->handle($sub);
+
+        return redirect()->route('orders.status', $order->invoice_code)
+            ->with('success', 'Pembayaran berhasil (simulasi).');
+    }
+
+    protected function handlePaidWalletTopup(WalletTopup $topup, array $raw): void
+    {
+        try {
+            DB::transaction(function () use ($topup, $raw) {
+                $locked = WalletTopup::where('id', $topup->id)->lockForUpdate()->first();
+                if ($locked->status !== 'pending') {
+                    return;
+                }
+
+                $user = User::where('id', $locked->user_id)->lockForUpdate()->first();
+                $user->increment('balance', $locked->amount);
+
+                $locked->update([
+                    'status' => 'success',
+                    'paid_at' => now(),
+                    'payload' => array_merge($locked->payload ?? [], ['webhook' => $raw]),
+                ]);
+            });
+
+            Log::info("WebhookController: Topup #{$topup->invoice_code} sukses — saldo ditambahkan.");
+        } catch (\Throwable $e) {
+            Log::error("WebhookController: Gagal proses topup #{$topup->invoice_code} — {$e->getMessage()}");
+        }
+    }
+
+    protected function handlePaidMemberTierUpgrade(MemberTierUpgrade $upgrade, array $raw): void
+    {
+        try {
+            DB::transaction(function () use ($upgrade, $raw) {
+                $locked = MemberTierUpgrade::where('id', $upgrade->id)->lockForUpdate()->first();
+                if ($locked->status !== 'pending') {
+                    return;
+                }
+
+                $user = User::where('id', $locked->user_id)->lockForUpdate()->first();
+                $newTier = $locked->target_tier;
+                $user->member_tier = $newTier;
+                $user->save();
+
+                $locked->update([
+                    'status' => 'success',
+                    'paid_at' => now(),
+                    'payload' => array_merge($locked->payload ?? [], ['webhook' => $raw]),
+                ]);
+            });
+
+            Log::info("WebhookController: Tier upgrade #{$upgrade->invoice_code} sukses.");
+        } catch (\Throwable $e) {
+            Log::error("WebhookController: Gagal proses tier upgrade #{$upgrade->invoice_code} — {$e->getMessage()}");
+        }
     }
 
     /**
@@ -101,7 +303,7 @@ class WebhookController extends Controller
         $order = Order::where('invoice_code', $invoiceCode)->firstOrFail();
         $amount = (int) round((float) $order->total_price);
 
-        $response = \Illuminate\Support\Facades\Http::asJson()->post('https://app.pakasir.com/api/paymentsimulation', [
+        $response = Http::asJson()->post('https://app.pakasir.com/api/paymentsimulation', [
             'project' => config('services.pak_kasir.slug'),
             'order_id' => $invoiceCode,
             'amount' => $amount,
@@ -114,7 +316,7 @@ class WebhookController extends Controller
         }
 
         return redirect()->route('orders.status', $invoiceCode)
-            ->with('error', 'Gagal kirim simulasi: ' . $response->json('message', 'Unknown error'));
+            ->with('error', 'Gagal kirim simulasi: '.$response->json('message', 'Unknown error'));
     }
 
     protected function handlePaidWebhook(Order $order, Payment $payment, array $payload): void
@@ -150,12 +352,12 @@ class WebhookController extends Controller
      * Endpoint untuk Semi-Bot WhatsApp.
      * Menerima invoice_code dan whatsapp_number, lalu kirim ulang key jika valid.
      */
-    public function waBot(Request $request): \Illuminate\Http\JsonResponse
+    public function waBot(Request $request): JsonResponse
     {
         $secret = config('services.whatsapp.server_secret');
         $auth = $request->header('Authorization');
 
-        if ($secret && $auth !== 'Bearer ' . $secret) {
+        if ($secret && $auth !== 'Bearer '.$secret) {
             Log::warning('WebhookController@waBot: Unauthorized access attempt', ['ip' => $request->ip()]);
 
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -198,7 +400,7 @@ class WebhookController extends Controller
                 $this->keyDeliveryService->deliver($order);
 
                 return response()->json([
-                    'message' => "⏳ Pembayaran terdeteksi. Key sedang diproses dan akan segera dikirim ke nomor ini.",
+                    'message' => '⏳ Pembayaran terdeteksi. Key sedang diproses dan akan segera dikirim ke nomor ini.',
                 ]);
             } catch (\Throwable $e) {
                 return response()->json([
@@ -207,7 +409,7 @@ class WebhookController extends Controller
             }
         }
 
-        if ($order->status === OrderStatus::EXPIRED || $order->status === OrderStatus::FAILED) {
+        if ($order->status === OrderStatus::FAILED) {
             return response()->json([
                 'message' => "❌ Invoice *{$invoiceCode}* sudah kedaluwarsa atau gagal. Silakan lakukan pemesanan ulang.",
             ]);

@@ -4,8 +4,9 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import { AppIcons } from '@/Components/shared/AppIcon';
 import Button from '@/Components/ui/Button';
 import ProductCard from '@/Components/shared/ProductCard';
+import GameCategoryFilter from '@/Components/guest/GameCategoryFilter';
 
-export default function Home({ products = [], banners = [] }) {
+export default function Home({ products = [], banners = [], gameCategories = [], filters = {} }) {
     const activeBanners = banners.filter(b => b.is_active);
     const [activeSlide, setActiveSlide] = useState(0);
 
@@ -90,12 +91,14 @@ export default function Home({ products = [], banners = [] }) {
                             <h2 className="font-bebas text-2xl font-bold uppercase leading-tight tracking-wide text-guest-text sm:text-3xl md:text-4xl">Top Pick Product</h2>
                             <p className="mt-1.5 text-sm leading-normal text-guest-muted sm:text-[15px]">Lisensi game digital & software premium dengan sistem pengiriman instan.</p>
                         </div>
-                        <Link href="/catalog">
+                        <Link href={route('catalog')}>
                             <Button variant="secondary" size="sm" className="rounded-xl bg-white text-guest-text shadow-md hover:bg-guest-elevated">
                                 Semua Produk <AppIcons.arrowRight size={14} />
                             </Button>
                         </Link>
                     </div>
+
+                    <GameCategoryFilter routeName="home" categories={gameCategories} currentCategory={filters.category ?? null} />
 
                     {products.length > 0 ? (
                         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">

@@ -22,7 +22,7 @@ export default function Login({ status }) {
         <>
             <Head title={`Masuk — ${siteName}`} />
 
-            <div className="min-h-screen bg-store-dark flex font-sans relative overflow-hidden">
+            <div className="min-h-screen bg-store-dark flex font-sans text-[15px] leading-normal text-white/90 antialiased relative overflow-hidden">
                 {/* ── Decorative Background ── */}
                 <div className="fixed inset-0 bg-grid opacity-[0.03] pointer-events-none" />
                 <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-store-accent/10 rounded-full blur-[120px] pointer-events-none" />
@@ -38,14 +38,14 @@ export default function Login({ status }) {
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-store-accent opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-store-accent"></span>
                             </span>
-                            <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Elite Gaming Service 24/7</span>
+                            <span className="text-xs font-semibold tracking-wide text-white/70">Layanan game 24 jam</span>
                         </div>
-                        <h1 className="text-6xl font-black text-white leading-[0.9] mb-6 font-bebas uppercase tracking-tighter text-glow-accent">
+                        <h1 className="font-bebas text-5xl sm:text-6xl font-bold text-white leading-[0.95] mb-5 uppercase tracking-tight text-glow-accent">
                             Level up your<br />
                             <span className="text-gradient-accent">Gaming gears</span>
                         </h1>
-                        <p className="text-store-subtle text-lg leading-relaxed max-w-md font-medium">
-                            Masuk ke portal premium {siteName} dan nikmati layanan top-up tercepat di industri gaming.
+                        <p className="text-base leading-relaxed max-w-md text-white/60 font-normal">
+                            Masuk ke akun {siteName} untuk area member, pesanan, top up, dan upgrade paket.
                         </p>
                     </div>
 
@@ -57,8 +57,8 @@ export default function Login({ status }) {
                                 </div>
                             ))}
                         </div>
-                        <p className="text-xs font-bold text-white/40 uppercase tracking-widest">
-                            Bergabung dengan <span className="text-white">10K+</span> gamers aktif
+                        <p className="text-sm font-medium text-white/45">
+                            Bergabung dengan <span className="font-semibold text-white/80">10K+</span> gamer aktif
                         </p>
                     </div>
                 </div>
@@ -72,12 +72,14 @@ export default function Login({ status }) {
                         </div>
 
                         <div>
-                            <h2 className="text-4xl font-black text-white font-bebas uppercase tracking-tight mb-2">Selamat Datang Kembali</h2>
-                            <p className="text-sm text-store-subtle font-medium uppercase tracking-wider">Silahkan masuk ke akun anda</p>
+                            <h2 className="font-bebas text-3xl sm:text-4xl font-bold text-white uppercase tracking-tight mb-2">
+                                Selamat datang kembali
+                            </h2>
+                            <p className="text-sm text-white/55 font-normal">Silakan masuk dengan email dan kata sandi Anda.</p>
                         </div>
 
                         {status && (
-                            <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-2xl text-sm font-bold text-green-400 flex items-center gap-3">
+                            <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-2xl text-sm font-medium text-green-300 flex items-center gap-3">
                                 <AppIcons.success_circle size={18} />
                                 {status}
                             </div>
@@ -86,43 +88,41 @@ export default function Login({ status }) {
                         <form onSubmit={submit} className="space-y-6">
                             {/* Email */}
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block px-1">Email Gamer</label>
+                                <label className="block px-1 text-sm font-semibold text-white/65">Email</label>
                                 <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/20 group-focus-within:text-store-accent transition-colors">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25 group-focus-within:text-store-accent transition-colors">
                                         <AppIcons.mail size={18} strokeWidth={2.5} />
                                     </div>
                                     <input
                                         type="email"
                                         value={data.email}
                                         onChange={(e) => setData('email', e.target.value)}
-                                        className={`w-full bg-white/5 border-2 ${errors.email ? 'border-red-500/50' : 'border-white/5'} focus:border-store-accent rounded-2xl py-4 pl-12 pr-4 text-white font-bold placeholder:text-white/10 transition-all outline-none`}
-                                        placeholder="GAMER@CORE.COM"
+                                        className={`w-full bg-white/5 border-2 ${errors.email ? 'border-red-500/50' : 'border-white/5'} focus:border-store-accent rounded-2xl py-3.5 pl-12 pr-4 text-[15px] font-normal text-white placeholder:text-white/25 placeholder:font-normal transition-all outline-none`}
+                                        placeholder="nama@email.com"
                                         autoComplete="email"
                                         autoFocus
                                     />
                                 </div>
-                                {errors.email && <p className="px-1 text-[10px] font-black text-red-400 uppercase italic tracking-wider">{errors.email}</p>}
+                                {errors.email && <p className="px-1 text-xs font-medium text-red-400">{errors.email}</p>}
                             </div>
 
                             {/* Password */}
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between px-1">
-                                    <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">Input Pass-code</label>
-                                </div>
+                                <label className="block px-1 text-sm font-semibold text-white/65">Kata sandi</label>
                                 <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/20 group-focus-within:text-store-accent transition-colors">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25 group-focus-within:text-store-accent transition-colors">
                                         <AppIcons.lock size={18} strokeWidth={2.5} />
                                     </div>
                                     <input
                                         type="password"
                                         value={data.password}
                                         onChange={(e) => setData('password', e.target.value)}
-                                        className={`w-full bg-white/5 border-2 ${errors.password ? 'border-red-500/50' : 'border-white/5'} focus:border-store-accent rounded-2xl py-4 pl-12 pr-4 text-white font-bold placeholder:text-white/10 transition-all outline-none`}
-                                        placeholder="••••••••"
+                                        className={`w-full bg-white/5 border-2 ${errors.password ? 'border-red-500/50' : 'border-white/5'} focus:border-store-accent rounded-2xl py-3.5 pl-12 pr-4 text-[15px] font-normal text-white placeholder:text-white/25 transition-all outline-none`}
+                                        placeholder="Kata sandi Anda"
                                         autoComplete="current-password"
                                     />
                                 </div>
-                                {errors.password && <p className="px-1 text-[10px] font-black text-red-400 uppercase italic tracking-wider">{errors.password}</p>}
+                                {errors.password && <p className="px-1 text-xs font-medium text-red-400">{errors.password}</p>}
                             </div>
 
                             {/* Remember me */}
@@ -133,8 +133,8 @@ export default function Login({ status }) {
                                     onChange={(e) => setData('remember', e.target.checked)}
                                     className="w-5 h-5 rounded-lg bg-white/5 border-2 border-white/10 text-store-accent focus:ring-store-accent focus:ring-offset-store-dark transition-all"
                                 />
-                                <span className="text-[11px] font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">
-                                    Tetap aktif dalam sesi
+                                <span className="text-sm font-medium text-white/50 group-hover:text-white/75 transition-colors">
+                                    Ingat saya di perangkat ini
                                 </span>
                             </label>
 
@@ -142,25 +142,28 @@ export default function Login({ status }) {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="w-full bg-store-accent hover:bg-white text-store-dark font-black uppercase tracking-widest py-5 rounded-2xl transition-all duration-300 shadow-accent-glow flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-store-accent hover:bg-amber-300 text-store-dark text-sm font-bold tracking-wide py-4 rounded-2xl transition-all duration-300 shadow-accent-glow flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {processing ? (
-                                    <><Spinner size="sm" color="dark" /> Mengunduh Data...</>
+                                    <><Spinner size="sm" color="dark" /> Memproses…</>
                                 ) : (
                                     <>
-                                        Masuk Akun Sekarang
-                                        <AppIcons.arrowRight size={18} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />
+                                        Masuk
+                                        <AppIcons.arrowRight size={18} strokeWidth={2.5} className="group-hover:translate-x-0.5 transition-transform" />
                                     </>
                                 )}
                             </button>
                         </form>
 
                         <div className="pt-8 border-t border-white/5">
-                            <p className="text-center text-[10px] font-bold text-white/25 uppercase tracking-widest leading-relaxed">
-                                Akses khusus pengelola toko. Pembelian tetap lewat katalog tanpa akun.
+                            <p className="text-center text-sm font-normal text-white/45 leading-relaxed">
+                                Belum punya akun?{' '}
+                                <Link href={route('register')} className="font-semibold text-store-accent hover:text-amber-200">
+                                    Daftar sebagai member
+                                </Link>
                             </p>
-                            <div className="mt-6 flex justify-center">
-                                <Link href="/" className="text-[10px] font-black text-store-accent uppercase tracking-widest hover:text-white transition-colors">
+                            <div className="mt-5 flex justify-center">
+                                <Link href="/" className="text-sm font-medium text-white/40 hover:text-white/70 transition-colors">
                                     ← Kembali ke beranda
                                 </Link>
                             </div>

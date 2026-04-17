@@ -38,7 +38,7 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('admin.dashboard', absolute: false));
     }
 
-    public function test_non_admin_login_is_rejected(): void
+    public function test_member_can_authenticate_and_redirects_to_member_area(): void
     {
         $user = User::factory()->create();
         $user->assignRole('member');
@@ -48,9 +48,8 @@ class AuthenticationTest extends TestCase
             'password' => 'password',
         ]);
 
-        $this->assertGuest();
-        $response->assertRedirect(route('home', absolute: false));
-        $response->assertSessionHas('error');
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('member.home', absolute: false));
     }
 
     public function test_user_without_admin_role_cannot_sign_in(): void

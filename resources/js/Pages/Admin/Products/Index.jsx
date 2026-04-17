@@ -26,6 +26,7 @@ export default function ProductIndex({ products, filters }) {
         telegram_group_invite_url: '',
         status: 'active',
         platform_type: '',
+        game_category: '',
         fields: [],
         durations: [{ name: '', duration_days: '', price: '', is_active: true }],
     });
@@ -49,6 +50,7 @@ export default function ProductIndex({ products, filters }) {
             telegram_group_invite_url: product.telegram_group_invite_url || '',
             status: product.status,
             platform_type: product.platform_type || '',
+            game_category: product.game_category || '',
             fields: product.fields || [],
             durations: product.durations || [],
         });
@@ -164,12 +166,13 @@ export default function ProductIndex({ products, filters }) {
                     </>
                 }
                 headers={[
-                    { label: 'Produk', className: 'w-[30%]' },
+                    { label: 'Produk', className: 'w-[26%]' },
                     { label: 'Platform', className: 'w-[10%]' },
-                    { label: 'Varian', className: 'w-[15%]' },
-                    { label: 'Stok Key', className: 'w-[15%]' },
-                    { label: 'Status', className: 'w-[15%]' },
-                    { label: 'Aksi', className: 'w-[15%] text-right' }
+                    { label: 'Game', className: 'w-[12%] hidden md:table-cell' },
+                    { label: 'Varian', className: 'w-[14%]' },
+                    { label: 'Stok Key', className: 'w-[14%]' },
+                    { label: 'Status', className: 'w-[12%]' },
+                    { label: 'Aksi', className: 'w-[12%] text-right' },
                 ]}
             >
                 {products.data.map((product) => (
@@ -205,6 +208,15 @@ export default function ProductIndex({ products, filters }) {
                                 )}
                                 {!product.platform_type && <span className="text-[10px] text-store-subtle font-bold">—</span>}
                             </div>
+                        </td>
+                        <td className="hidden md:table-cell">
+                            {product.game_category_label ? (
+                                <span className="text-[10px] font-bold uppercase tracking-wide text-store-charcoal">
+                                    {product.game_category_label}
+                                </span>
+                            ) : (
+                                <span className="text-[10px] font-bold text-store-subtle">—</span>
+                            )}
                         </td>
                         <td>
                             <div className="flex flex-col gap-1">
@@ -345,6 +357,34 @@ export default function ProductIndex({ products, filters }) {
                                         <option value="ios">iOS Only</option>
                                         <option value="both">Android & iOS</option>
                                     </Select>
+                                    <div className="space-y-2">
+                                        <Input
+                                            label="Kategori game (opsional)"
+                                            value={data.game_category}
+                                            onChange={(e) =>
+                                                setData(
+                                                    'game_category',
+                                                    e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '')
+                                                )
+                                            }
+                                            error={errors.game_category}
+                                            placeholder="mis. mlbb, roblox, pubgm"
+                                            list="admin-game-category-presets"
+                                        />
+                                        <datalist id="admin-game-category-presets">
+                                            <option value="mlbb" />
+                                            <option value="roblox" />
+                                            <option value="pubgm" />
+                                            <option value="ff" />
+                                            <option value="genshin" />
+                                            <option value="valorant" />
+                                            <option value="minecraft" />
+                                            <option value="steam" />
+                                        </datalist>
+                                        <p className="text-[9px] font-medium leading-relaxed text-store-subtle">
+                                            Slug kecil (huruf/angka, tanda hubung). Kosongkan untuk produk tanpa filter game — aman untuk data lama.
+                                        </p>
+                                    </div>
                                     <Input
                                         label="Link undangan grup Telegram (opsional)"
                                         value={data.telegram_group_invite_url}

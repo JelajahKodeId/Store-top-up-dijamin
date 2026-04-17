@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\MemberTier;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -38,6 +39,12 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
+                    'phone_number' => $request->user()->phone_number,
+                    'balance' => (float) $request->user()->balance,
+                    'member_tier' => ($mt = MemberTier::fromDatabase(
+                        $request->user()->getAttributes()['member_tier'] ?? null
+                    ))->value,
+                    'member_tier_label' => $mt->label(),
                     'roles' => $request->user()->getRoleNames(),
                     'permissions' => $request->user()->getAllPermissions()->pluck('name'),
                 ] : null,
