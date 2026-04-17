@@ -75,7 +75,6 @@ export default function OrderShow({ order }) {
                                                             <KeyIcon size={14} className="text-store-accent flex-shrink-0" />
                                                             <code className="text-xs font-bold text-store-charcoal font-mono flex-1 break-all">{key.key_code}</code>
                                                         </div>
-                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
