@@ -25,6 +25,8 @@ export default function UserIndex({ users, filters }) {
         role: 'member',
         password: '',
         password_confirmation: '',
+        member_tier: 'standard',
+        balance: '',
     });
 
     const openCreateModal = () => {
@@ -42,6 +44,8 @@ export default function UserIndex({ users, filters }) {
             role: user.role,
             password: '',
             password_confirmation: '',
+            member_tier: user.member_tier || 'standard',
+            balance: user.balance ?? '',
         });
         clearErrors();
         setIsEditModalOpen(true);
@@ -100,7 +104,7 @@ export default function UserIndex({ users, filters }) {
     return (
         <AdminLayout
             title="Manajemen Pengguna"
-            subtitle="Kelola akun dan role administrator/member"
+            subtitle="Kelola akun, role, saldo dompet, dan level paket member"
         >
             <Head title="Manajemen Pengguna" />
 
@@ -132,10 +136,11 @@ export default function UserIndex({ users, filters }) {
                     </>
                 }
                 headers={[
-                    { label: 'Pengguna', className: 'w-[50%] lg:w-[40%]' },
-                    { label: 'Kontak', className: 'hidden md:table-cell w-[30%]' },
-                    { label: 'Role', className: 'w-[20%] lg:w-[15%]' },
-                    { label: 'Aksi', className: 'w-[30%] lg:w-[15%] text-right' }
+                    { label: 'Pengguna', className: 'w-[42%] lg:w-[32%]' },
+                    { label: 'Kontak', className: 'hidden md:table-cell w-[26%]' },
+                    { label: 'Member', className: 'hidden lg:table-cell w-[18%]' },
+                    { label: 'Role', className: 'w-[18%] lg:w-[12%]' },
+                    { label: 'Aksi', className: 'w-[22%] lg:w-[12%] text-right' },
                 ]}
             >
                 {users.data.map((user) => (
@@ -156,6 +161,18 @@ export default function UserIndex({ users, filters }) {
                                 <span className="text-xs font-bold text-store-charcoal">{user.email}</span>
                                 <span className="text-[10px] font-bold text-store-subtle">{user.phone_number || '-'}</span>
                             </div>
+                        </td>
+                        <td className="hidden lg:table-cell">
+                            {user.role === 'member' ? (
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs font-black text-store-charcoal">{user.balance_formatted}</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wide text-store-subtle">
+                                        {user.member_tier_label}
+                                    </span>
+                                </div>
+                            ) : (
+                                <span className="text-[10px] font-bold text-store-subtle">—</span>
+                            )}
                         </td>
                         <td>
                             <Badge variant={user.role === 'admin' ? 'charcoal' : 'gray'}>
@@ -219,6 +236,26 @@ export default function UserIndex({ users, filters }) {
                         <Input label="Password" type="password" value={data.password} onChange={e => setData('password', e.target.value)} error={errors.password} />
                         <Input label="Konfirmasi" type="password" value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value)} />
                     </div>
+                    {data.role === 'member' && (
+                        <div className="space-y-4 rounded-2xl border border-dashed border-store-border bg-admin-bg/50 p-5">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-store-subtle">Dompet &amp; paket member</p>
+                            <Select label="Level paket" value={data.member_tier} onChange={e => setData('member_tier', e.target.value)} error={errors.member_tier}>
+                                <option value="standard">Member (standar)</option>
+                                <option value="reseller">Reseller</option>
+                                <option value="vip">VIP</option>
+                            </Select>
+                            <Input
+                                label="Saldo awal (Rp)"
+                                type="number"
+                                min={0}
+                                step={1000}
+                                value={data.balance}
+                                onChange={e => setData('balance', e.target.value)}
+                                error={errors.balance}
+                                placeholder="0"
+                            />
+                        </div>
+                    )}
                 </div>
             </Modal>
 
@@ -243,6 +280,29 @@ export default function UserIndex({ users, filters }) {
                         <option value="member">Member</option>
                         <option value="admin">Admin</option>
                     </Select>
+                    {data.role === 'member' && (
+                        <div className="space-y-4 rounded-2xl border border-dashed border-store-border bg-admin-bg/50 p-5">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-store-subtle">Dompet &amp; paket member</p>
+                            <Select label="Level paket" value={data.member_tier} onChange={e => setData('member_tier', e.target.value)} error={errors.member_tier}>
+                                <option value="standard">Member (standar)</option>
+                                <option value="reseller">Reseller</option>
+                                <option value="vip">VIP</option>
+                            </Select>
+                            <Input
+                                label="Saldo dompet (Rp)"
+                                type="number"
+                                min={0}
+                                step={1000}
+                                value={data.balance}
+                                onChange={e => setData('balance', e.target.value)}
+                                error={errors.balance}
+                                placeholder="Kosongkan jika tidak diubah"
+                            />
+                            <p className="text-[10px] font-medium leading-relaxed text-store-subtle">
+                                Hanya untuk akun member. Ubah saldo hanya bila perlu (mis. koreksi manual); transaksi top up member tetap lewat gateway.
+                            </p>
+                        </div>
+                    )}
                     <div className="p-5 bg-admin-bg rounded-2xl border border-dashed border-store-border">
                         <p className="text-[10px] font-black text-store-subtle uppercase tracking-widest mb-4">Ubah Password (Optional)</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

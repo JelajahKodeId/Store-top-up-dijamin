@@ -4,45 +4,48 @@ import GuestFooter from '@/Components/guest/GuestFooter';
 
 /**
  * GuestLayout — wrapper halaman publik (tema putih / abu).
+ *
+ * @param {boolean} [memberArea=false] — area /member: bilah atas disederhanakan.
+ * @param {boolean} [hidePageHeading=false] — sembunyikan blok judul bawaan (judul diatur di dalam children, mis. MemberLayout).
  */
-export default function GuestLayout({ children, title, subtitle }) {
+export default function GuestLayout({ children, title, subtitle, memberArea = false, hidePageHeading = false }) {
     const { flash } = usePage().props;
+    const docTitle = title ? `${title} — Mall Store` : 'Mall Store';
 
     return (
         <div className="flex min-h-screen flex-col bg-guest-bg font-sans text-sm font-normal leading-normal text-guest-text antialiased selection:bg-store-accent/25 selection:text-guest-text sm:text-base">
-            <Head title={title ? `${title} — Mall Store` : 'Mall Store'} />
+            <Head title={docTitle} />
 
-            <GuestNavbar />
+            <GuestNavbar memberArea={memberArea} />
 
-            <main className="relative z-10 flex-grow animate-fade-in pt-[88px]">
+            <main className="relative z-10 flex-grow animate-fade-in pt-24 sm:pt-[5.75rem]">
                 {flash?.error && (
-                    <div className="section-container pb-4">
+                    <div className="section-container pb-3 pt-3">
                         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium leading-normal text-red-800 sm:p-4">
                             {flash.error}
                         </div>
                     </div>
                 )}
                 {flash?.success && (
-                    <div className="section-container pb-4">
-                        <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold leading-snug text-green-900">
+                    <div className="section-container pb-3 pt-3">
+                        <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm font-medium leading-snug text-green-900 sm:p-4">
                             {flash.success}
                         </div>
                     </div>
                 )}
                 {flash?.info && (
-                    <div className="section-container pb-4">
+                    <div className="section-container pb-3 pt-3">
                         <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm font-medium leading-normal text-sky-900 sm:p-4">
                             {flash.info}
                         </div>
                     </div>
                 )}
-                {title && (
+
+                {!hidePageHeading && title && (
                     <div className="section-container pb-4 pt-6 sm:pb-5 sm:pt-8">
                         <div className="space-y-0.5">
                             <h1 className="section-heading">{title}</h1>
-                            {subtitle && (
-                                <p className="section-subtext">{subtitle}</p>
-                            )}
+                            {subtitle && <p className="section-subtext">{subtitle}</p>}
                         </div>
                     </div>
                 )}

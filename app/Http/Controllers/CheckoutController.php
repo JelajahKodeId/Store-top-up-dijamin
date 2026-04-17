@@ -12,6 +12,7 @@ use App\Models\Voucher;
 use App\Services\Payment\PaymentGatewayInterface;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -92,7 +93,11 @@ class CheckoutController extends Controller
                     $voucher->increment('used');
                 }
 
+                $authUser = Auth::user();
+                $memberUserId = ($authUser && $authUser->hasRole('member')) ? $authUser->id : null;
+
                 $order = Order::create([
+                    'user_id' => $memberUserId,
                     'customer_name' => $request->customer_name,
                     // customer_email tidak dikumpulkan — notifikasi via WhatsApp
                     'customer_phone' => $request->whatsapp,

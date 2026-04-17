@@ -18,6 +18,10 @@ class ProductRequest extends FormRequest
         if ($tg === '' || $tg === null) {
             $this->merge(['telegram_group_invite_url' => null]);
         }
+        $gc = $this->input('game_category');
+        if ($gc === '' || $gc === null) {
+            $this->merge(['game_category' => null]);
+        }
     }
 
     public function rules(): array
@@ -33,6 +37,7 @@ class ProductRequest extends FormRequest
             'telegram_group_invite_url' => ['nullable', 'string', 'max:2048', 'url'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'platform_type' => ['nullable', Rule::in(['android', 'ios', 'both'])],
+            'game_category' => ['nullable', 'string', 'max:40', 'regex:/^[a-z0-9][a-z0-9_-]*$/'],
 
             // Fields validation
             'fields' => ['nullable', 'array'],

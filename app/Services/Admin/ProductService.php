@@ -27,6 +27,16 @@ class ProductService
         return $v === '' ? null : $v;
     }
 
+    private function normalizedGameCategory(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        $v = strtolower(trim($value));
+
+        return $v === '' ? null : $v;
+    }
+
     /**
      * Create new product with dynamic fields and durations
      */
@@ -41,6 +51,7 @@ class ProductService
                 'telegram_group_invite_url' => $this->normalizedTelegramUrl($data['telegram_group_invite_url'] ?? null),
                 'status' => $data['status'],
                 'platform_type' => $data['platform_type'] ?? null,
+                'game_category' => $this->normalizedGameCategory($data['game_category'] ?? null),
             ]);
 
             if (isset($data['fields'])) {
@@ -73,6 +84,7 @@ class ProductService
                 'telegram_group_invite_url' => $this->normalizedTelegramUrl($data['telegram_group_invite_url'] ?? null),
                 'status' => $data['status'],
                 'platform_type' => $data['platform_type'] ?? null,
+                'game_category' => $this->normalizedGameCategory($data['game_category'] ?? null),
             ]);
 
             // Sync Fields — hapus yang tidak ada di payload, lalu upsert

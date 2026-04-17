@@ -35,12 +35,15 @@ class AuthenticatedSessionController extends Controller
             return redirect()->intended(route('admin.dashboard', absolute: false));
         }
 
-        // Portal member publik belum digunakan — hanya admin login untuk sementara
+        if ($request->user()->hasRole('member')) {
+            return redirect()->intended(route('member.home', absolute: false));
+        }
+
         Auth::guard('web')->logout();
         $request->session()->regenerateToken();
 
         return redirect()->route('home')
-            ->with('error', 'Akun ini tidak memiliki akses panel. Hubungi administrator.');
+            ->with('error', 'Akun ini tidak memiliki akses masuk. Hubungi administrator.');
     }
 
     /**

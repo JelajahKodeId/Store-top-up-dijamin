@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\OrderStatus;
+use App\Http\Middleware\VerifyCsrfToken;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductDuration;
@@ -10,8 +11,8 @@ use App\Models\ProductKey;
 use App\Models\User;
 use App\Services\Payment\MockPaymentService;
 use App\Services\Payment\PaymentGatewayInterface;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -22,14 +23,15 @@ class SecurityTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $member;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
-        $this->app->instance(PaymentGatewayInterface::class, new MockPaymentService());
+        $this->seed(RolePermissionSeeder::class);
+        $this->app->instance(PaymentGatewayInterface::class, new MockPaymentService);
 
         $this->admin = User::factory()->create();
         $this->admin->assignRole('admin');
@@ -42,20 +44,20 @@ class SecurityTest extends TestCase
 
     public function test_checkout_post_without_csrf_returns_419(): void
     {
-        $product  = Product::create(['name' => 'Test', 'slug' => 'test', 'status' => 'active']);
+        $product = Product::create(['name' => 'Test', 'slug' => 'test', 'status' => 'active']);
         $duration = ProductDuration::create([
-            'product_id'    => $product->id,
-            'name'          => '1 Hari',
+            'product_id' => $product->id,
+            'name' => '1 Hari',
             'duration_days' => 1,
-            'price'         => 10000,
-            'is_active'     => true,
+            'price' => 10000,
+            'is_active' => true,
         ]);
 
         // withoutMiddleware tidak dipakai — kita uji bahwa CSRF aktif
         $response = $this->call('POST', route('checkout.store'), [
-            'product_id'  => $product->id,
+            'product_id' => $product->id,
             'duration_id' => $duration->id,
-            'whatsapp'    => '081234567890',
+            'whatsapp' => '081234567890',
         ]);
 
         // Tanpa CSRF token, harus 419 (Page Expired) atau 302 (redirect ke form)
@@ -77,7 +79,7 @@ class SecurityTest extends TestCase
         // Webhook tidak boleh memerlukan CSRF — gateway eksternal tidak bisa mengirimnya
         $response = $this->call('POST', route('webhooks.payment'), [
             'reference' => 'MOCK-TEST',
-            'status'    => 'paid',
+            'status' => 'paid',
         ]);
 
         // Tidak boleh 419
@@ -107,7 +109,7 @@ class SecurityTest extends TestCase
 
     public function test_unauthenticated_user_cannot_post_to_admin_endpoints(): void
     {
-        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+        $this->withoutMiddleware(VerifyCsrfToken::class)
             ->post(route('admin.settings.update'), ['key' => 'site_name', 'value' => 'Hacked'])
             ->assertRedirect(route('login'));
     }
@@ -121,6 +123,27 @@ class SecurityTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_member_can_access_member_dashboard(): void
+    {
+        $this->actingAs($this->member)
+            ->get(route('member.home'))
+            ->assertOk();
+    }
+
+    public function test_member_can_access_package_upgrade_page(): void
+    {
+        $this->actingAs($this->member)
+            ->get(route('member.packages.index'))
+            ->assertOk();
+    }
+
+    public function test_admin_without_member_role_cannot_access_member_area(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('member.home'))
+            ->assertForbidden();
+    }
+
     public function test_member_cannot_view_admin_users_list(): void
     {
         $this->actingAs($this->member)
@@ -131,10 +154,10 @@ class SecurityTest extends TestCase
     public function test_member_cannot_create_product(): void
     {
         $this->actingAs($this->member)
-            ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+            ->withoutMiddleware(VerifyCsrfToken::class)
             ->post(route('admin.products.store'), [
-                'name'   => 'Hacked Product',
-                'slug'   => 'hacked',
+                'name' => 'Hacked Product',
+                'slug' => 'hacked',
                 'status' => 'active',
             ])
             ->assertForbidden();
@@ -144,13 +167,13 @@ class SecurityTest extends TestCase
     {
         $order = Order::create([
             'whatsapp_number' => '08999',
-            'invoice_code'    => 'INV-SEC-001',
-            'total_price'     => 50000,
-            'status'          => OrderStatus::UNPAID,
+            'invoice_code' => 'INV-SEC-001',
+            'total_price' => 50000,
+            'status' => OrderStatus::UNPAID,
         ]);
 
         $this->actingAs($this->member)
-            ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+            ->withoutMiddleware(VerifyCsrfToken::class)
             ->patch(route('admin.orders.update', $order), ['status' => 'success'])
             ->assertForbidden();
 
@@ -159,7 +182,7 @@ class SecurityTest extends TestCase
 
     public function test_member_cannot_delete_product_keys(): void
     {
-        $product  = Product::create(['name' => 'P', 'slug' => 'p', 'status' => 'active']);
+        $product = Product::create(['name' => 'P', 'slug' => 'p', 'status' => 'active']);
         $duration = ProductDuration::create([
             'product_id' => $product->id, 'name' => '1D',
             'duration_days' => 1, 'price' => 5000, 'is_active' => true,
@@ -170,7 +193,7 @@ class SecurityTest extends TestCase
         ]);
 
         $this->actingAs($this->member)
-            ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+            ->withoutMiddleware(VerifyCsrfToken::class)
             ->delete(route('admin.products.keys.destroy', $key))
             ->assertForbidden();
 
@@ -181,7 +204,7 @@ class SecurityTest extends TestCase
 
     public function test_checkout_rejects_sql_injection_in_whatsapp(): void
     {
-        $product  = Product::create(['name' => 'SQL Test', 'slug' => 'sql-test', 'status' => 'active']);
+        $product = Product::create(['name' => 'SQL Test', 'slug' => 'sql-test', 'status' => 'active']);
         $duration = ProductDuration::create([
             'product_id' => $product->id, 'name' => '1D',
             'duration_days' => 1, 'price' => 5000, 'is_active' => true,
@@ -189,11 +212,11 @@ class SecurityTest extends TestCase
 
         // Inject SQL ke field whatsapp — harus truncated/rejected by validation (max:20)
         $sqlPayload = "'; DROP TABLE orders; --";
-        $response   = $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+        $response = $this->withoutMiddleware(VerifyCsrfToken::class)
             ->post(route('checkout.store'), [
-                'product_id'  => $product->id,
+                'product_id' => $product->id,
                 'duration_id' => $duration->id,
-                'whatsapp'    => $sqlPayload,
+                'whatsapp' => $sqlPayload,
             ]);
 
         // Harus gagal validasi karena max:20
@@ -206,17 +229,16 @@ class SecurityTest extends TestCase
         // Jika ada order, pastikan SQL injection tidak expose data lain
         Order::create([
             'whatsapp_number' => '08888',
-            'invoice_code'    => 'INV-REAL-001',
-            'total_price'     => 10000,
-            'status'          => 'unpaid',
+            'invoice_code' => 'INV-REAL-001',
+            'total_price' => 10000,
+            'status' => 'unpaid',
         ]);
 
         $sqlPayload = "' OR '1'='1";
-        $response   = $this->get(route('landing.track.search', ['invoice' => $sqlPayload]));
+        $response = $this->get(route('landing.track.search', ['invoice' => $sqlPayload]));
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) =>
-            $page->where('order', null)
+        $response->assertInertia(fn ($page) => $page->where('order', null)
         );
     }
 
@@ -224,7 +246,7 @@ class SecurityTest extends TestCase
 
     public function test_xss_payload_in_customer_name_is_stored_safely(): void
     {
-        $product  = Product::create(['name' => 'XSS Test', 'slug' => 'xss-test', 'status' => 'active']);
+        $product = Product::create(['name' => 'XSS Test', 'slug' => 'xss-test', 'status' => 'active']);
         $duration = ProductDuration::create([
             'product_id' => $product->id, 'name' => '1D',
             'duration_days' => 1, 'price' => 5000, 'is_active' => true,
@@ -236,12 +258,12 @@ class SecurityTest extends TestCase
 
         $xssPayload = '<script>alert("XSS")</script>';
 
-        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+        $this->withoutMiddleware(VerifyCsrfToken::class)
             ->post(route('checkout.store'), [
-                'product_id'    => $product->id,
-                'duration_id'   => $duration->id,
+                'product_id' => $product->id,
+                'duration_id' => $duration->id,
                 'customer_name' => $xssPayload,
-                'whatsapp'      => '081234567890',
+                'whatsapp' => '081234567890',
             ]);
 
         // Payload tersimpan apa adanya di DB (Eloquent TIDAK escape) — rendering engine (Blade/React) yang escape
@@ -255,7 +277,7 @@ class SecurityTest extends TestCase
 
     public function test_checkout_rate_limit_blocks_excessive_requests(): void
     {
-        $product  = Product::create(['name' => 'RL Test', 'slug' => 'rl-test', 'status' => 'active']);
+        $product = Product::create(['name' => 'RL Test', 'slug' => 'rl-test', 'status' => 'active']);
         $duration = ProductDuration::create([
             'product_id' => $product->id, 'name' => '1D',
             'duration_days' => 1, 'price' => 5000, 'is_active' => true,
@@ -266,14 +288,14 @@ class SecurityTest extends TestCase
         for ($i = 0; $i < 6; $i++) {
             ProductKey::create([
                 'product_id' => $product->id, 'product_duration_id' => $duration->id,
-                'key_code'   => 'RL-KEY-' . $i, 'status' => 'available',
+                'key_code' => 'RL-KEY-'.$i, 'status' => 'available',
             ]);
 
-            $lastResponse = $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+            $lastResponse = $this->withoutMiddleware(VerifyCsrfToken::class)
                 ->post(route('checkout.store'), [
-                    'product_id'  => $product->id,
+                    'product_id' => $product->id,
                     'duration_id' => $duration->id,
-                    'whatsapp'    => '08123456789' . $i,
+                    'whatsapp' => '08123456789'.$i,
                 ]);
         }
 
@@ -287,9 +309,9 @@ class SecurityTest extends TestCase
     public function test_order_model_blocks_mass_assignment_of_sensitive_fields(): void
     {
         $order = new Order([
-            'status'    => 'success',
-            'is_sent'   => true,
-            'id'        => 9999,
+            'status' => 'success',
+            'is_sent' => true,
+            'id' => 9999,
         ]);
 
         // Cek apakah field yang tidak ada di $fillable tidak diisi
@@ -299,17 +321,17 @@ class SecurityTest extends TestCase
 
     public function test_product_key_model_blocks_mass_assignment_of_sold_status(): void
     {
-        $product  = Product::create(['name' => 'MA Test', 'slug' => 'ma-test', 'status' => 'active']);
+        $product = Product::create(['name' => 'MA Test', 'slug' => 'ma-test', 'status' => 'active']);
         $duration = ProductDuration::create([
             'product_id' => $product->id, 'name' => '1D',
             'duration_days' => 1, 'price' => 5000, 'is_active' => true,
         ]);
 
         $key = ProductKey::create([
-            'product_id'          => $product->id,
+            'product_id' => $product->id,
             'product_duration_id' => $duration->id,
-            'key_code'            => 'MA-KEY-001',
-            'status'              => 'available',
+            'key_code' => 'MA-KEY-001',
+            'status' => 'available',
         ]);
 
         // Status 'available' tersimpan dengan benar — 'status' ada di fillable
@@ -322,9 +344,9 @@ class SecurityTest extends TestCase
     {
         $order = Order::create([
             'whatsapp_number' => '08777',
-            'invoice_code'    => 'INV-IDOR-001',
-            'total_price'     => 20000,
-            'status'          => OrderStatus::UNPAID,
+            'invoice_code' => 'INV-IDOR-001',
+            'total_price' => 20000,
+            'status' => OrderStatus::UNPAID,
         ]);
 
         // Member mencoba akses detail order via admin route
@@ -336,11 +358,11 @@ class SecurityTest extends TestCase
     public function test_guest_can_access_own_order_status_by_invoice(): void
     {
         $order = Order::create([
-            'customer_email'  => 'buyer@test.com',
+            'customer_email' => 'buyer@test.com',
             'whatsapp_number' => '08123',
-            'invoice_code'    => 'INV-PUBLIC-001',
-            'total_price'     => 15000,
-            'status'          => OrderStatus::UNPAID,
+            'invoice_code' => 'INV-PUBLIC-001',
+            'total_price' => 15000,
+            'status' => OrderStatus::UNPAID,
         ]);
 
         // Order status accessible via invoice code (public, no auth required)
