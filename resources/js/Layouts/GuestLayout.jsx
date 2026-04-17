@@ -18,7 +18,7 @@ export default function GuestLayout({ children, title, subtitle, memberArea = fa
 
             <GuestNavbar memberArea={memberArea} />
 
-            <main className={`relative z-10 flex-grow animate-fade-in ${memberArea ? 'pt-[56px]' : 'pt-[88px]'}`}>
+            <main className="relative z-10 flex-grow animate-fade-in pt-24 sm:pt-[5.75rem]">
                 {flash?.error && (
                     <div className="section-container pb-3 pt-3">
                         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium leading-normal text-red-800 sm:p-4">
