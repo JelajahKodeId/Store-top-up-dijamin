@@ -91,6 +91,8 @@ Route::post('/vouchers/check', function (Request $request) {
 Route::post('/webhooks/payment', [WebhookController::class, 'handle'])
     ->middleware('throttle:60,1')
     ->name('webhooks.payment');
+Route::post('/webhooks/wa-bot', [WebhookController::class, 'waBot'])
+    ->name('webhooks.wa-bot');
 
 // Mock webhook untuk testing di lokal (hanya aktif di env local/testing)
 Route::get('/webhooks/mock/{invoice_code}', [WebhookController::class, 'mock'])

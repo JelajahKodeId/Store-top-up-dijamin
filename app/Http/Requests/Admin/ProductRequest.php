@@ -32,6 +32,7 @@ class ProductRequest extends FormRequest
             'image_file' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
             'telegram_group_invite_url' => ['nullable', 'string', 'max:2048', 'url'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
+            'platform_type' => ['nullable', Rule::in(['android', 'ios', 'both'])],
 
             // Fields validation
             'fields' => ['nullable', 'array'],

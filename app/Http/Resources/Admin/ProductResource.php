@@ -21,6 +21,7 @@ class ProductResource extends JsonResource
             'image_url' => $this->image_url,
             'telegram_group_invite_url' => $this->telegram_group_invite_url,
             'status' => $this->status,
+            'platform_type' => $this->platform_type,
             'reviews' => $this->whenLoaded('reviews', fn () => $this->reviews->map(fn ($r) => [
                 'id' => $r->id,
                 'author_name' => $r->author_name,

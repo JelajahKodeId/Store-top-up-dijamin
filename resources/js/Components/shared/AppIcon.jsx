@@ -66,6 +66,8 @@ import {
     Layers,
     Download,
     Star,
+    Smartphone,
+    Apple,
 } from 'lucide-react';
 
 /**
@@ -166,6 +168,8 @@ export const AppIcons = {
     layers: Layers,        // paket/tier
     download: Download,    // unduh / undangan Telegram, dll.
     star: Star,              // rating (hindari karakter unicode bintang)
+    android: Smartphone,
+    ios: Apple,
 };
 
 /**

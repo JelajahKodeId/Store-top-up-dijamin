@@ -70,6 +70,23 @@ export default function OrderStatus({ order, flash, app_env }) {
     const csWaLink = site?.whatsapp ? toWaLink(site.whatsapp) : null;
     const isSuccess = order.status === 'success';
 
+    const [copiedKey, setCopiedKey] = useState(null);
+
+    const copyToClipboard = (text) => {
+        if (!navigator.clipboard) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+        } else {
+            navigator.clipboard.writeText(text);
+        }
+        setCopiedKey(text);
+        setTimeout(() => setCopiedKey(null), 2000);
+    };
+
     return (
         <GuestLayout title="Status Pesanan" subtitle={`Invoice #${order.invoice_code}`}>
             <Head title={`Status Pesanan #${order.invoice_code} — Mall Store`} />
@@ -149,28 +166,53 @@ export default function OrderStatus({ order, flash, app_env }) {
                                         <AppIcons.key size={18} className="text-green-700" strokeWidth={2} />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-green-800">Key / Lisensi Tersedia</p>
-                                        <p className="mt-0.5 text-sm font-bold uppercase tracking-wide text-guest-subtle">
-                                            Dikirim langsung ke WhatsApp Anda
+                                        <p className="text-sm font-bold text-green-800">Key / Lisensi Anda</p>
+                                        <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-guest-subtle">
+                                            Sudah dikirim juga ke WhatsApp
                                         </p>
                                     </div>
                                 </div>
 
-                                {/* Info privasi */}
-                                <div className="mb-4 space-y-2 rounded-2xl border border-guest-border bg-guest-surface p-4">
-                                    <div className="flex items-start gap-2.5">
-                                        <AppIcons.shield size={13} className="mt-0.5 flex-shrink-0 text-green-600/80" />
-                                        <p className="text-[11px] font-medium leading-normal text-guest-muted">
-                                            Untuk menjaga privasi, key tidak ditampilkan di halaman ini.
-                                            Key lisensi sudah dikirimkan secara eksklusif ke WhatsApp Anda.
-                                        </p>
-                                    </div>
-                                    {order.whatsapp && (
-                                        <div className="flex items-center gap-2 pt-1">
-                                            <AppIcons.phone size={11} className="text-guest-subtle" />
-                                            <span className="text-[10px] font-mono font-bold text-guest-text">{order.whatsapp}</span>
+                                {/* List Key per Item */}
+                                <div className="mb-4 space-y-3">
+                                    {order.items?.map((item, idx) => (
+                                        <div key={idx} className="space-y-2">
+                                            {item.keys?.length > 0 && (
+                                                <div className="rounded-2xl border border-guest-border bg-guest-surface p-3 sm:p-4">
+                                                    <p className="mb-2.5 text-[10px] font-bold uppercase tracking-wider text-guest-subtle">
+                                                        {item.product_name}
+                                                    </p>
+                                                    <div className="space-y-2">
+                                                        {item.keys.map((k, kIdx) => (
+                                                            <div key={kIdx} className="group relative flex items-center justify-between gap-3 rounded-xl border border-guest-border bg-guest-elevated p-3 transition-all hover:border-green-300 hover:bg-green-50/50">
+                                                                <code className="min-w-0 flex-1 break-all font-mono text-xs font-bold tracking-wider text-guest-text">
+                                                                    {k.key}
+                                                                </code>
+                                                                <button
+                                                                    onClick={() => copyToClipboard(k.key)}
+                                                                    className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide transition-all active:scale-95 ${
+                                                                        copiedKey === k.key
+                                                                            ? 'bg-green-500 text-white shadow-lg shadow-green-500/20'
+                                                                            : 'bg-guest-surface text-guest-muted border border-guest-border hover:bg-green-500 hover:text-white hover:border-green-500'
+                                                                    }`}
+                                                                >
+                                                                    {copiedKey === k.key ? (
+                                                                        <>
+                                                                            <AppIcons.success size={10} /> Copied
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <AppIcons.copy size={10} /> Salin
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
 
                                 {/* Tombol buka WA */}
@@ -179,17 +221,12 @@ export default function OrderStatus({ order, flash, app_env }) {
                                         href={waLink}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center justify-center gap-3 w-full py-4 rounded-xl bg-green-500 hover:bg-green-400 text-store-dark text-xs font-black uppercase tracking-[0.15em] transition-all shadow-[0_0_20px_rgba(74,222,128,0.2)] hover:shadow-[0_0_30px_rgba(74,222,128,0.35)] hover:scale-[1.01] active:scale-[0.98]"
+                                        className="flex items-center justify-center gap-3 w-full py-4 rounded-xl border border-green-200 bg-guest-surface hover:bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-sm hover:shadow-md active:scale-[0.98]"
                                     >
-                                        <AppIcons.phone size={15} strokeWidth={2.5} />
-                                        Buka WhatsApp — Lihat Key
-                                        <AppIcons.arrowRight size={14} strokeWidth={2.5} />
+                                        <AppIcons.phone size={14} strokeWidth={2.5} />
+                                        Buka Chat WhatsApp
                                     </a>
-                                ) : (
-                                    <p className="p-3 text-center text-sm font-medium text-guest-muted">
-                                        Key telah dikirim via WhatsApp. Periksa chat Anda.
-                                    </p>
-                                )}
+                                ) : null}
 
                                 {(() => {
                                     const seen = new Set();

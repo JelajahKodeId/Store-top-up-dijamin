@@ -40,6 +40,7 @@ class ProductService
                 'image' => $this->normalizedImage($data['image'] ?? null),
                 'telegram_group_invite_url' => $this->normalizedTelegramUrl($data['telegram_group_invite_url'] ?? null),
                 'status' => $data['status'],
+                'platform_type' => $data['platform_type'] ?? null,
             ]);
 
             if (isset($data['fields'])) {
@@ -71,6 +72,7 @@ class ProductService
                 'image' => $this->normalizedImage($data['image'] ?? null),
                 'telegram_group_invite_url' => $this->normalizedTelegramUrl($data['telegram_group_invite_url'] ?? null),
                 'status' => $data['status'],
+                'platform_type' => $data['platform_type'] ?? null,
             ]);
 
             // Sync Fields — hapus yang tidak ada di payload, lalu upsert

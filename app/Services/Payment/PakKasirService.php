@@ -106,6 +106,7 @@ class PakKasirService implements PaymentGatewayInterface
         $response = Http::get("{$this->baseUrl}/transactiondetail", [
             'project'  => $this->slug,
             'order_id' => $orderId,
+            'amount'   => $amount,
             'api_key'  => $this->apiKey,
         ]);
 
@@ -117,7 +118,8 @@ class PakKasirService implements PaymentGatewayInterface
         }
 
         $data = $response->json();
-        $rawStatus = strtolower((string) ($data['status'] ?? ''));
+        // Pak Kasir API mengembalikan status di dalam transaction.status
+        $rawStatus = strtolower((string) ($data['transaction']['status'] ?? $data['status'] ?? ''));
 
         // Pemetaan status: Pak Kasir 'completed' => 'paid'
         $status = match ($rawStatus) {

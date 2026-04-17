@@ -75,11 +75,6 @@ export default function OrderShow({ order }) {
                                                             <KeyIcon size={14} className="text-store-accent flex-shrink-0" />
                                                             <code className="text-xs font-bold text-store-charcoal font-mono flex-1 break-all">{key.key_code}</code>
                                                         </div>
-                                                        {key.expired_at && (
-                                                            <p className="text-[10px] text-store-subtle font-bold ml-6">
-                                                                Expired: {key.expired_at}
-                                                            </p>
-                                                        )}
                                                     </div>
                                                 ))}
                                             </div>

@@ -25,6 +25,7 @@ export default function ProductIndex({ products, filters }) {
         image_file: null,
         telegram_group_invite_url: '',
         status: 'active',
+        platform_type: '',
         fields: [],
         durations: [{ name: '', duration_days: '', price: '', is_active: true }],
     });
@@ -47,6 +48,7 @@ export default function ProductIndex({ products, filters }) {
             image_file: null,
             telegram_group_invite_url: product.telegram_group_invite_url || '',
             status: product.status,
+            platform_type: product.platform_type || '',
             fields: product.fields || [],
             durations: product.durations || [],
         });
@@ -162,7 +164,8 @@ export default function ProductIndex({ products, filters }) {
                     </>
                 }
                 headers={[
-                    { label: 'Produk', className: 'w-[40%]' },
+                    { label: 'Produk', className: 'w-[30%]' },
+                    { label: 'Platform', className: 'w-[10%]' },
                     { label: 'Varian', className: 'w-[15%]' },
                     { label: 'Stok Key', className: 'w-[15%]' },
                     { label: 'Status', className: 'w-[15%]' },
@@ -175,6 +178,32 @@ export default function ProductIndex({ products, filters }) {
                             <div className="flex flex-col">
                                 <span className="font-black text-store-charcoal text-sm">{product.name}</span>
                                 <span className="text-[10px] text-store-subtle uppercase font-bold tracking-widest">{product.slug}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div className="flex items-center gap-1.5">
+                                {product.platform_type === 'android' && (
+                                    <Badge variant="gray" className="gap-1 px-1.5 py-0.5">
+                                        <AppIcons.android size={10} />
+                                        <span className="text-[9px] font-bold">Android</span>
+                                    </Badge>
+                                )}
+                                {product.platform_type === 'ios' && (
+                                    <Badge variant="gray" className="gap-1 px-1.5 py-0.5">
+                                        <AppIcons.ios size={10} />
+                                        <span className="text-[9px] font-bold">iOS</span>
+                                    </Badge>
+                                )}
+                                {product.platform_type === 'both' && (
+                                    <Badge variant="gray" className="gap-1 px-1.5 py-0.5">
+                                        <div className="flex items-center -space-x-1">
+                                            <AppIcons.android size={9} />
+                                            <AppIcons.ios size={9} />
+                                        </div>
+                                        <span className="text-[9px] font-bold">Mobile</span>
+                                    </Badge>
+                                )}
+                                {!product.platform_type && <span className="text-[10px] text-store-subtle font-bold">—</span>}
                             </div>
                         </td>
                         <td>
@@ -309,6 +338,12 @@ export default function ProductIndex({ products, filters }) {
                                     <Select label="Status Produk" value={data.status} onChange={e => setData('status', e.target.value)} error={errors.status}>
                                         <option value="active">Aktif (Tampil di Toko)</option>
                                         <option value="inactive">Draft (Sembunyikan)</option>
+                                    </Select>
+                                    <Select label="Tipe Platform" value={data.platform_type} onChange={e => setData('platform_type', e.target.value)} error={errors.platform_type}>
+                                        <option value="">Tidak Ditentukan / Universal</option>
+                                        <option value="android">Android Only</option>
+                                        <option value="ios">iOS Only</option>
+                                        <option value="both">Android & iOS</option>
                                     </Select>
                                     <Input
                                         label="Link undangan grup Telegram (opsional)"
