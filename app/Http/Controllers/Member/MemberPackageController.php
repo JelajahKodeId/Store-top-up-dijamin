@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Member;
 
-use App\Enums\MemberTier;
+use App\Models\MemberTier;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Member\MemberPackageStoreRequest;
 use App\Models\MemberTierUpgrade;
@@ -20,32 +20,36 @@ class MemberPackageController extends Controller
     public function index(Request $request, MemberTierUpgradePaymentService $payments): Response
     {
         $user = $request->user();
-        $current = MemberTier::fromDatabase($user->getAttributes()['member_tier'] ?? null);
+        $user->load('tier');
+        $currentTier = $user->tier;
+        $currentLevel = $currentTier ? $currentTier->level : 0;
 
-        $packages = collect(MemberTier::purchasableTiers())->map(function (MemberTier $tier) use ($current) {
-            $active = $current->rank() >= $tier->rank();
-            $purchasable = match ($tier) {
-                MemberTier::Reseller => $current === MemberTier::Standard,
-                MemberTier::Vip => $current->rank() < MemberTier::Vip->rank(),
-                default => false,
-            };
+        $packages = MemberTier::whereNotNull('price')
+            ->where('is_active', true)
+            ->orderBy('level')
+            ->get()
+            ->map(function (MemberTier $tier) use ($currentLevel) {
+                // Active if the user's current level is >= the package level (already has this tier)
+                $active = $currentLevel >= $tier->level;
+                // Purchasable if it's the immediate next tier
+                $purchasable = $tier->level > $currentLevel;
 
-            return [
-                'code' => $tier->value,
-                'label' => $tier->label(),
-                'price' => (float) $tier->upgradePrice(),
-                'active' => $active,
-                'purchasable' => $purchasable,
-            ];
-        })->values()->all();
+                return [
+                    'code' => $tier->id,
+                    'label' => $tier->name,
+                    'price' => (float) $tier->price,
+                    'active' => $active,
+                    'purchasable' => $purchasable,
+                ];
+            })->values()->all();
 
-        $history = $user->memberTierUpgrades()
+        $history = $user->memberTierUpgrades()->with('targetTier')
             ->latest('id')
             ->take(20)
             ->get()
             ->map(fn (MemberTierUpgrade $u) => [
                 'invoice_code' => $u->invoice_code,
-                'target_label' => $u->target_tier->label(),
+                'target_label' => $u->targetTier ? $u->targetTier->name : 'Unknown Tier',
                 'amount' => (float) $u->amount,
                 'status' => $u->status,
                 'created_at' => $u->created_at->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
@@ -53,10 +57,10 @@ class MemberPackageController extends Controller
 
         return Inertia::render('Member/Packages', [
             'packages' => $packages,
-            'currentTier' => $current->value,
-            'currentTierLabel' => $current->label(),
+            'currentTier' => $currentTier ? $currentTier->id : 'standard',
+            'currentTierLabel' => $currentTier ? $currentTier->name : 'Member',
             'paymentChannels' => $payments->paymentChannelsForUi(),
-            'checkoutGateway' => app(PaymentGatewayInterface::class)->getGatewayName(),
+            'checkoutGateway' => app(\App\Services\Payment\PakKasirService::class)->getGatewayName(),
             'history' => $history,
         ]);
     }
@@ -64,20 +68,19 @@ class MemberPackageController extends Controller
     public function store(MemberPackageStoreRequest $request, MemberTierUpgradePaymentService $payments): RedirectResponse
     {
         $user = $request->user();
-        $target = $request->tier();
-        $price = $target->upgradePrice();
-
-        if ($price === null) {
+        $user->load('tier');
+        $targetId = collect($request->input())->get('tier') ?? $request->input('target_tier'); 
+        
+        $target = MemberTier::where('id', $targetId)->where('is_active', true)->whereNotNull('price')->first();
+        
+        if (! $target) {
             return back()->withErrors(['target_tier' => 'Paket tidak valid.']);
         }
 
-        $current = MemberTier::fromDatabase($user->getAttributes()['member_tier'] ?? null);
+        $price = $target->price;
+        $currentLevel = $user->tier ? $user->tier->level : 0;
 
-        $purchasable = match ($target) {
-            MemberTier::Reseller => $current === MemberTier::Standard,
-            MemberTier::Vip => $current->rank() < MemberTier::Vip->rank(),
-            default => false,
-        };
+        $purchasable = $target->level > $currentLevel;
 
         if (! $purchasable) {
             return back()->withErrors(['target_tier' => 'Anda tidak dapat memilih paket ini.']);
@@ -85,7 +88,7 @@ class MemberPackageController extends Controller
 
         $pending = MemberTierUpgrade::query()
             ->where('user_id', $user->id)
-            ->where('target_tier', $target->value)
+            ->where('target_tier', $target->id)
             ->where('status', 'pending')
             ->exists();
 
@@ -99,7 +102,7 @@ class MemberPackageController extends Controller
             $upgrade = DB::transaction(function () use ($user, $target, $price, $paymentMethod, $payments) {
                 $row = MemberTierUpgrade::create([
                     'user_id' => $user->id,
-                    'target_tier' => $target,
+                    'target_tier' => $target->id,
                     'amount' => $price,
                     'status' => 'pending',
                     'payment_method' => $paymentMethod,
@@ -122,23 +125,36 @@ class MemberPackageController extends Controller
     public function show(Request $request, string $invoice): Response
     {
         $user = $request->user();
-        $upgrade = MemberTierUpgrade::where('invoice_code', strtoupper($invoice))
+        $upgrade = MemberTierUpgrade::with('targetTier')->where('invoice_code', strtoupper($invoice))
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        $targetTier = MemberTier::fromDatabase($upgrade->getAttributes()['target_tier'] ?? null);
+        $pakKasirDetails = null;
+        if ($upgrade->status === 'pending' && $upgrade->gateway === 'pak_kasir') {
+            $p = $upgrade->payload['payment'] ?? $upgrade->payload ?? [];
+            if (isset($p['payment_number'])) {
+                $pakKasirDetails = [
+                    'number' => $p['payment_number'],
+                    'total_payment' => $p['total_payment'] ?? $p['amount'] ?? $upgrade->amount,
+                    'method' => $p['payment_method'] ?? $upgrade->payment_method ?? 'qris',
+                    'is_qris' => str_contains(strtolower($p['payment_method'] ?? 'qris'), 'qris'),
+                ];
+            }
+        }
 
         return Inertia::render('Member/PackageStatus', [
             'upgrade' => [
                 'invoice_code' => $upgrade->invoice_code,
-                'target_tier' => $targetTier->value,
-                'target_label' => $targetTier->label(),
+                'target_tier' => $upgrade->targetTier ? $upgrade->targetTier->id : $upgrade->target_tier,
+                'target_label' => $upgrade->targetTier ? $upgrade->targetTier->name : 'Upgrade',
                 'amount' => (float) $upgrade->amount,
                 'status' => $upgrade->status,
                 'payment_url' => $upgrade->payment_url,
+                'pak_kasir_details' => $pakKasirDetails,
                 'payment_expired_at' => $upgrade->payment_expired_at?->toISOString(),
                 'created_at' => $upgrade->created_at->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
             ],
+            'app_env' => app()->environment(),
         ]);
     }
 }

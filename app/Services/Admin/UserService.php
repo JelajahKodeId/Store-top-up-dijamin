@@ -2,7 +2,6 @@
 
 namespace App\Services\Admin;
 
-use App\Enums\MemberTier;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -38,9 +37,9 @@ class UserService
     public function createUser(array $data): User
     {
         return DB::transaction(function () use ($data) {
-            $tier = MemberTier::Standard;
+            $tier = 'standard';
             if (($data['role'] ?? '') === 'member' && ! empty($data['member_tier'])) {
-                $tier = MemberTier::tryFrom((string) $data['member_tier']) ?? MemberTier::Standard;
+                $tier = (string) $data['member_tier'];
             }
 
             $balance = 0;
@@ -85,7 +84,7 @@ class UserService
             if ($user->hasRole('member')) {
                 $memberPatch = [];
                 if (! empty($data['member_tier'])) {
-                    $memberPatch['member_tier'] = MemberTier::from((string) $data['member_tier']);
+                    $memberPatch['member_tier'] = (string) $data['member_tier'];
                 }
                 if (array_key_exists('balance', $data) && $data['balance'] !== null && $data['balance'] !== '') {
                     $memberPatch['balance'] = (float) $data['balance'];

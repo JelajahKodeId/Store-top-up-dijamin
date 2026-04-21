@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 class MemberTierUpgradePaymentService
 {
     public function __construct(
-        protected PaymentGatewayInterface $paymentGateway,
+        protected \App\Services\Payment\PakKasirService $paymentGateway,
     ) {}
 
     /**
@@ -20,14 +20,7 @@ class MemberTierUpgradePaymentService
      */
     public function startGatewaySession(MemberTierUpgrade $upgrade, User $user, string $paymentMethod): array
     {
-        $driver = $this->paymentGateway->getGatewayName();
-
-        return match ($driver) {
-            'mock' => $this->startMock($upgrade),
-            'tripay' => $this->startTripay($upgrade, $user, $paymentMethod),
-            'pak_kasir' => $this->startPakKasir($upgrade, $paymentMethod),
-            default => throw new \RuntimeException('Upgrade paket belum didukung untuk gateway pembayaran ini. Silakan hubungi administrator.'),
-        };
+        return $this->startPakKasir($upgrade, $paymentMethod);
     }
 
     /**

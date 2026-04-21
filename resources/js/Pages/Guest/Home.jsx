@@ -92,7 +92,7 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                             <p className="mt-1.5 text-sm leading-normal text-guest-muted sm:text-[15px]">Lisensi game digital & software premium dengan sistem pengiriman instan.</p>
                         </div>
                         <Link href={route('catalog')}>
-                            <Button variant="secondary" size="sm" className="rounded-xl bg-white text-guest-text shadow-md hover:bg-guest-elevated">
+                            <Button variant="dark" size="sm" className="rounded-xl shadow-md">
                                 Semua Produk <AppIcons.arrowRight size={14} />
                             </Button>
                         </Link>

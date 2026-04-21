@@ -55,15 +55,16 @@ const navItems = [
                 route: 'admin.settings.index',
                 icon: 'settings',
             },
-            {
-                label: 'WhatsApp',
-                route: 'admin.whatsapp.index',
-                icon: 'phone',
-            },
+
             {
                 label: 'Manajemen Pengguna',
                 route: 'admin.users.index',
                 icon: 'users',
+            },
+            {
+                label: 'Paket Member',
+                route: 'admin.member-tiers.index',
+                icon: 'star',
             },
             {
                 label: 'Profil Saya',

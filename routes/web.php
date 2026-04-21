@@ -98,8 +98,7 @@ Route::post('/vouchers/check', function (Request $request) {
 Route::post('/webhooks/payment', [WebhookController::class, 'handle'])
     ->middleware('throttle:60,1')
     ->name('webhooks.payment');
-Route::post('/webhooks/wa-bot', [WebhookController::class, 'waBot'])
-    ->name('webhooks.wa-bot');
+
 
 // Mock webhook untuk testing di lokal (hanya aktif di env local/testing)
 Route::get('/webhooks/mock/{invoice_code}', [WebhookController::class, 'mock'])
@@ -195,15 +194,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('settings', [SettingController::class, 'update'])->name('settings.update');
 
-    Route::get('whatsapp', [WhatsAppGatewayController::class, 'index'])->name('whatsapp.index');
-    Route::middleware('throttle:90,1')->group(function () {
-        Route::get('whatsapp/status', [WhatsAppGatewayController::class, 'status'])->name('whatsapp.status');
-    });
-    Route::middleware('throttle:12,1')->group(function () {
-        Route::post('whatsapp/logout', [WhatsAppGatewayController::class, 'logoutSession'])->name('whatsapp.logout');
-        Route::post('whatsapp/send-test', [WhatsAppGatewayController::class, 'sendTest'])->name('whatsapp.send-test');
-    });
-
+    Route::resource('member-tiers', \App\Http\Controllers\Admin\MemberTierController::class)
+        ->only(['index', 'store', 'update', 'destroy']);
     Route::resource('orders', OrderController::class)
         ->only(['index', 'show', 'update']);
 });

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\MemberTier;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -31,8 +30,12 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'balance' => 'decimal:2',
-            'member_tier' => MemberTier::class,
         ];
+    }
+
+    public function tier()
+    {
+        return $this->belongsTo(MemberTier::class, 'member_tier', 'id');
     }
 
     public function orders(): HasMany

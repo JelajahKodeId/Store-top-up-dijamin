@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\MemberTier;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -29,7 +28,7 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'phone_number' => '628'.fake()->unique()->numberBetween(1000000000, 9999999999),
-            'member_tier' => MemberTier::Standard->value,
+            'member_tier' => 'standard',
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Member;
 
-use App\Enums\MemberTier;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
@@ -15,7 +14,8 @@ class MemberDashboardController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        $tier = MemberTier::fromDatabase($user->getAttributes()['member_tier'] ?? null);
+        $user->load('tier');
+        $tierLabel = $user->tier ? $user->tier->name : 'Member';
 
         $ordersQuery = Order::query()->visibleToMember($user)->newestFirst();
 
@@ -31,7 +31,7 @@ class MemberDashboardController extends Controller
             'totalOrders' => $totalOrders,
             'account' => [
                 'full_name' => $user->name,
-                'level' => $tier->label(),
+                'level' => $tierLabel,
                 'whatsapp' => $user->phone_number,
                 'registered_at' => $user->created_at->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
             ],

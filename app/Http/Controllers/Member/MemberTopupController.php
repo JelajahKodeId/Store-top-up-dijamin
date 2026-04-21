@@ -75,15 +75,30 @@ class MemberTopupController extends Controller
             ->where('user_id', $user->id)
             ->firstOrFail();
 
+        $pakKasirDetails = null;
+        if ($topup->status === 'pending' && $topup->gateway === 'pak_kasir') {
+            $p = $topup->payload['payment'] ?? $topup->payload ?? [];
+            if (isset($p['payment_number'])) {
+                $pakKasirDetails = [
+                    'number' => $p['payment_number'],
+                    'total_payment' => $p['total_payment'] ?? $p['amount'] ?? $topup->amount,
+                    'method' => $p['payment_method'] ?? $topup->payment_method ?? 'qris',
+                    'is_qris' => str_contains(strtolower($p['payment_method'] ?? 'qris'), 'qris'),
+                ];
+            }
+        }
+
         return Inertia::render('Member/TopupStatus', [
             'topup' => [
                 'invoice_code' => $topup->invoice_code,
                 'amount' => (float) $topup->amount,
                 'status' => $topup->status,
                 'payment_url' => $topup->payment_url,
+                'pak_kasir_details' => $pakKasirDetails,
                 'payment_expired_at' => $topup->payment_expired_at?->toISOString(),
                 'created_at' => $topup->created_at->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
             ],
+            'app_env' => app()->environment(),
         ]);
     }
 }

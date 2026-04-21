@@ -9,9 +9,8 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductDuration;
 use App\Models\Voucher;
-use App\Services\Payment\PaymentGatewayInterface;
-use App\Services\WhatsAppService;
-use Illuminate\Http\Request;
+    use App\Services\Payment\PaymentGatewayInterface;
+    use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,8 +18,7 @@ use Illuminate\Support\Facades\Log;
 class CheckoutController extends Controller
 {
     public function __construct(
-        protected PaymentGatewayInterface $paymentGateway,
-        protected WhatsAppService $whatsApp,
+        protected PaymentGatewayInterface $paymentGateway
     ) {}
 
     public function store(Request $request)
@@ -152,12 +150,7 @@ class CheckoutController extends Controller
                 );
             }
 
-            // Kirim notifikasi WA ke customer + admin (non-blocking, tidak menghentikan flow)
-            try {
-                $this->whatsApp->sendOrderCreated($order->fresh(['items', 'fieldValues.field', 'payment']));
-            } catch (\Throwable $e) {
-                Log::warning("Checkout: WA notification gagal — {$e->getMessage()}");
-            }
+
 
             return redirect()->route('orders.status', $order->invoice_code)
                 ->with('success', 'Pesanan berhasil dibuat! Silakan selesaikan pembayaran.');

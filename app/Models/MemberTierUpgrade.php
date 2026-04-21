@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\MemberTier;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
@@ -29,8 +28,12 @@ class MemberTierUpgrade extends Model
         'payment_expired_at' => 'datetime',
         'paid_at' => 'datetime',
         'payload' => 'array',
-        'target_tier' => MemberTier::class,
     ];
+
+    public function targetTier(): BelongsTo
+    {
+        return $this->belongsTo(MemberTier::class, 'target_tier', 'id');
+    }
 
     public function user(): BelongsTo
     {

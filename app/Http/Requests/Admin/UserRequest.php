@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Enums\MemberTier;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -52,7 +51,7 @@ class UserRequest extends FormRequest
             'member_tier' => [
                 'nullable',
                 'string',
-                Rule::in(array_map(static fn (MemberTier $t) => $t->value, MemberTier::cases())),
+                Rule::exists('member_tiers', 'id'),
             ],
             'balance' => ['nullable', 'numeric', 'min:0', 'max:999999999999.99'],
         ];

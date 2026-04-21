@@ -13,8 +13,7 @@ use Illuminate\Support\Facades\Log;
 class KeyDeliveryService
 {
     public function __construct(
-        protected OrderNotificationService $notificationService,
-        protected WhatsAppService $whatsApp,
+        protected OrderNotificationService $notificationService
     ) {}
 
     /**
@@ -67,13 +66,6 @@ class KeyDeliveryService
             Log::debug("KeyDelivery: Mengirim notifikasi untuk Order #{$order->invoice_code}");
             $this->notificationService->sendForStatus($freshOrder);
 
-            try {
-                $this->whatsApp->sendKeyDelivered($freshOrder);
-            } catch (\Throwable $e) {
-                Log::error("KeyDelivery: WA notification EXCEPTION untuk #{$order->invoice_code} — {$e->getMessage()}", [
-                    'trace' => $e->getTraceAsString()
-                ]);
-            }
 
             Log::info("KeyDelivery: Order #{$order->invoice_code} selesai diproses seluruhnya.");
         } catch (InsufficientKeyStockException $e) {

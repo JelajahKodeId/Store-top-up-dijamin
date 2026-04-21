@@ -3,7 +3,7 @@ import MemberTransactionStatus from '@/Components/member/MemberTransactionStatus
 import { formatRp } from '@/utils/formatRp';
 import { memberPaymentStatusLabel } from '@/utils/memberPaymentStatusLabel';
 
-export default function PackageStatus({ upgrade }) {
+export default function PackageStatus({ upgrade, app_env }) {
     const pending = upgrade.status === 'pending';
 
     const rows = [
@@ -20,7 +20,10 @@ export default function PackageStatus({ upgrade }) {
                     status={upgrade.status}
                     statusLabel={memberPaymentStatusLabel(upgrade.status)}
                     pending={pending}
+                    invoiceCode={upgrade.invoice_code}
+                    appEnv={app_env}
                     paymentUrl={upgrade.payment_url}
+                    pakKasirDetails={upgrade.pak_kasir_details}
                     paymentHint="Setelah pembayaran dikonfirmasi, level akun Anda akan diperbarui otomatis."
                     backHref={route('member.packages.index')}
                     backLabel="← Kembali ke pilih paket"

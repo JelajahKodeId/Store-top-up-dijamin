@@ -64,12 +64,59 @@ export default function OrderStatus({ order, flash, app_env }) {
         return () => clearInterval(timer);
     }, [shouldPoll, refresh]);
 
-    // WA customer → untuk tombol "Buka WhatsApp lihat key"
-    const waLink = toWaLink(order.whatsapp);
-    // WA CS admin → untuk tombol bantuan
-    const csWaLink = site?.whatsapp ? toWaLink(site.whatsapp) : null;
+    const adminNumber = site?.whatsapp;
+    const generateClaimMessage = () => {
+        let msg = `✅ *PEMBAYARAN BERHASIL — KEY SIAP*\n`;
+        msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+        msg += `📋 *Invoice:* ${order.invoice_code}\n`;
+        msg += `📅 Selesai: ${order.created_at}\n`;
+        msg += `💳 Metode: ${order.payment_method_label || order.payment_method || '-'}\n`;
+        msg += `💰 *Total:* ${formatPrice(order.total_price)}\n`;
+        msg += `📱 Pembeli: ${order.whatsapp}\n\n`;
+        msg += `*KEY / LISENSI ANDA:*\n\n`;
+        
+        if (order.items && order.items.length > 0) {
+            order.items.forEach((item) => {
+                msg += `📦 *${item.product_name}*\n`;
+                msg += `   Paket: ${item.duration_name} × ${item.quantity}\n`;
+                msg += `   Subtotal: ${formatPrice(item.price * item.quantity)}\n`;
+                if (item.keys && item.keys.length > 0) {
+                    item.keys.forEach((k, idx) => {
+                        msg += `   🔑 Key ${idx + 1}: \`${k.key}\`\n`;
+                    });
+                } else {
+                    msg += `   _(Key tidak terlampir — hubungi CS.)_\n`;
+                }
+                msg += `\n`;
+            });
+        }
+        
+        msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+        msg += `ℹ️ Stok key untuk pesanan ini sudah dialokasikan dari inventori kami.\n`;
+        msg += `⚠️ *Simpan rahasia.* Jangan bagikan key ke orang lain. Simpan bukti di galeri Anda jika perlu.\n\n`;
+        msg += `_Terima kasih berbelanja di Mall Store._`;
+        return encodeURIComponent(msg);
+    };
+
+    let claimWaLink = null;
+    let csWaLink = null;
+    if (adminNumber) {
+        let cleanNumber = adminNumber.replace(/\D/g, '');
+        if (cleanNumber.startsWith('0')) cleanNumber = '62' + cleanNumber.slice(1);
+        claimWaLink = `https://api.whatsapp.com/send?phone=${cleanNumber}&text=${generateClaimMessage()}`;
+        csWaLink = toWaLink(adminNumber);
+    }
     const isSuccess = order.status === 'success';
 
+    useEffect(() => {
+        if (isSuccess && claimWaLink) {
+            const redirectKey = `wa_redirected_${order.invoice_code}`;
+            if (!sessionStorage.getItem(redirectKey)) {
+                sessionStorage.setItem(redirectKey, '1');
+                window.location.href = claimWaLink;
+            }
+        }
+    }, [isSuccess, claimWaLink, order.invoice_code]);
     const [copiedKey, setCopiedKey] = useState(null);
 
     const copyToClipboard = (text) => {
@@ -215,16 +262,16 @@ export default function OrderStatus({ order, flash, app_env }) {
                                     ))}
                                 </div>
 
-                                {/* Tombol buka WA */}
-                                {waLink ? (
+                                {/* Tombol kirim ke Admin */}
+                                {claimWaLink ? (
                                     <a
-                                        href={waLink}
+                                        href={claimWaLink}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center justify-center gap-3 w-full py-4 rounded-xl border border-green-200 bg-guest-surface hover:bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-sm hover:shadow-md active:scale-[0.98]"
                                     >
                                         <AppIcons.phone size={14} strokeWidth={2.5} />
-                                        Buka Chat WhatsApp
+                                        Kirim ke Admin (Konfirmasi)
                                     </a>
                                 ) : null}
 

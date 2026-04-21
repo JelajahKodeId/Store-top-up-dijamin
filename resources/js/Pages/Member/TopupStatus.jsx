@@ -3,7 +3,7 @@ import MemberTransactionStatus from '@/Components/member/MemberTransactionStatus
 import { formatRp } from '@/utils/formatRp';
 import { memberPaymentStatusLabel } from '@/utils/memberPaymentStatusLabel';
 
-export default function TopupStatus({ topup }) {
+export default function TopupStatus({ topup, app_env }) {
     const pending = topup.status === 'pending';
 
     const rows = [
@@ -19,8 +19,11 @@ export default function TopupStatus({ topup }) {
                     status={topup.status}
                     statusLabel={memberPaymentStatusLabel(topup.status)}
                     pending={pending}
+                    invoiceCode={topup.invoice_code}
+                    appEnv={app_env}
                     paymentUrl={topup.payment_url}
-                    paymentHint="Selesaikan pembayaran di tab baru. Saldo akan bertambah otomatis setelah gateway mengonfirmasi."
+                    pakKasirDetails={topup.pak_kasir_details}
+                    paymentHint="Saldo otomatis masuk ke akun Anda setelah pembayaran dikonfirmasi."
                     backHref={route('member.topup.index')}
                     backLabel="← Kembali ke Top Up"
                 />
