@@ -50,6 +50,8 @@ class ProductResource extends JsonResource
                 'duration_days' => $d->duration_days,
                 'price' => (float) $d->price,
                 'price_formatted' => 'Rp '.number_format($d->price, 0, ',', '.'),
+                'reseller_price' => $d->reseller_price !== null ? (float) $d->reseller_price : null,
+                'reseller_price_formatted' => $d->reseller_price !== null ? 'Rp '.number_format($d->reseller_price, 0, ',', '.') : null,
                 'is_active' => $d->is_active,
                 'available_keys_count' => $d->available_keys_count ?? 0,
             ]),

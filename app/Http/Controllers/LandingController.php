@@ -128,6 +128,7 @@ class LandingController extends Controller
             'flash' => [
                 'success' => session('success'),
                 'error' => session('error'),
+                'whatsapp_url' => session('whatsapp_url'),
             ],
             'app_env' => app()->environment(),
         ]);

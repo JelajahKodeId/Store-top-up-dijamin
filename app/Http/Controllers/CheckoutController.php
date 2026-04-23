@@ -54,22 +54,28 @@ class CheckoutController extends Controller
             ? strtoupper(trim($request->voucher_code))
             : null;
 
+        $authUser = Auth::user();
+        $isResellerEligible = $authUser && $authUser->tier && (int) $authUser->tier->level >= 2;
+        $basePrice = ($isResellerEligible && $duration->reseller_price !== null && (float) $duration->reseller_price > 0)
+            ? (float) $duration->reseller_price
+            : (float) $duration->price;
+
         if ($voucherCode) {
             $preCheckVoucher = Voucher::active()->where('code', $voucherCode)->first();
             if (! $preCheckVoucher) {
                 return back()->withErrors(['voucher_code' => 'Voucher tidak valid atau sudah kadaluarsa.']);
             }
-            if ($preCheckVoucher->min_transaction && $duration->price < $preCheckVoucher->min_transaction) {
+            if ($preCheckVoucher->min_transaction && $basePrice < $preCheckVoucher->min_transaction) {
                 return back()->withErrors(['voucher_code' => 'Minimum transaksi untuk voucher ini adalah Rp '.number_format($preCheckVoucher->min_transaction, 0, ',', '.')]);
             }
         }
 
         try {
-            $order = DB::transaction(function () use ($request, $product, $duration, $voucherCode, $paymentMethod) {
+            $order = DB::transaction(function () use ($request, $product, $duration, $voucherCode, $paymentMethod, $basePrice, $authUser) {
                 // Lock voucher di dalam transaksi untuk cegah race condition
                 $voucher = null;
                 $discountAmount = 0;
-                $finalPrice = $duration->price;
+                $finalPrice = $basePrice;
 
                 if ($voucherCode) {
                     $voucher = Voucher::active()
@@ -114,7 +120,7 @@ class CheckoutController extends Controller
                     'product_duration_id' => $duration->id,
                     'product_name' => $product->name,
                     'duration_name' => $duration->name,
-                    'price' => $duration->price,
+                    'price' => $basePrice,
                     'quantity' => 1,
                 ]);
 
@@ -152,8 +158,12 @@ class CheckoutController extends Controller
 
 
 
+            $order->load(['items.product', 'items.duration', 'fieldValues.field']);
+            $whatsappUrl = $this->generateWhatsappConfirmationUrl($order);
+
             return redirect()->route('orders.status', $order->invoice_code)
-                ->with('success', 'Pesanan berhasil dibuat! Silakan selesaikan pembayaran.');
+                ->with('success', 'Pesanan berhasil dibuat! Silakan selesaikan pembayaran.')
+                ->with('whatsapp_url', $whatsappUrl);
         } catch (\Throwable $e) {
             Log::error("CheckoutController: Gagal proses checkout — {$e->getMessage()}");
 
@@ -204,5 +214,50 @@ class CheckoutController extends Controller
         } catch (\Throwable $e) {
             Log::error("CheckoutController: Gagal rollback order #{$order->invoice_code} — {$e->getMessage()}");
         }
+    }
+
+    /**
+     * Generate WhatsApp confirmation message URL
+     */
+    protected function generateWhatsappConfirmationUrl(Order $order): ?string
+    {
+        $adminNumber = \App\Models\Setting::get('whatsapp_number');
+        if (! $adminNumber) return null;
+
+        $itemsText = "";
+        foreach ($order->items as $item) {
+            $itemsText .= "  • {$item->product_name}\n";
+            $itemsText .= "    Paket: {$item->duration_name} × {$item->quantity}\n";
+            $itemsText .= "    Subtotal: Rp " . number_format($item->price * $item->quantity, 0, ',', '.') . "\n";
+        }
+
+        $fieldsText = "";
+        if ($order->fieldValues->count() > 0) {
+            $fieldsText .= "\n📝 *Data tambahan:*\n";
+            foreach ($order->fieldValues as $fv) {
+                $fieldsText .= "  • {$fv->field->name}: {$fv->value}\n";
+            }
+        }
+
+        $message = "🛒 *KONFIRMASI PESANAN*\n";
+        $message .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $message .= "📋 *Invoice:* {$order->invoice_code}\n";
+        $message .= "📅 Dibuat: " . $order->created_at->format('d M Y, H:i') . " WIB\n";
+        $message .= "📱 WhatsApp: {$order->whatsapp_number}\n";
+        $message .= "💳 *Metode bayar:* " . strtoupper($order->payment_method) . "\n\n";
+        $message .= "🛍️ *Rincian item:*\n{$itemsText}\n";
+        $message .= "💰 *Total dibayar:* Rp " . number_format($order->total_price, 0, ',', '.') . "\n";
+        $message .= "⏰ *Batas bayar:* " . ($order->payment_expired_at ? $order->payment_expired_at->format('d M Y, H:i') : '-') . " WIB\n";
+        $message .= "{$fieldsText}";
+        $message .= "━━━━━━━━━━━━━━━━━━━━\n\n";
+        $message .= "_Tunggu instruksi pembayaran di halaman status pesanan jika link belum tersedia._\n\n";
+        $message .= "_Segera selesaikan pembayaran. Setelah lunas, key akan dikirim ke nomor WhatsApp ini._";
+
+        $cleanNumber = preg_replace('/\D/', '', $adminNumber);
+        if (str_starts_with($cleanNumber, '0')) {
+            $cleanNumber = '62' . substr($cleanNumber, 1);
+        }
+
+        return "https://api.whatsapp.com/send?phone={$cleanNumber}&text=" . urlencode($message);
     }
 }

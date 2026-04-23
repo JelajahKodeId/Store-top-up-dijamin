@@ -11,4 +11,8 @@ class Setting extends Model
         'value',
         'group'
     ];
+    public static function get(string $key, $default = null)
+    {
+        return self::where('key', $key)->value('value') ?? $default;
+    }
 }

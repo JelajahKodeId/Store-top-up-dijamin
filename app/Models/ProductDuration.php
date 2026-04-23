@@ -13,12 +13,14 @@ class ProductDuration extends Model
         'name',
         'duration_days',
         'price',
+        'reseller_price',
         'is_active',
     ];
 
     protected $casts = [
         'duration_days' => 'integer',
         'price' => 'decimal:2',
+        'reseller_price' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 

@@ -1,13 +1,21 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { AppIcons } from '@/Components/shared/AppIcon';
 import { formatPrice, formatSoldCount, productImageSrc } from '@/utils/guest';
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500' viewBox='0 0 400 500'%3E%3Crect width='400' height='500' fill='%23E4E4E7'/%3E%3Ctext x='200' y='260' font-family='sans-serif' font-size='40' fill='%23A1A1AA' text-anchor='middle'%3E%3F%3C/text%3E%3C/svg%3E";
 
 export default function ProductCard({ product }) {
+    const { auth } = usePage().props;
+    const isResellerEligible = Number(auth?.user?.member_level ?? 0) >= 2;
+
     const activeDurations = product.durations?.filter((d) => d.is_active !== false) ?? [];
-    const prices = activeDurations.map((d) => Number(d.price)).filter((p) => p > 0);
+    const prices = activeDurations.map((d) => {
+        const base = Number(d.price);
+        const reseller = (d.reseller_price !== null && d.reseller_price !== undefined && d.reseller_price !== '') ? Number(d.reseller_price) : null;
+        return (isResellerEligible && reseller !== null && reseller > 0) ? reseller : base;
+    }).filter((p) => p > 0);
     const lowestPrice = prices.length > 0 ? Math.min(...prices) : 0;
+    const isShowingResellerPrice = isResellerEligible && activeDurations.some(d => d.reseller_price !== null && d.reseller_price !== undefined && Number(d.reseller_price) > 0);
     const hasMultipleDurations = activeDurations.length > 1;
 
     const hasStockData = activeDurations.some((d) => d.available_keys_count !== undefined);
@@ -86,6 +94,11 @@ export default function ProductCard({ product }) {
                             <p className="font-bebas text-sm font-bold leading-none tracking-tight text-guest-text sm:text-[15px]">
                                 {lowestPrice > 0 ? formatPrice(lowestPrice) : '—'}
                             </p>
+                            {isShowingResellerPrice && (
+                                <div className="inline-flex items-center gap-1 rounded bg-sky-100 px-1 py-0.5 text-[7px] font-black uppercase tracking-wide text-sky-700">
+                                    <AppIcons.shield size={7} /> Harga Reseller
+                                </div>
+                            )}
                             <p className="inline-flex items-center gap-0.5 text-[8px] font-medium text-guest-subtle">
                                 <AppIcons.orders size={8} strokeWidth={2} className="shrink-0 opacity-80" aria-hidden />
                                 <span>{soldLabel} terjual</span>

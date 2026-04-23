@@ -148,10 +148,16 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
         return null;
     }
 
+    const { auth } = usePage().props;
+    const isResellerEligible = Number(auth?.user?.member_level ?? 0) >= 2;
+
     const paymentLabel = paymentMethods.find(m => m.code === data.payment_method)?.label ?? data.payment_method;
-    const originalPrice = selectedDuration?.price ?? 0;
+    const basePrice = (isResellerEligible && selectedDuration?.reseller_price !== null && Number(selectedDuration?.reseller_price) > 0)
+        ? Number(selectedDuration?.reseller_price)
+        : (Number(selectedDuration?.price) ?? 0);
+    
     const discountAmount = voucherInfo?.valid ? voucherInfo.discount_amount : 0;
-    const finalPrice = voucherInfo?.valid ? voucherInfo.final_price : originalPrice;
+    const finalPrice = voucherInfo?.valid ? voucherInfo.final_price : basePrice;
     const hasDiscount = discountAmount > 0;
 
     const modal = (
@@ -216,7 +222,7 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-bold uppercase tracking-wide text-guest-subtle">Harga</span>
                             <span className={`text-xs font-bold ${hasDiscount ? 'text-guest-subtle line-through' : 'text-store-accent'}`}>
-                                {formatPrice(originalPrice)}
+                                {formatPrice(basePrice)}
                             </span>
                         </div>
                         {hasDiscount && (
@@ -236,7 +242,7 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                         {!hasDiscount && (
                             <div className="flex items-center justify-between border-t border-guest-border pt-1.5">
                                 <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Total Bayar</span>
-                                <span className="font-bebas text-xl font-bold text-store-accent">{formatPrice(originalPrice)}</span>
+                                <span className="font-bebas text-xl font-bold text-store-accent">{formatPrice(basePrice)}</span>
                             </div>
                         )}
                     </div>
@@ -376,7 +382,8 @@ export default function ProductDetail({
     midtransSandboxMode = false,
     reviewInvoice = null,
 }) {
-    const { flash, site } = usePage().props;
+    const { auth, flash, site } = usePage().props;
+    const isResellerEligible = Number(auth?.user?.member_level ?? 0) >= 2;
     const reviews = product.reviews ?? [];
     const reviewAvg = useMemo(() => {
         if (!reviews.length) return null;
@@ -489,7 +496,12 @@ export default function ProductDetail({
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
                 },
-                body: JSON.stringify({ code, price: selectedDuration.price }),
+                body: JSON.stringify({ 
+                    code, 
+                    price: (isResellerEligible && selectedDuration.reseller_price !== null) 
+                        ? selectedDuration.reseller_price 
+                        : selectedDuration.price 
+                }),
             });
             const json = await res.json();
             setVoucherInfo(json);
@@ -518,7 +530,11 @@ export default function ProductDetail({
 
     const totalStock = product.durations?.reduce((sum, d) => sum + (d.available_keys_count ?? 0), 0) ?? 0;
     const activeDurationsCount = product.durations?.filter(d => (d.available_keys_count ?? 0) > 0).length ?? 0;
-    const lowestPrice = Math.min(...(product.durations?.map(d => Number(d.price)).filter(p => p > 0) ?? [0]));
+    const lowestPrice = Math.min(...(product.durations?.map(d => {
+        const base = Number(d.price);
+        const reseller = d.reseller_price !== null ? Number(d.reseller_price) : null;
+        return (isResellerEligible && reseller !== null) ? reseller : base;
+    }).filter(p => p > 0) ?? [0]));
     const soldDisplay = formatSoldCount(product.sold_count);
 
     const relatedBlock = related.length > 0 ? (
@@ -1059,9 +1075,14 @@ export default function ProductDetail({
                                                 {duration.name}
                                             </p>
                                             <div className="flex items-center justify-between gap-1">
-                                                <span className={`font-bebas text-xs font-bold leading-none ${outOfStock ? 'text-guest-subtle' : 'text-store-accent'}`}>
-                                                    {formatPrice(duration.price)}
-                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span className={`font-bebas text-xs font-bold leading-none ${outOfStock ? 'text-guest-subtle' : 'text-store-accent'}`}>
+                                                        {formatPrice((isResellerEligible && duration.reseller_price !== null && Number(duration.reseller_price) > 0) ? Number(duration.reseller_price) : Number(duration.price))}
+                                                    </span>
+                                                    {(isResellerEligible && duration.reseller_price !== null && Number(duration.reseller_price) > 0) && (
+                                                        <span className="mt-0.5 text-[6px] font-black uppercase tracking-wide text-sky-700">Reseller</span>
+                                                    )}
+                                                </div>
                                                 {isSelected && !outOfStock && <AppIcons.check size={10} strokeWidth={3} className="flex-shrink-0 text-store-accent" />}
                                                 {outOfStock && <span className="text-[6px] font-bold uppercase text-red-500">Habis</span>}
                                             </div>
@@ -1182,7 +1203,8 @@ export default function ProductDetail({
                             {/* Ringkasan harga + diskon voucher */}
                             {selectedDuration && (() => {
                                 const hasVoucherDiscount = voucherInfo?.valid && voucherInfo.discount_amount > 0;
-                                const displayPrice = hasVoucherDiscount ? voucherInfo.final_price : selectedDuration.price;
+                                const basePrice = (isResellerEligible && selectedDuration.reseller_price !== null) ? selectedDuration.reseller_price : selectedDuration.price;
+                                const displayPrice = hasVoucherDiscount ? voucherInfo.final_price : basePrice;
                                 return (
                                     <div className={`rounded-xl border p-3.5 transition-colors ${hasVoucherDiscount
                                             ? 'border-green-200 bg-green-50/80'
@@ -1191,7 +1213,7 @@ export default function ProductDetail({
                                         {hasVoucherDiscount && (
                                             <div className="mb-2 flex items-center justify-between">
                                                 <span className="text-xs font-bold uppercase tracking-wide text-guest-subtle line-through">
-                                                    {formatPrice(selectedDuration.price)}
+                                                    {formatPrice((isResellerEligible && selectedDuration.reseller_price !== null) ? selectedDuration.reseller_price : selectedDuration.price)}
                                                 </span>
                                                 <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-green-800">
                                                     <AppIcons.tag size={9} /> -{formatPrice(voucherInfo.discount_amount)}
@@ -1204,6 +1226,11 @@ export default function ProductDetail({
                                                 <p className="font-bebas text-2xl font-bold leading-none text-store-accent">
                                                     {formatPrice(displayPrice)}
                                                 </p>
+                                                {(isResellerEligible && selectedDuration.reseller_price !== null && Number(selectedDuration.reseller_price) > 0) && (
+                                                    <p className="mt-1 text-[8px] font-black uppercase tracking-wide text-sky-700 flex items-center gap-1">
+                                                        <AppIcons.shield size={8} /> Harga Reseller Aktif
+                                                    </p>
+                                                )}
                                             </div>
                                             <div className="text-right">
                                                 <p className="mb-0.5 flex items-center justify-end gap-1 text-xs font-bold uppercase text-green-700">

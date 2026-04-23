@@ -28,7 +28,7 @@ export default function ProductIndex({ products, filters }) {
         platform_type: '',
         game_category: '',
         fields: [],
-        durations: [{ name: '', duration_days: '', price: '', is_active: true }],
+        durations: [{ name: '', duration_days: '', price: '', reseller_price: '', is_active: true }],
     });
 
     const openCreateModal = () => {
@@ -128,7 +128,7 @@ export default function ProductIndex({ products, filters }) {
     };
 
     // Durations Logic
-    const addDuration = () => setData('durations', [...data.durations, { name: '', duration_days: '', price: '', is_active: true }]);
+    const addDuration = () => setData('durations', [...data.durations, { name: '', duration_days: '', price: '', reseller_price: '', is_active: true }]);
     const removeDuration = (idx) => {
         const d = [...data.durations]; d.splice(idx, 1); setData('durations', d);
     };
@@ -502,9 +502,10 @@ export default function ProductIndex({ products, filters }) {
                                                 <span className="text-[10px] font-black text-store-charcoal uppercase tracking-wider">Varian {idx + 1}</span>
                                             </div>
                                             <Input label="Nama Denom / Paket" value={dur.name} onChange={e => updateDuration(idx, 'name', e.target.value)} placeholder="Contoh: 86 Diamonds" />
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                                 <Input label="Masa Aktif (Hari)" type="number" value={dur.duration_days} onChange={e => updateDuration(idx, 'duration_days', e.target.value)} placeholder="0" />
-                                                <Input label="Harga Jual (Rp)" type="number" value={dur.price} onChange={e => updateDuration(idx, 'price', e.target.value)} placeholder="50000" />
+                                                <Input label="Harga Normal (Rp)" type="number" value={dur.price} onChange={e => updateDuration(idx, 'price', e.target.value)} placeholder="50000" />
+                                                <Input label="Harga Reseller (Rp)" type="number" value={dur.reseller_price || ''} onChange={e => updateDuration(idx, 'reseller_price', e.target.value)} placeholder="Opsional" />
                                             </div>
                                             <div className="flex items-center gap-2 pt-2">
                                                 <input

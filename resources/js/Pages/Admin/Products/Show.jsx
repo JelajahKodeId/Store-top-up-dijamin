@@ -183,7 +183,12 @@ export default function ProductShow({ product }) {
                                                         {stock > 0 ? `${stock} Key` : 'Habis'}
                                                     </p>
                                                 </div>
-                                                <span className="text-lg font-black text-store-charcoal">{formatPrice(d.price)}</span>
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-lg font-black text-store-charcoal">{formatPrice(d.price)}</span>
+                                                    {d.reseller_price && (
+                                                        <span className="text-[10px] font-black text-sky-600 uppercase tracking-tight">Reseller: {formatPrice(d.reseller_price)}</span>
+                                                    )}
+                                                </div>
                                                 <Badge variant={d.is_active ? 'accent' : 'gray'} className="text-[9px]">
                                                     {d.is_active ? 'Aktif' : 'Nonaktif'}
                                                 </Badge>

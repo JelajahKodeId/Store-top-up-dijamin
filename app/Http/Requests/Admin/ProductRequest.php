@@ -56,6 +56,7 @@ class ProductRequest extends FormRequest
             'durations.*.name' => ['required', 'string', 'max:100'],
             'durations.*.duration_days' => ['required', 'integer', 'min:0'],
             'durations.*.price' => ['required', 'numeric', 'min:0'],
+            'durations.*.reseller_price' => ['nullable', 'numeric', 'min:0'],
             'durations.*.is_active' => ['nullable', 'boolean'],
         ];
     }

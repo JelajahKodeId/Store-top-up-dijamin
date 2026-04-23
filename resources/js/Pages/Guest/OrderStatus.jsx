@@ -117,6 +117,17 @@ export default function OrderStatus({ order, flash, app_env }) {
             }
         }
     }, [isSuccess, claimWaLink, order.invoice_code]);
+
+    // Handle initial checkout info redirect
+    useEffect(() => {
+        if (flash?.whatsapp_url) {
+            const redirectKey = `wa_checkout_info_${order.invoice_code}`;
+            if (!sessionStorage.getItem(redirectKey)) {
+                sessionStorage.setItem(redirectKey, '1');
+                window.location.href = flash.whatsapp_url;
+            }
+        }
+    }, [flash?.whatsapp_url, order.invoice_code]);
     const [copiedKey, setCopiedKey] = useState(null);
 
     const copyToClipboard = (text) => {

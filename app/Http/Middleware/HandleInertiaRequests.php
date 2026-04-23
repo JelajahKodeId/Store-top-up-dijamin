@@ -41,6 +41,7 @@ class HandleInertiaRequests extends Middleware
                     'phone_number' => $request->user()->phone_number,
                     'balance' => (float) $request->user()->balance,
                     'member_tier' => $request->user()->member_tier ?? 'standard',
+                    'member_level' => $request->user()->tier ? (int) $request->user()->tier->level : 0,
                     'member_tier_label' => $request->user()->tier ? $request->user()->tier->name : 'Member',
                     'roles' => $request->user()->getRoleNames(),
                     'permissions' => $request->user()->getAllPermissions()->pluck('name'),
