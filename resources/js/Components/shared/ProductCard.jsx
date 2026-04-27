@@ -68,8 +68,6 @@ export default function ProductCard({ product }) {
                             </div>
                         )}
                     </div>
-
-                    )}
                 </div>
 
                 <div className="flex min-h-0 flex-1 flex-col px-2 pt-2 sm:px-2.5 sm:pt-2.5">

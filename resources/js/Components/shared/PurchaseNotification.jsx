@@ -11,20 +11,24 @@ export default function PurchaseNotification() {
             const response = await axios.get(route('api.recent-order'));
             const data = response.data.order;
 
-            // Jika ada order baru dan ID nya berbeda dengan yang terakhir ditampilkan
-            if (data && data.id !== lastId) {
-                setOrder(data);
-                setLastId(data.id);
-                setIsVisible(true);
+            if (data) {
+                const sessionLastId = sessionStorage.getItem('last_notified_order_id');
+                
+                // Hanya tampilkan jika ID berbeda dengan yang terakhir ditampilkan di sesi ini
+                if (data.id.toString() !== lastId?.toString() && data.id.toString() !== sessionLastId) {
+                    setOrder(data);
+                    setLastId(data.id);
+                    sessionStorage.setItem('last_notified_order_id', data.id.toString());
+                    setIsVisible(true);
 
-                // Sembunyikan setelah 7 detik
-                setTimeout(() => {
-                    setIsVisible(false);
-                }, 7000);
+                    // Sembunyikan setelah 7 detik
+                    setTimeout(() => {
+                        setIsVisible(false);
+                    }, 7000);
+                }
             }
         } catch (error) {
-            // Silently fail to not disturb user
-            // console.error('Recent order fetch error');
+            // Silently fail
         }
     };
 
@@ -41,7 +45,7 @@ export default function PurchaseNotification() {
 
     return (
         <div 
-            className={`fixed bottom-6 left-6 z-[9990] w-[calc(100%-3rem)] max-w-[320px] transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+            className={`fixed bottom-24 left-4 sm:bottom-8 sm:left-8 z-[9990] w-auto max-w-[260px] sm:max-w-[320px] transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] ${
                 isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
             }`}
         >

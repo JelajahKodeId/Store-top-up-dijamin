@@ -107,6 +107,7 @@ export default function OrderStatus({ order, flash, app_env }) {
         csWaLink = toWaLink(adminNumber);
     }
     const isPaidOrSuccess = ['paid', 'success'].includes(order.status);
+    const isSuccess = order.status === 'success';
     const shouldRedirect = isPaidOrSuccess && claimWaLink;
 
     useEffect(() => {
