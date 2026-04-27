@@ -258,12 +258,14 @@ class LandingController extends Controller
     public function recentOrder()
     {
         $order = Order::whereIn('status', [OrderStatus::PAID, OrderStatus::SUCCESS])
-            ->with(['items.product'])
-            ->whereNotNull('paid_at')
-            ->latest('paid_at')
+            ->whereHas('payment', function($q) {
+                $q->whereNotNull('paid_at');
+            })
+            ->with(['items.product', 'payment'])
+            ->latest('updated_at')
             ->first();
 
-        if (!$order) return response()->json(['order' => null]);
+        if (!$order || !$order->payment) return response()->json(['order' => null]);
 
         $item = $order->items->first();
         if (!$item) return response()->json(['order' => null]);
@@ -273,11 +275,11 @@ class LandingController extends Controller
         return response()->json([
             'order' => [
                 'id' => $order->id,
-                'customer_name' => 'Seseorang', // Privacy
+                'customer_name' => 'Seseorang', 
                 'product_name' => $item->product_name,
                 'product_image' => $product ? $product->image_url : null,
-                'time_ago' => $order->paid_at->diffForHumans(['parts' => 1, 'short' => true]),
-                'paid_at' => $order->paid_at->toIso8601String(),
+                'time_ago' => $order->payment->paid_at->diffForHumans(['parts' => 1, 'short' => true]),
+                'paid_at' => $order->payment->paid_at->toIso8601String(),
             ]
         ]);
     }

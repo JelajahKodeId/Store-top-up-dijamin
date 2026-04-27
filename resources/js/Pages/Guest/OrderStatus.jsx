@@ -106,17 +106,18 @@ export default function OrderStatus({ order, flash, app_env }) {
         claimWaLink = `https://api.whatsapp.com/send?phone=${cleanNumber}&text=${generateClaimMessage()}`;
         csWaLink = toWaLink(adminNumber);
     }
-    const isSuccess = order.status === 'success';
+    const isPaidOrSuccess = ['paid', 'success'].includes(order.status);
+    const shouldRedirect = isPaidOrSuccess && claimWaLink;
 
     useEffect(() => {
-        if (isSuccess && claimWaLink) {
+        if (shouldRedirect) {
             const redirectKey = `wa_redirected_${order.invoice_code}`;
             if (!sessionStorage.getItem(redirectKey)) {
                 sessionStorage.setItem(redirectKey, '1');
                 window.location.href = claimWaLink;
             }
         }
-    }, [isSuccess, claimWaLink, order.invoice_code]);
+    }, [shouldRedirect, claimWaLink, order.invoice_code]);
 
     // Handle initial checkout info redirect
     useEffect(() => {

@@ -69,10 +69,6 @@ export default function ProductCard({ product }) {
                         )}
                     </div>
 
-                    {categoryLabel && (
-                        <div className="pointer-events-none absolute left-1.5 top-1.5 z-[1] max-w-[70%] truncate rounded-md bg-black/75 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-tight tracking-wide text-white shadow-sm backdrop-blur-sm">
-                            {categoryLabel}
-                        </div>
                     )}
                 </div>
 
