@@ -26,6 +26,29 @@ export default function Home({ products = [], banners = [], gameCategories = [],
         setActiveSlide((prev) => (prev + 1) % Math.max(activeBanners.length, 1));
     }, [activeBanners.length]);
 
+    const prevSlide = useCallback(() => {
+        setActiveSlide((prev) => (prev - 1 + activeBanners.length) % Math.max(activeBanners.length, 1));
+    }, [activeBanners.length]);
+
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
+
+    const handleTouchStart = (e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+
+    const handleTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > 50;
+        const isRightSwipe = distance < -50;
+        if (isLeftSwipe) nextSlide();
+        if (isRightSwipe) prevSlide();
+    };
+
     useEffect(() => {
         if (activeBanners.length <= 1) return;
         const timer = setInterval(nextSlide, 5000);
@@ -57,7 +80,12 @@ export default function Home({ products = [], banners = [], gameCategories = [],
 
             <section className="relative bg-guest-bg pb-6">
                 <div className="section-container">
-                    <div className="relative overflow-hidden rounded-2xl bg-guest-surface shadow-lg md:rounded-[2.5rem]">
+                    <div 
+                        className="relative overflow-hidden rounded-2xl bg-guest-surface shadow-lg md:rounded-[2.5rem]"
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                    >
                         <div className="relative aspect-[2/1] overflow-hidden md:aspect-[21/9] lg:aspect-[24/9]">
                             {activeBanners.length > 0 ? (
                                 activeBanners.map((banner, idx) => {
@@ -177,8 +205,8 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                                 <span className="flex h-1.5 w-1.5 animate-pulse rounded-full bg-store-accent" />
                                 Terpopuler Saat Ini
                             </div>
-                            <h2 className="font-bebas text-2xl font-bold uppercase leading-tight tracking-wide text-guest-text sm:text-3xl md:text-4xl">Top Pick Product</h2>
-                            <p className="mt-1.5 text-sm leading-normal text-guest-muted sm:text-[15px]">Lisensi game digital & software premium dengan sistem pengiriman instan.</p>
+                            <h2 className="font-bebas text-2xl font-bold uppercase leading-tight tracking-wide text-guest-text [text-shadow:_0_2px_4px_rgb(0_0_0_/_20%)] sm:text-3xl md:text-4xl">Top Pick Product</h2>
+                            <p className="mt-1.5 text-sm font-medium leading-normal text-guest-text/80 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] sm:text-[15px]">Lisensi game digital & software premium dengan sistem pengiriman instan.</p>
                             <div className="mt-5 h-[1.5px] w-20 bg-store-accent" />
                         </div>
                         <Link href={route('catalog')}>
