@@ -124,7 +124,7 @@ export default function ProductCard({ product }) {
                             href={product.telegram_group_invite_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex w-full items-center justify-center gap-1.5 rounded-md bg-guest-elevated py-1.5 text-[9px] font-bold uppercase tracking-wide text-guest-text shadow-sm transition-all hover:bg-store-accent hover:text-store-dark hover:shadow sm:py-2 sm:text-[10px]"
+                            className="flex w-full items-center justify-center gap-1.5 rounded-md bg-sky-600 py-1.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm transition-all hover:bg-sky-700 hover:shadow sm:py-2 sm:text-[10px]"
                         >
                             <AppIcons.download size={10} strokeWidth={2.5} className="shrink-0" />
                             Download

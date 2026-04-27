@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Models\WalletTopup;
 use App\Services\KeyDeliveryService;
+use App\Jobs\DeliverOrderKeysJob;
 use App\Services\Payment\PaymentGatewayInterface;
 use App\Services\WhatsAppService;
 use Illuminate\Http\JsonResponse;
@@ -355,7 +356,7 @@ class WebhookController extends Controller
                 $order->update(['status' => OrderStatus::PAID]);
             });
 
-            $this->keyDeliveryService->deliver($order->fresh());
+            DeliverOrderKeysJob::dispatch($order->fresh());
 
             Log::info("WebhookController: Order #{$order->invoice_code} berhasil diproses (PAID → SUCCESS).");
         } catch (\Throwable $e) {

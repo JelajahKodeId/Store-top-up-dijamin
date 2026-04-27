@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Badge from '@/Components/ui/Badge';
 import Button from '@/Components/ui/Button';
@@ -10,6 +11,8 @@ const formatPrice = (price) =>
 export default function ProductShow({ product }) {
     const p = product.data ?? product;
     const reviews = p.reviews ?? [];
+    const [showAllReviews, setShowAllReviews] = useState(false);
+    const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 5);
 
     return (
         <AdminLayout
@@ -89,72 +92,85 @@ export default function ProductShow({ product }) {
                         {reviews.length === 0 ? (
                             <p className="text-sm text-store-subtle italic">Belum ada ulasan.</p>
                         ) : (
-                            <ul className="space-y-3">
-                                {reviews.map((r) => (
-                                    <li key={r.id} className="rounded-2xl border border-store-border bg-admin-bg p-4">
-                                        <div className="flex flex-wrap items-center justify-between gap-2">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="font-black text-store-charcoal">{r.author_name}</span>
-                                                <span className="inline-flex items-center gap-0.5">
-                                                    {[1, 2, 3, 4, 5].map((i) => (
-                                                        <AppIcons.star
-                                                            key={i}
-                                                            size={14}
-                                                            strokeWidth={2}
-                                                            className={i <= r.rating ? 'fill-amber-400 text-amber-500' : 'fill-none text-zinc-300'}
-                                                        />
-                                                    ))}
-                                                </span>
-                                                {r.verified_purchase && (
-                                                    <Badge variant="accent" className="text-[8px]">Terverifikasi</Badge>
-                                                )}
-                                                <Badge variant={r.is_published ? 'charcoal' : 'gray'} className="text-[8px]">
-                                                    {r.is_published ? 'Publik' : 'Menunggu'}
-                                                </Badge>
+                            <>
+                                <ul className="space-y-3">
+                                    {displayedReviews.map((r) => (
+                                        <li key={r.id} className="rounded-2xl border border-store-border bg-admin-bg p-4">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="font-black text-store-charcoal">{r.author_name}</span>
+                                                    <span className="inline-flex items-center gap-0.5">
+                                                        {[1, 2, 3, 4, 5].map((i) => (
+                                                            <AppIcons.star
+                                                                key={i}
+                                                                size={14}
+                                                                strokeWidth={2}
+                                                                className={i <= r.rating ? 'fill-amber-400 text-amber-500' : 'fill-none text-zinc-300'}
+                                                            />
+                                                        ))}
+                                                    </span>
+                                                    {r.verified_purchase && (
+                                                        <Badge variant="accent" className="text-[8px]">Terverifikasi</Badge>
+                                                    )}
+                                                    <Badge variant={r.is_published ? 'charcoal' : 'gray'} className="text-[8px]">
+                                                        {r.is_published ? 'Publik' : 'Menunggu'}
+                                                    </Badge>
+                                                </div>
+                                                <span className="text-[9px] font-bold text-store-subtle">{r.created_at}</span>
                                             </div>
-                                            <span className="text-[9px] font-bold text-store-subtle">{r.created_at}</span>
-                                        </div>
-                                        <p className="mt-2 text-sm text-store-charcoal leading-relaxed">{r.body}</p>
-                                        {r.invoice_code && (
-                                            <p className="mt-1 text-[9px] font-mono text-store-subtle">Invoice: {r.invoice_code}</p>
-                                        )}
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                            {!r.is_published ? (
-                                                <Button
-                                                    type="button"
-                                                    variant="dark"
-                                                    size="sm"
-                                                    onClick={() => router.patch(route('admin.products.reviews.publish', { product: p.id, review: r.id }))}
-                                                >
-                                                    Terbitkan
-                                                </Button>
-                                            ) : (
+                                            <p className="mt-2 text-sm text-store-charcoal leading-relaxed">{r.body}</p>
+                                            {r.invoice_code && (
+                                                <p className="mt-1 text-[9px] font-mono text-store-subtle">Invoice: {r.invoice_code}</p>
+                                            )}
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {!r.is_published ? (
+                                                    <Button
+                                                        type="button"
+                                                        variant="dark"
+                                                        size="sm"
+                                                        onClick={() => router.patch(route('admin.products.reviews.publish', { product: p.id, review: r.id }))}
+                                                    >
+                                                        Terbitkan
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        type="button"
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        onClick={() => router.patch(route('admin.products.reviews.unpublish', { product: p.id, review: r.id }))}
+                                                    >
+                                                        Sembunyikan
+                                                    </Button>
+                                                )}
                                                 <Button
                                                     type="button"
                                                     variant="secondary"
                                                     size="sm"
-                                                    onClick={() => router.patch(route('admin.products.reviews.unpublish', { product: p.id, review: r.id }))}
+                                                    className="!text-red-600"
+                                                    onClick={() => {
+                                                        if (confirm('Hapus ulasan ini?')) {
+                                                            router.delete(route('admin.products.reviews.destroy', { product: p.id, review: r.id }));
+                                                        }
+                                                    }}
                                                 >
-                                                    Sembunyikan
+                                                    Hapus
                                                 </Button>
-                                            )}
-                                            <Button
-                                                type="button"
-                                                variant="secondary"
-                                                size="sm"
-                                                className="!text-red-600"
-                                                onClick={() => {
-                                                    if (confirm('Hapus ulasan ini?')) {
-                                                        router.delete(route('admin.products.reviews.destroy', { product: p.id, review: r.id }));
-                                                    }
-                                                }}
-                                            >
-                                                Hapus
-                                            </Button>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                                {reviews.length > 5 && !showAllReviews && (
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="w-full mt-4"
+                                        onClick={() => setShowAllReviews(true)}
+                                        icon={AppIcons.chevronDown}
+                                    >
+                                        Lihat semua ({reviews.length}) ulasan
+                                    </Button>
+                                )}
+                            </>
                         )}
                     </div>
 

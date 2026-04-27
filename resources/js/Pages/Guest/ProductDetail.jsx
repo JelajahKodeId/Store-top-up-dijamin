@@ -385,6 +385,9 @@ export default function ProductDetail({
     const { auth, flash, site } = usePage().props;
     const isResellerEligible = Number(auth?.user?.member_level ?? 0) >= 2;
     const reviews = product.reviews ?? [];
+    const [showAllReviews, setShowAllReviews] = useState(false);
+    const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 5);
+
     const reviewAvg = useMemo(() => {
         if (!reviews.length) return null;
         const sum = reviews.reduce((acc, r) => acc + Number(r.rating), 0);
@@ -584,11 +587,23 @@ export default function ProductDetail({
                 </p>
 
                 {reviews.length > 0 ? (
-                    <ul className="mb-6 space-y-3 sm:space-y-4">
-                        {reviews.map((r) => (
-                            <ReviewCard key={r.id} review={r} />
-                        ))}
-                    </ul>
+                    <>
+                        <ul className="mb-6 space-y-3 sm:space-y-4">
+                            {displayedReviews.map((r) => (
+                                <ReviewCard key={r.id} review={r} />
+                            ))}
+                        </ul>
+                        {reviews.length > 5 && !showAllReviews && (
+                            <button
+                                type="button"
+                                onClick={() => setShowAllReviews(true)}
+                                className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl border border-guest-border bg-guest-elevated py-3 text-sm font-bold uppercase tracking-wide text-guest-muted transition-all hover:bg-guest-surface hover:text-guest-text"
+                            >
+                                Lihat semua ({reviews.length}) ulasan
+                                <AppIcons.chevronDown size={14} />
+                            </button>
+                        )}
+                    </>
                 ) : (
                     <p className="mb-6 text-sm font-medium text-zinc-700">Belum ada ulasan untuk produk ini.</p>
                 )}

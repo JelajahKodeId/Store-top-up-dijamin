@@ -103,7 +103,7 @@ class PakKasirService implements PaymentGatewayInterface
      */
     protected function verifyViaApi(string $orderId, $amount, array $originalPayload): ?array
     {
-        $response = Http::get("{$this->baseUrl}/transactiondetail", [
+        $response = Http::timeout(15)->get("{$this->baseUrl}/transactiondetail", [
             'project'  => $this->slug,
             'order_id' => $orderId,
             'amount'   => $amount,

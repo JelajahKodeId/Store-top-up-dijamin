@@ -1,14 +1,15 @@
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { useState, useEffect, useCallback } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { AppIcons } from '@/Components/shared/AppIcon';
 import Button from '@/Components/ui/Button';
 import ProductCard from '@/Components/shared/ProductCard';
-import GameCategoryFilter from '@/Components/guest/GameCategoryFilter';
+import GuestInput from '@/Components/guest/GuestInput';
 
 export default function Home({ products = [], banners = [], gameCategories = [], filters = {} }) {
     const activeBanners = banners.filter(b => b.is_active);
     const [activeSlide, setActiveSlide] = useState(0);
+    const [search, setSearch] = useState('');
 
     const nextSlide = useCallback(() => {
         setActiveSlide((prev) => (prev + 1) % Math.max(activeBanners.length, 1));
@@ -21,6 +22,12 @@ export default function Home({ products = [], banners = [], gameCategories = [],
     }, [activeBanners.length, nextSlide]);
 
     const goToSlide = (idx) => setActiveSlide(idx);
+
+    const filteredProducts = useMemo(() => {
+        const q = search.toLowerCase().trim();
+        if (!q) return products;
+        return products.filter(p => p.name.toLowerCase().includes(q));
+    }, [products, search]);
 
     return (
         <GuestLayout>
@@ -98,11 +105,20 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                         </Link>
                     </div>
 
-                    <GameCategoryFilter routeName="home" categories={gameCategories} currentCategory={filters.category ?? null} />
+                    <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:mb-8 sm:flex-row sm:items-center">
+                        <GuestInput
+                            icon="search"
+                            type="text"
+                            placeholder="Cari produk..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            containerClassName="w-full sm:max-w-sm"
+                        />
+                    </div>
 
-                    {products.length > 0 ? (
+                    {filteredProducts.length > 0 ? (
                         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
-                            {products.map((product) => (
+                            {filteredProducts.map((product) => (
                                 <ProductCard key={product.id} product={product} />
                             ))}
                         </div>

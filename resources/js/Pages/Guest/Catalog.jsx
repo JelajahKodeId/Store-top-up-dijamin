@@ -2,7 +2,6 @@ import { Head } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import GuestInput from '@/Components/guest/GuestInput';
 import ProductCard from '@/Components/shared/ProductCard';
-import GameCategoryFilter from '@/Components/guest/GameCategoryFilter';
 import { AppIcons } from '@/Components/shared/AppIcon';
 import { useState, useMemo } from 'react';
 
@@ -24,7 +23,6 @@ export default function Catalog({ products = [], gameCategories = [], filters = 
             <Head title="Katalog Produk Digital — Mall Store" />
 
             <div className="section-container pb-12 sm:pb-16">
-                <GameCategoryFilter routeName="catalog" categories={gameCategories} currentCategory={filters.category ?? null} />
 
                 <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
                     <GuestInput
