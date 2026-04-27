@@ -61,7 +61,7 @@ export default function Catalog({ products = [], gameCategories = [], filters = 
                                 <button
                                     key={cat.value}
                                     onClick={() => setSelectedCategory(cat.value)}
-                                    className={`flex-shrink-0 rounded-full px-5 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                                    className={`flex-shrink-0 rounded-md px-5 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${
                                         selectedCategory === cat.value
                                             ? 'bg-store-accent/15 text-store-accent-dark border border-store-accent shadow-sm'
                                             : 'bg-white border border-guest-border text-guest-muted hover:border-guest-subtle shadow-sm'

@@ -12,7 +12,7 @@ const GuestInput = forwardRef(function GuestInput(
     const isTextarea = type === 'textarea';
 
     const baseClass = `
-        w-full rounded-xl border border-guest-border bg-white font-medium text-guest-text shadow-sm
+        w-full rounded-md border border-guest-border bg-white font-medium text-guest-text shadow-sm
         text-sm placeholder:text-guest-subtle transition-all outline-none
         focus:border-store-accent/50 focus:ring-2 focus:ring-store-accent/15
         ${error ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}

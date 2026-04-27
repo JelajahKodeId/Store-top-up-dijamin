@@ -78,10 +78,10 @@ export default function Home({ products = [], banners = [], gameCategories = [],
         <GuestLayout>
             <Head title="Level up your Gaming Gears — Mall Store" />
 
-            <section className="relative bg-guest-bg pb-6">
+            <section className="relative bg-guest-bg pb-0">
                 <div className="section-container">
                     <div 
-                        className="relative overflow-hidden rounded-2xl bg-guest-surface shadow-lg md:rounded-[2.5rem]"
+                        className="relative overflow-hidden rounded-xl bg-guest-surface shadow-lg"
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
@@ -152,44 +152,24 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                     </div>
 
                     {site?.running_text && (
-                        <div className="relative mt-4 overflow-hidden rounded-2xl bg-store-charcoal py-2.5 text-white shadow-sm md:rounded-3xl">
+                        <div className="relative mt-4 overflow-hidden rounded-md border border-guest-border bg-white py-2.5 text-guest-text shadow-sm">
                             <div className="animate-marquee">
                                 <div className="flex items-center gap-12 px-6">
-                                    <span className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em]">
-                                        <AppIcons.zap size={14} className="text-store-accent" />
-                                        {site.running_text}
-                                    </span>
-                                    <span className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em]">
-                                        <AppIcons.zap size={14} className="text-store-accent" />
-                                        {site.running_text}
-                                    </span>
-                                    <span className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em]">
-                                        <AppIcons.zap size={14} className="text-store-accent" />
-                                        {site.running_text}
-                                    </span>
-                                    <span className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em]">
-                                        <AppIcons.zap size={14} className="text-store-accent" />
-                                        {site.running_text}
-                                    </span>
+                                    {[1, 2, 3, 4].map((i) => (
+                                        <span key={i} className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em] [text-shadow:_0_1px_1px_rgb(0_0_0_/_8%)]">
+                                            <AppIcons.zap size={13} className="text-store-accent-dark" />
+                                            {site.running_text}
+                                        </span>
+                                    ))}
                                 </div>
                                 {/* Duplicate for seamless loop */}
                                 <div className="flex items-center gap-12 px-6">
-                                    <span className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em]">
-                                        <AppIcons.zap size={14} className="text-store-accent" />
-                                        {site.running_text}
-                                    </span>
-                                    <span className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em]">
-                                        <AppIcons.zap size={14} className="text-store-accent" />
-                                        {site.running_text}
-                                    </span>
-                                    <span className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em]">
-                                        <AppIcons.zap size={14} className="text-store-accent" />
-                                        {site.running_text}
-                                    </span>
-                                    <span className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em]">
-                                        <AppIcons.zap size={14} className="text-store-accent" />
-                                        {site.running_text}
-                                    </span>
+                                    {[5, 6, 7, 8].map((i) => (
+                                        <span key={i} className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em] [text-shadow:_0_1px_1px_rgb(0_0_0_/_8%)]">
+                                            <AppIcons.zap size={13} className="text-store-accent-dark" />
+                                            {site.running_text}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -197,17 +177,43 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                 </div>
             </section>
 
-            <section className="relative overflow-hidden bg-guest-bg py-10 sm:py-12">
+            <section className="relative overflow-hidden bg-guest-bg pb-10 pt-6 sm:pb-12 sm:pt-8">
                 <div className="section-container relative z-10">
                     <div className="mb-8 flex flex-col items-end justify-between gap-4 md:flex-row md:gap-6">
                         <div className="max-w-2xl">
-                            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-store-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-900">
+                            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-store-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-900">
                                 <span className="flex h-1.5 w-1.5 animate-pulse rounded-full bg-store-accent" />
                                 Terpopuler Saat Ini
                             </div>
                             <h2 className="font-bebas text-2xl font-bold uppercase leading-tight tracking-wide text-guest-text [text-shadow:_0_2px_4px_rgb(0_0_0_/_20%)] sm:text-3xl md:text-4xl">Top Pick Product</h2>
                             <p className="mt-1.5 text-sm font-medium leading-normal text-guest-text/80 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] sm:text-[15px]">Lisensi game digital & software premium dengan sistem pengiriman instan.</p>
                             <div className="mt-5 h-[1.5px] w-20 bg-store-accent" />
+                            
+                            {/* Saluran Media Sosial */}
+                            <div className="mt-6 flex flex-wrap gap-3">
+                                {site?.wa_channel && (
+                                    <a 
+                                        href={site.wa_channel} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 rounded-lg bg-[#25D366] px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-md transition-all hover:scale-105 hover:bg-[#20bd5a] active:scale-95"
+                                    >
+                                        <AppIcons.speaker size={14} />
+                                        <span>Saluran WA</span>
+                                    </a>
+                                )}
+                                {site?.tg_channel && (
+                                    <a 
+                                        href={site.tg_channel} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 rounded-lg bg-[#0088cc] px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-md transition-all hover:scale-105 hover:bg-[#0077b5] active:scale-95"
+                                    >
+                                        <AppIcons.speaker size={14} />
+                                        <span>Saluran Telegram</span>
+                                    </a>
+                                )}
+                            </div>
                         </div>
                         <Link href={route('catalog')}>
                             <Button variant="dark" size="sm" className="rounded-xl shadow-md">
@@ -233,7 +239,7 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                                     <button
                                         key={cat.value}
                                         onClick={() => setSelectedCategory(cat.value)}
-                                        className={`flex-shrink-0 rounded-full px-5 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${selectedCategory === cat.value
+                                        className={`flex-shrink-0 rounded-md px-5 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${selectedCategory === cat.value
                                                 ? 'bg-store-accent/15 text-store-accent-dark border border-store-accent shadow-sm'
                                                 : 'bg-white border border-guest-border text-guest-muted hover:border-guest-subtle shadow-sm'
                                             }`}

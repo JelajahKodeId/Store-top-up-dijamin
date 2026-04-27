@@ -33,6 +33,7 @@ class SettingController extends Controller
             'site_name', 'site_description', 'site_keywords', 'announcement', 'running_text',
             'logo_web', 'logo_footer', 'favicon',
             'whatsapp_number', 'instagram_username', 'telegram_username', 'facebook_page', 'tiktok_username',
+            'whatsapp_channel', 'telegram_channel',
             'contact_email', 'contact_phone', 'address',
         ];
         $fileKeys = ['logo_web', 'logo_footer', 'favicon'];

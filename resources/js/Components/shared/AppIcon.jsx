@@ -70,6 +70,7 @@ import {
     Apple,
     MessageCircle,
     Send,
+    Megaphone,
 } from 'lucide-react';
 
 /**
@@ -174,6 +175,7 @@ export const AppIcons = {
     ios: Apple,
     whatsapp: MessageCircle,
     telegram: Send,
+    speaker: Megaphone,
 };
 
 /**

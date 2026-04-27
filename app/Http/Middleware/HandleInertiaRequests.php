@@ -56,6 +56,7 @@ class HandleInertiaRequests extends Middleware
                 $s = Setting::whereIn('key', [
                     'site_name', 'site_description', 'logo_web', 'favicon',
                     'whatsapp_number', 'instagram_username', 'telegram_username', 'facebook_page', 'tiktok_username',
+                    'whatsapp_channel', 'telegram_channel',
                     'running_text',
                 ])->pluck('value', 'key')->toArray();
 
@@ -68,6 +69,8 @@ class HandleInertiaRequests extends Middleware
                     'telegram' => $s['telegram_username'] ?? null,
                     'facebook' => $s['facebook_page'] ?? null,
                     'tiktok' => $s['tiktok_username'] ?? null,
+                    'wa_channel' => $s['whatsapp_channel'] ?? null,
+                    'tg_channel' => $s['telegram_channel'] ?? null,
                     'running_text' => $s['running_text'] ?? null,
                 ];
             }),

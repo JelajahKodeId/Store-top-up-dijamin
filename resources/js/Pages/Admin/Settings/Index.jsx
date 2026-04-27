@@ -13,6 +13,7 @@ export default function SettingIndex({ settings }) {
         site_name: '', site_description: '', site_keywords: '', announcement: '', running_text: '',
         logo_web: '', logo_footer: '', favicon: '',
         whatsapp_number: '', instagram_username: '', telegram_username: '', facebook_page: '', tiktok_username: '',
+        whatsapp_channel: '', telegram_channel: '',
         contact_email: '', contact_phone: '', address: '',
     };
     const initialSettings = settings.reduce((acc, s) => {
@@ -231,6 +232,20 @@ export default function SettingIndex({ settings }) {
                                             value={data.tiktok_username}
                                             onChange={e => setData('tiktok_username', e.target.value)}
                                             error={errors.tiktok_username}
+                                        />
+                                        <Input
+                                            label="WhatsApp Channel Link"
+                                            value={data.whatsapp_channel}
+                                            onChange={e => setData('whatsapp_channel', e.target.value)}
+                                            error={errors.whatsapp_channel}
+                                            placeholder="https://whatsapp.com/channel/..."
+                                        />
+                                        <Input
+                                            label="Telegram Channel Link"
+                                            value={data.telegram_channel}
+                                            onChange={e => setData('telegram_channel', e.target.value)}
+                                            error={errors.telegram_channel}
+                                            placeholder="https://t.me/..."
                                         />
                                     </div>
                                 </div>
