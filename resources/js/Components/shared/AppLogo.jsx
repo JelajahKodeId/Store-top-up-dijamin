@@ -8,7 +8,7 @@ import { Link, usePage } from '@inertiajs/react';
  * @param {'sm'|'md'|'lg'} size
  * @param {string} imageWrapperClassName — kelas tambahan untuk bingkai logo (mis. di footer gelap)
  */
-export default function AppLogo({ theme = 'dark', size = 'md', href = '/', className = '', imageWrapperClassName = '' }) {
+export default function AppLogo({ theme = 'dark', size = 'md', href = '/', className = '', imageWrapperClassName = '', subtitle = null }) {
     const { site } = usePage().props;
 
     const siteName = site?.name || 'Mall Store';
@@ -48,11 +48,19 @@ export default function AppLogo({ theme = 'dark', size = 'md', href = '/', class
                 </div>
             )}
 
-            <div>
+            <div className="flex flex-col">
                 <span className={`font-black ${textSizes[size]} ${textColor} tracking-tight leading-none`}>
                     {firstName}
                     {restName && <> <span className={subColor}>{restName}</span></>}
                 </span>
+                {subtitle && (
+                    <div className="mt-1 flex flex-col gap-0.5">
+                        <div className={`h-[1px] w-full ${theme === 'light' ? 'bg-white/20' : 'bg-guest-border'}`} />
+                        <span className={`text-[7px] font-bold uppercase tracking-tighter sm:text-[8px] ${theme === 'light' ? 'text-zinc-400' : 'text-guest-subtle'}`}>
+                            {subtitle}
+                        </span>
+                    </div>
+                )}
             </div>
         </Link>
     );

@@ -10,9 +10,9 @@ export default function SettingIndex({ settings }) {
 
     // Konversi array settings ke object key-value, dengan default untuk setiap key
     const SETTING_DEFAULTS = {
-        site_name: '', site_description: '', site_keywords: '', announcement: '',
+        site_name: '', site_description: '', site_keywords: '', announcement: '', running_text: '',
         logo_web: '', logo_footer: '', favicon: '',
-        whatsapp_number: '', instagram_username: '', facebook_page: '', tiktok_username: '',
+        whatsapp_number: '', instagram_username: '', telegram_username: '', facebook_page: '', tiktok_username: '',
         contact_email: '', contact_phone: '', address: '',
     };
     const initialSettings = settings.reduce((acc, s) => {
@@ -120,6 +120,13 @@ export default function SettingIndex({ settings }) {
                                             error={errors.announcement}
                                             rows={4}
                                         />
+                                        <Input
+                                            label="Running Text (Beranda)"
+                                            value={data.running_text}
+                                            onChange={e => setData('running_text', e.target.value)}
+                                            error={errors.running_text}
+                                            placeholder="Teks berjalan di bawah banner..."
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -205,6 +212,13 @@ export default function SettingIndex({ settings }) {
                                             onChange={e => setData('instagram_username', e.target.value)}
                                             error={errors.instagram_username}
                                             placeholder="@store_topup"
+                                        />
+                                        <Input
+                                            label="Telegram Username/Link"
+                                            value={data.telegram_username}
+                                            onChange={e => setData('telegram_username', e.target.value)}
+                                            error={errors.telegram_username}
+                                            placeholder="mallstore_cs"
                                         />
                                         <Input
                                             label="Facebook Page Name"

@@ -61,7 +61,12 @@ export default function GuestNavbar({ memberArea = false }) {
             <div className="section-container relative" ref={menuRef}>
                 <div className="flex min-h-[4.25rem] items-center justify-between gap-3 py-3 sm:min-h-[4.5rem] sm:py-3.5">
                     <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4 lg:gap-8">
-                        <AppLogo href={inMemberArea && isMember ? route('member.home') : '/'} size="lg" theme="dark" />
+                        <AppLogo
+                            href={inMemberArea && isMember ? route('member.home') : '/'}
+                            size="lg"
+                            theme="dark"
+                            subtitle="Layanan Voucher Game & Media Sosial"
+                        />
 
                         {!(inMemberArea && isMember) && (
                             <div className="hidden min-w-0 items-center gap-1 sm:gap-2 lg:flex">

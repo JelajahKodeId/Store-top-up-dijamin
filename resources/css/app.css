@@ -231,4 +231,20 @@
     .banner-gradient {
         background: linear-gradient(to top, rgba(18, 18, 18, 0.95) 0%, rgba(18, 18, 18, 0.4) 50%, rgba(18, 18, 18, 0.05) 100%);
     }
+
+    /* ── Marquee Animation ── */
+    @keyframes marquee {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+    }
+
+    .animate-marquee {
+        display: flex;
+        width: max-content;
+        animation: marquee 45s linear infinite;
+    }
+
+    .animate-marquee:hover {
+        animation-play-state: paused;
+    }
 }

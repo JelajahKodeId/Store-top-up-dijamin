@@ -1,6 +1,8 @@
 import { Head, usePage } from '@inertiajs/react';
 import GuestNavbar from '@/Components/guest/GuestNavbar';
 import GuestFooter from '@/Components/guest/GuestFooter';
+import SupportFloatingButton from '@/Components/shared/SupportFloatingButton';
+import PurchaseNotification from '@/Components/shared/PurchaseNotification';
 
 /**
  * GuestLayout — wrapper halaman publik (tema putih / abu).
@@ -54,6 +56,8 @@ export default function GuestLayout({ children, title, subtitle, memberArea = fa
             </main>
 
             <GuestFooter />
+            <SupportFloatingButton />
+            <PurchaseNotification />
         </div>
     );
 }

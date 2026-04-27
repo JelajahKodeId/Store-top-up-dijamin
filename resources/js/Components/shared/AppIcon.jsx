@@ -68,6 +68,8 @@ import {
     Star,
     Smartphone,
     Apple,
+    MessageCircle,
+    Send,
 } from 'lucide-react';
 
 /**
@@ -170,6 +172,8 @@ export const AppIcons = {
     star: Star,              // rating (hindari karakter unicode bintang)
     android: Smartphone,
     ios: Apple,
+    whatsapp: MessageCircle,
+    telegram: Send,
 };
 
 /**

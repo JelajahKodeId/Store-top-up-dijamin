@@ -39,6 +39,7 @@ Route::get('/track-invoice/search', [LandingController::class, 'trackInvoiceSear
     ->middleware('throttle:10,1')
     ->name('landing.track.search');
 Route::get('/orders/{invoice}', [LandingController::class, 'orderStatus'])->name('orders.status');
+Route::get('/api/recent-order', [LandingController::class, 'recentOrder'])->name('api.recent-order');
 
 Route::post('/checkout', [CheckoutController::class, 'store'])
     ->middleware('throttle:checkout')

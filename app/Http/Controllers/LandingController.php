@@ -250,4 +250,35 @@ class LandingController extends Controller
             ]),
         ];
     }
+
+    /**
+     * Get the most recent paid order for "Live Purchase" notification.
+     * GET /api/recent-order
+     */
+    public function recentOrder()
+    {
+        $order = Order::whereIn('status', [OrderStatus::PAID, OrderStatus::SUCCESS])
+            ->with(['items.product'])
+            ->whereNotNull('paid_at')
+            ->latest('paid_at')
+            ->first();
+
+        if (!$order) return response()->json(['order' => null]);
+
+        $item = $order->items->first();
+        if (!$item) return response()->json(['order' => null]);
+
+        $product = $item->product;
+
+        return response()->json([
+            'order' => [
+                'id' => $order->id,
+                'customer_name' => 'Seseorang', // Privacy
+                'product_name' => $item->product_name,
+                'product_image' => $product ? $product->image_url : null,
+                'time_ago' => $order->paid_at->diffForHumans(['parts' => 1, 'short' => true]),
+                'paid_at' => $order->paid_at->toIso8601String(),
+            ]
+        ]);
+    }
 }

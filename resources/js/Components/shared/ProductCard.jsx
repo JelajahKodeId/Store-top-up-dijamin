@@ -48,15 +48,10 @@ export default function ProductCard({ product }) {
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
                     <div className="pointer-events-none absolute right-1.5 top-1.5 z-[1] flex flex-col items-end gap-1">
-                        {isOutOfStock ? (
+                        {isOutOfStock && (
                             <div className="inline-flex h-5 items-center gap-0.5 rounded-md bg-red-50 px-1.5 text-[8px] font-bold uppercase leading-none text-red-600 ring-1 ring-red-100">
                                 <AppIcons.close size={7} strokeWidth={3} className="shrink-0" />
                                 Habis
-                            </div>
-                        ) : (
-                            <div className="inline-flex h-5 items-center gap-0.5 rounded-md bg-white/95 px-1.5 text-[8px] font-bold uppercase leading-none text-amber-800 shadow-sm ring-1 ring-black/5">
-                                <AppIcons.speed size={7} strokeWidth={3} className="shrink-0" />
-                                Instan
                             </div>
                         )}
                         {product.platform_type && (
@@ -82,12 +77,12 @@ export default function ProductCard({ product }) {
                 </div>
 
                 <div className="flex min-h-0 flex-1 flex-col px-2 pt-2 sm:px-2.5 sm:pt-2.5">
-                    <h3 className="line-clamp-2 min-h-[2.25rem] text-left font-bebas text-[11px] font-bold leading-tight tracking-wide text-guest-text transition-colors group-hover:text-store-accent-dark sm:min-h-[2.5rem] sm:text-xs">
+                    <h3 className="line-clamp-2 text-left font-bebas text-[11px] font-bold leading-tight tracking-wide text-guest-text transition-colors group-hover:text-store-accent-dark sm:text-xs">
                         {product.name}
                     </h3>
 
-                    <div className="mt-1.5 flex min-h-0 flex-1 flex-col">
-                        <div className="shrink-0 space-y-0.5">
+                    <div className="mt-0 flex min-h-0 flex-1 flex-col">
+                        <div className="shrink-0 space-y-0">
                             {hasMultipleDurations && (
                                 <p className="text-[8px] font-semibold uppercase tracking-wider text-guest-subtle">Mulai dari</p>
                             )}

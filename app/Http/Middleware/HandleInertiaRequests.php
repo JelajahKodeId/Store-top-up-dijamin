@@ -55,17 +55,20 @@ class HandleInertiaRequests extends Middleware
             'site' => Cache::remember('inertia_site_settings', 300, function () {
                 $s = Setting::whereIn('key', [
                     'site_name', 'site_description', 'logo_web', 'favicon',
-                    'whatsapp_number', 'instagram_username', 'facebook_page', 'tiktok_username',
+                    'whatsapp_number', 'instagram_username', 'telegram_username', 'facebook_page', 'tiktok_username',
+                    'running_text',
                 ])->pluck('value', 'key')->toArray();
 
                 return [
                     'name' => $s['site_name'] ?? 'Mall Store',
                     'description' => $s['site_description'] ?? 'Platform top-up game instan 24 jam.',
-                    'logo' => isset($s['logo_web']) && $s['logo_web'] ? '/storage/'.$s['logo_web'] : null,
+                    'logo' => isset($s['logo_web']) && $s['logo_web'] ? '/storage/'. $s['logo_web'] : null,
                     'whatsapp' => $s['whatsapp_number'] ?? null,
                     'instagram' => $s['instagram_username'] ?? null,
+                    'telegram' => $s['telegram_username'] ?? null,
                     'facebook' => $s['facebook_page'] ?? null,
                     'tiktok' => $s['tiktok_username'] ?? null,
+                    'running_text' => $s['running_text'] ?? null,
                 ];
             }),
         ];
