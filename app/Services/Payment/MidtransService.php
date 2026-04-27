@@ -107,8 +107,8 @@ class MidtransService implements PaymentGatewayInterface
             ],
             'notification_url'    => $notifyUrl,
             'expiry'              => [
-                'unit'     => 'hours',
-                'duration' => 24,
+                'unit'     => 'minutes',
+                'duration' => 10,
             ],
         ];
 
@@ -137,7 +137,7 @@ class MidtransService implements PaymentGatewayInterface
         return [
             'reference_id' => $orderId,
             'payment_url'  => $redirectUrl,
-            'expired_at'   => now()->addHours(24),
+            'expired_at'   => now()->addMinutes(10),
             'payload'      => array_merge($data, [
                 'snap_token'         => $token,
                 'midtrans_client_key'=> $this->clientKey,

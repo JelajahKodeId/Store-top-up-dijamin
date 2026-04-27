@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Jalankan setiap tengah malam untuk menandai key yang sudah kadaluarsa
 Schedule::command('keys:mark-expired')->dailyAt('00:05');
+
+// Batalkan pesanan yang kadaluarsa (10 menit)
+Schedule::command('orders:cancel-expired')->everyMinute();

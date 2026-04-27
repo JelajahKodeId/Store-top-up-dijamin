@@ -224,34 +224,19 @@ class CheckoutController extends Controller
         $adminNumber = \App\Models\Setting::get('whatsapp_number');
         if (! $adminNumber) return null;
 
-        $itemsText = "";
-        foreach ($order->items as $item) {
-            $itemsText .= "  • {$item->product_name}\n";
-            $itemsText .= "    Paket: {$item->duration_name} × {$item->quantity}\n";
-            $itemsText .= "    Subtotal: Rp " . number_format($item->price * $item->quantity, 0, ',', '.') . "\n";
-        }
+        $productNames = $order->items->map(fn($item) => $item->product_name)->implode(', ');
+        $priceFormatted = "Rp " . number_format($order->total_price, 0, ',', '.');
+        $statusUrl = route('orders.status', $order->invoice_code);
 
-        $fieldsText = "";
-        if ($order->fieldValues->count() > 0) {
-            $fieldsText .= "\n📝 *Data tambahan:*\n";
-            foreach ($order->fieldValues as $fv) {
-                $fieldsText .= "  • {$fv->field->name}: {$fv->value}\n";
-            }
-        }
-
-        $message = "🛒 *KONFIRMASI PESANAN*\n";
-        $message .= "━━━━━━━━━━━━━━━━━━━━\n";
-        $message .= "📋 *Invoice:* {$order->invoice_code}\n";
-        $message .= "📅 Dibuat: " . $order->created_at->format('d M Y, H:i') . " WIB\n";
-        $message .= "📱 WhatsApp: {$order->whatsapp_number}\n";
-        $message .= "💳 *Metode bayar:* " . strtoupper($order->payment_method) . "\n\n";
-        $message .= "🛍️ *Rincian item:*\n{$itemsText}\n";
-        $message .= "💰 *Total dibayar:* Rp " . number_format($order->total_price, 0, ',', '.') . "\n";
-        $message .= "⏰ *Batas bayar:* " . ($order->payment_expired_at ? $order->payment_expired_at->format('d M Y, H:i') : '-') . " WIB\n";
-        $message .= "{$fieldsText}";
-        $message .= "━━━━━━━━━━━━━━━━━━━━\n\n";
-        $message .= "_Tunggu instruksi pembayaran di halaman status pesanan jika link belum tersedia._\n\n";
-        $message .= "_Segera selesaikan pembayaran. Setelah lunas, key akan dikirim ke nomor WhatsApp ini._";
+        $message = "*Hallo mohon segera melakukan pelunasan pesanan Anda.*\n\n";
+        $message .= "Rincian Pesanan Sbb.\n";
+        $message .= "No Invoce : {$order->invoice_code}\n";
+        $message .= "Nama Produk : {$productNames}\n";
+        $message .= "Harga : {$priceFormatted}\n\n";
+        $message .= "*UNTUK PEMBAYARAN SILAHKAN BUKA LINK BERIKUT :*\n";
+        $message .= "{$statusUrl}\n\n";
+        $message .= "*Setelah pembayaran, Key Bisa Dilihat Di link web diatas*\n\n";
+        $message .= "> Ada kendala hub admin : 083871820682";
 
         $cleanNumber = preg_replace('/\D/', '', $adminNumber);
         if (str_starts_with($cleanNumber, '0')) {

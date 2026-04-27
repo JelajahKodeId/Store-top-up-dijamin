@@ -43,7 +43,7 @@ class PakKasirService implements PaymentGatewayInterface
             return [
                 'reference_id' => $orderId,
                 'payment_url'  => $paymentUrl,
-                'expired_at'   => now()->addHours(24),
+                'expired_at'   => now()->addMinutes(10),
                 'payload'      => ['mode' => 'universal_url'],
             ];
         }
@@ -77,7 +77,7 @@ class PakKasirService implements PaymentGatewayInterface
         return [
             'reference_id' => $orderId,
             'payment_url'  => $paymentUrl,
-            'expired_at'   => now()->addHours(24),
+            'expired_at'   => now()->addMinutes(10),
             'payload'      => $data,
         ];
     }
