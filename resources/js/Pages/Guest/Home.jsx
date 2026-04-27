@@ -283,7 +283,7 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                             Belanja digital <span className="text-store-accent-dark">aman & cepat</span>
                         </h2>
                         <p className="mt-3 text-sm font-normal leading-normal text-guest-muted sm:text-[15px]">
-                            Pembayaran terintegrasi, pengiriman key otomatis ke WhatsApp, dan tim siap membantu jika ada kendala — tanpa janji merek pihak ketiga yang tidak kami kelola.
+                            Pembayaran terintegrasi, pengiriman key otomatis, dan tim siap membantu jika ada kendala — tanpa janji merek pihak ketiga yang tidak kami kelola.
                         </p>
                     </div>
 
