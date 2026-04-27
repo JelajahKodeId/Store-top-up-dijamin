@@ -529,7 +529,19 @@ export default function ProductDetail({
     const hasFields = (product.fields || []).length > 0;
     const step2 = hasFields ? 2 : 1;
     const step3 = hasFields ? 3 : 2;
-    const canSubmit = selectedDuration && data.whatsapp.trim().length >= 8;
+    const canSubmit = useMemo(() => {
+        if (!selectedDuration) return false;
+        if (data.whatsapp.trim().length < 8) return false;
+
+        // Validasi field dinamis (identitas player, dll)
+        const requiredFields = (product.fields || []).filter(f => f.is_required);
+        const allFieldsFilled = requiredFields.every(f => {
+            const val = data.fields[f.id];
+            return val && String(val).trim().length > 0;
+        });
+
+        return allFieldsFilled;
+    }, [selectedDuration, data.whatsapp, data.fields, product.fields]);
 
     const totalStock = product.durations?.reduce((sum, d) => sum + (d.available_keys_count ?? 0), 0) ?? 0;
     const activeDurationsCount = product.durations?.filter(d => (d.available_keys_count ?? 0) > 0).length ?? 0;
@@ -1269,6 +1281,11 @@ export default function ProductDetail({
                             {selectedDuration && !data.whatsapp.trim() && (
                                 <p className="flex items-center justify-center gap-1.5 text-center text-sm font-bold uppercase tracking-wide text-amber-700">
                                     <AppIcons.phone size={10} /> Masukkan nomor WhatsApp
+                                </p>
+                            )}
+                            {selectedDuration && data.whatsapp.trim().length >= 8 && !canSubmit && (
+                                <p className="flex items-center justify-center gap-1.5 text-center text-sm font-bold uppercase tracking-wide text-amber-700">
+                                    <AppIcons.clipboard size={11} /> Lengkapi data yang dibutuhkan
                                 </p>
                             )}
 

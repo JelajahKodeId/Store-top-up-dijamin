@@ -40,6 +40,11 @@ class CheckoutController extends Controller
             ->where('is_active', true)
             ->findOrFail($request->duration_id);
 
+        // Validasi Stok (Backend)
+        if ($duration->keys()->available()->count() === 0) {
+            return back()->with('error', 'Maaf, stok untuk paket "' . $duration->name . '" baru saja habis. Silakan pilih paket lain.');
+        }
+
         $gateway = app(PaymentGatewayInterface::class);
         $defaultMethod = match ($gateway->getGatewayName()) {
             'tripay' => 'QRIS',

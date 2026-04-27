@@ -112,9 +112,10 @@ export default function OrderStatus({ order, flash, app_env }) {
 
     useEffect(() => {
         if (shouldRedirect) {
-            const redirectKey = `wa_redirected_${order.invoice_code}`;
-            if (!sessionStorage.getItem(redirectKey)) {
-                sessionStorage.setItem(redirectKey, '1');
+            // Gunakan localStorage agar flag 'sudah kirim' bertahan meski browser tutup/tab baru
+            const redirectKey = `wa_sent_paid_${order.invoice_code}`;
+            if (!localStorage.getItem(redirectKey)) {
+                localStorage.setItem(redirectKey, '1');
                 window.location.href = claimWaLink;
             }
         }
@@ -123,9 +124,9 @@ export default function OrderStatus({ order, flash, app_env }) {
     // Handle initial checkout info redirect
     useEffect(() => {
         if (flash?.whatsapp_url) {
-            const redirectKey = `wa_checkout_info_${order.invoice_code}`;
-            if (!sessionStorage.getItem(redirectKey)) {
-                sessionStorage.setItem(redirectKey, '1');
+            const redirectKey = `wa_sent_checkout_${order.invoice_code}`;
+            if (!localStorage.getItem(redirectKey)) {
+                localStorage.setItem(redirectKey, '1');
                 window.location.href = flash.whatsapp_url;
             }
         }

@@ -29,8 +29,10 @@ class CancelExpiredOrders extends Command
     public function handle()
     {
         $expiredOrders = Order::where('status', OrderStatus::UNPAID)
-            ->whereNotNull('payment_expired_at')
-            ->where('payment_expired_at', '<', now())
+            ->where(function($query) {
+                $query->where('payment_expired_at', '<', now())
+                      ->orWhere('created_at', '<', now()->subMinutes(10));
+            })
             ->get();
 
         if ($expiredOrders->isEmpty()) {
