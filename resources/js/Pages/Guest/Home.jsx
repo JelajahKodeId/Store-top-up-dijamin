@@ -38,25 +38,43 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                     <div className="relative overflow-hidden rounded-2xl bg-guest-surface shadow-lg md:rounded-[2.5rem]">
                         <div className="relative aspect-[4/5] overflow-hidden md:aspect-[21/9] lg:aspect-[24/9]">
                             {activeBanners.length > 0 ? (
-                                activeBanners.map((banner, idx) => (
-                                    <Link
-                                        key={banner.id}
-                                        href={banner.url_path || `/catalog`}
-                                        className={`absolute inset-0 block cursor-pointer transition-opacity duration-700 ease-in-out group ${
+                                activeBanners.map((banner, idx) => {
+                                    const isExternal = banner.link?.startsWith('http');
+                                    const bannerProps = {
+                                        key: banner.id,
+                                        className: `absolute inset-0 block cursor-pointer transition-opacity duration-700 ease-in-out group ${
                                             idx === activeSlide
                                                 ? 'z-10 opacity-100'
                                                 : 'pointer-events-none z-0 opacity-0'
-                                        }`}
-                                    >
-                                        <img
-                                            src={banner.image_url}
-                                            alt={banner.title || 'Promotion'}
-                                            className="h-full w-full object-cover object-center transition-transform duration-1000 group-hover:scale-[1.03]"
-                                        />
-                                        <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_120px_rgba(0,0,0,0.12)]" />
-                                        <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
-                                    </Link>
-                                ))
+                                        }`
+                                    };
+
+                                    const content = (
+                                        <>
+                                            <img
+                                                src={banner.image_url}
+                                                alt={banner.title || 'Promotion'}
+                                                className="h-full w-full object-cover object-center transition-transform duration-1000 group-hover:scale-[1.03]"
+                                            />
+                                            <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_120px_rgba(0,0,0,0.12)]" />
+                                            <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
+                                        </>
+                                    );
+
+                                    if (isExternal) {
+                                        return (
+                                            <a {...bannerProps} href={banner.link} target="_blank" rel="noopener noreferrer">
+                                                {content}
+                                            </a>
+                                        );
+                                    }
+
+                                    return (
+                                        <Link {...bannerProps} href={banner.link || '/catalog'}>
+                                            {content}
+                                        </Link>
+                                    );
+                                })
                             ) : (
                                 <div className="absolute inset-0 flex items-center justify-center text-guest-subtle opacity-40">
                                     <AppIcons.boxes size={40} />

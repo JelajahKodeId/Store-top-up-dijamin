@@ -27,7 +27,13 @@ class LandingController extends Controller
 
         return Inertia::render('Guest/Home', [
             'products' => $this->catalogService->getActiveProducts($category),
-            'banners' => $this->catalogService->getActiveBanners(),
+            'banners' => $this->catalogService->getActiveBanners()->map(fn($b) => [
+                'id' => $b->id,
+                'title' => $b->title,
+                'image_url' => $b->image_url,
+                'link' => $b->link,
+                'is_active' => $b->is_active,
+            ]),
             'gameCategories' => $this->catalogService->getActiveGameCategoriesForFilter(),
             'filters' => [
                 'category' => $category,
