@@ -10,8 +10,11 @@ import PurchaseNotification from '@/Components/shared/PurchaseNotification';
  * @param {boolean} [memberArea=false] — area /member: bilah atas disederhanakan.
  * @param {boolean} [hidePageHeading=false] — sembunyikan blok judul bawaan (judul diatur di dalam children, mis. MemberLayout).
  */
-export default function GuestLayout({ children, title, subtitle, memberArea = false, hidePageHeading = false }) {
-    const { flash } = usePage().props;
+export default function GuestLayout({ children, title: manualTitle, subtitle: manualSubtitle, memberArea = false, hidePageHeading = false }) {
+    const { props } = usePage();
+    const title = manualTitle || props.title;
+    const subtitle = manualSubtitle || props.subtitle;
+    const { flash } = props;
     const docTitle = title ? `${title} — Mall Store` : 'Mall Store';
 
     return (

@@ -28,6 +28,10 @@ class UserService
             $query->role($filters['role']);
         }
 
+        if (! empty($filters['tier'])) {
+            $query->where('member_tier', $filters['tier']);
+        }
+
         return $query->paginate(10)->withQueryString();
     }
 

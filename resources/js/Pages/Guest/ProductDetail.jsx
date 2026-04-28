@@ -162,19 +162,18 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
 
     const modal = (
         <div
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
             role="dialog"
             aria-modal="true"
             aria-labelledby="confirm-order-title"
         >
-            <button
-                type="button"
-                className="absolute inset-0 cursor-default border-0 bg-black/40 p-0 backdrop-blur-sm"
+            <div
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                 onClick={onClose}
-                aria-label="Tutup"
+                aria-hidden="true"
             />
             <div
-                className="relative z-10 mx-auto flex h-auto min-h-0 w-full max-w-md max-h-[min(85dvh,calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem))] flex-col overflow-hidden rounded-3xl border border-guest-border bg-guest-surface shadow-lux sm:max-h-[min(90dvh,44rem)]"
+                className="relative z-10 mx-auto flex h-auto min-h-0 w-full max-w-md max-h-[90dvh] flex-col overflow-hidden rounded-3xl border border-guest-border bg-guest-surface shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -249,7 +248,7 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                 </div>
 
                 {/* Footer — tidak ikut scroll; safe area iOS */}
-                <div className="shrink-0 space-y-3 border-t border-guest-border bg-guest-elevated px-5 py-4 sm:px-6">
+                <div className="shrink-0 space-y-3 border-t border-guest-border bg-guest-elevated px-5 pb-8 pt-4 sm:px-6 sm:pb-6">
                     <p className="text-center text-xs font-bold uppercase tracking-wide text-guest-subtle">
                         Key akan dikirim ke nomor WhatsApp Anda
                     </p>
@@ -456,6 +455,13 @@ export default function ProductDetail({
         : fallbackList;
     const [selectedDuration, setSelectedDuration] = useState(null);
     const [showConfirm, setShowConfirm] = useState(false);
+
+    // Otomatis tutup modal jika ada flash error dari backend
+    useEffect(() => {
+        if (flash?.error) {
+            setShowConfirm(false);
+        }
+    }, [flash?.error]);
 
     // State voucher: null | { valid, message, discount_amount, final_price, label }
     const [voucherInfo, setVoucherInfo] = useState(null);
@@ -714,7 +720,7 @@ export default function ProductDetail({
     ) : null;
 
     return (
-        <GuestLayout title={product.name}>
+        <>
             <Head title={`${product.name} — Order`} />
 
             {flash?.error && (
@@ -1342,6 +1348,6 @@ export default function ProductDetail({
                     {reviewFormSection}
                 </div>
             </div>
-        </GuestLayout>
+        </>
     );
 }

@@ -39,7 +39,7 @@ export default function Catalog({ products = [], gameCategories = [], filters = 
     ).length;
 
     return (
-        <GuestLayout title="Katalog Produk" subtitle="Eksplorasi produk digital premium dengan pengiriman instan">
+        <>
             <Head title="Katalog Produk Digital — Mall Store" />
 
             <div className="section-container pb-12 sm:pb-16">
@@ -124,6 +124,6 @@ export default function Catalog({ products = [], gameCategories = [], filters = 
                     </div>
                 )}
             </div>
-        </GuestLayout>
+        </>
     );
 }

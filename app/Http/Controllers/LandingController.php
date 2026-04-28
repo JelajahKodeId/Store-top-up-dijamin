@@ -49,6 +49,8 @@ class LandingController extends Controller
         $category = $this->resolveGameCategoryQuery($request);
 
         return Inertia::render('Guest/Catalog', [
+            'title' => 'Katalog Produk',
+            'subtitle' => 'Eksplorasi produk digital premium dengan pengiriman instan',
             'products' => $this->catalogService->getActiveProducts($category),
             'gameCategories' => $this->catalogService->getActiveGameCategoriesForFilter(),
             'filters' => [
@@ -112,7 +114,10 @@ class LandingController extends Controller
      */
     public function trackInvoice(): Response
     {
-        return Inertia::render('Guest/TrackInvoice');
+        return Inertia::render('Guest/TrackInvoice', [
+            'title' => 'Lacak Pesanan',
+            'subtitle' => 'Periksa status transaksi Anda secara real-time',
+        ]);
     }
 
     /**
@@ -130,6 +135,8 @@ class LandingController extends Controller
         }
 
         return Inertia::render('Guest/OrderStatus', [
+            'title' => 'Status Pesanan',
+            'subtitle' => "Invoice #{$order->invoice_code}",
             'order' => $this->formatOrderForFrontend($order),
             'flash' => [
                 'success' => session('success'),

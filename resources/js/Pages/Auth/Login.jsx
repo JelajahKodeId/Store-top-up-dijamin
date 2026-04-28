@@ -139,11 +139,21 @@ export default function Login({ status }) {
                             </label>
 
                             {/* Submit */}
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="w-full bg-store-accent hover:bg-amber-300 text-store-dark text-sm font-bold tracking-wide py-4 rounded-2xl transition-all duration-300 shadow-accent-glow flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
+                            <div className="space-y-4">
+                                <div className="flex justify-end px-1">
+                                    <Link
+                                        href={route('password.request')}
+                                        className="text-sm font-medium text-store-accent hover:text-amber-200 transition-colors"
+                                    >
+                                        Lupa kata sandi?
+                                    </Link>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="w-full bg-store-accent hover:bg-amber-300 text-store-dark text-sm font-bold tracking-wide py-4 rounded-2xl transition-all duration-300 shadow-accent-glow flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                 {processing ? (
                                     <><Spinner size="sm" color="dark" /> Memproses…</>
                                 ) : (
@@ -152,7 +162,8 @@ export default function Login({ status }) {
                                         <AppIcons.arrowRight size={18} strokeWidth={2.5} className="group-hover:translate-x-0.5 transition-transform" />
                                     </>
                                 )}
-                            </button>
+                                </button>
+                            </div>
                         </form>
 
                         <div className="pt-8 border-t border-white/5">

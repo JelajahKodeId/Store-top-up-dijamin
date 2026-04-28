@@ -18,7 +18,7 @@ export default function TrackInvoice({ not_found = false, search_invoice = '' })
     };
 
     return (
-        <GuestLayout title="Lacak Pesanan" subtitle="Periksa status transaksi Anda secara real-time">
+        <>
             <Head title="Lacak Pesanan — Mall Store" />
 
             <div className="section-container pb-12 sm:pb-16">
@@ -139,6 +139,6 @@ export default function TrackInvoice({ not_found = false, search_invoice = '' })
 
                 </div>
             </div>
-        </GuestLayout>
+        </>
     );
 }

@@ -9,7 +9,7 @@ import Input, { Select } from '@/Components/ui/Input';
 import DeleteConfirmModal from '@/Components/ui/DeleteConfirmModal';
 import { AppIcons } from '@/Components/shared/AppIcon';
 
-export default function UserIndex({ users, filters }) {
+export default function UserIndex({ users, filters, memberTiers = [] }) {
     const { auth } = usePage().props;
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -96,6 +96,10 @@ export default function UserIndex({ users, filters }) {
         router.get(route('admin.users.index'), { ...filters, role: role }, { preserveState: true });
     };
 
+    const handleTierFilter = (tier) => {
+        router.get(route('admin.users.index'), { ...filters, tier: tier }, { preserveState: true });
+    };
+
     const PlusIcon = AppIcons.plus;
     const EditIcon = AppIcons.edit;
     const TrashIcon = AppIcons.delete;
@@ -125,6 +129,17 @@ export default function UserIndex({ users, filters }) {
                             <option value="member">Member</option>
                         </select>
 
+                        <select
+                            value={filters.tier || ''}
+                            onChange={(e) => handleTierFilter(e.target.value)}
+                            className="bg-admin-bg border-1.5 border-store-border rounded-xl px-4 py-2.5 text-xs font-bold text-store-charcoal outline-none focus:border-store-charcoal transition-all"
+                        >
+                            <option value="">Semua Rank</option>
+                            {memberTiers.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+
                         <Button
                             variant="dark"
                             size="md"
@@ -138,8 +153,8 @@ export default function UserIndex({ users, filters }) {
                 headers={[
                     { label: 'Pengguna', className: 'w-[42%] lg:w-[32%]' },
                     { label: 'Kontak', className: 'hidden md:table-cell w-[26%]' },
-                    { label: 'Member', className: 'hidden lg:table-cell w-[18%]' },
-                    { label: 'Role', className: 'w-[18%] lg:w-[12%]' },
+                    { label: 'Saldo', className: 'hidden lg:table-cell w-[18%]' },
+                    { label: 'Rank', className: 'w-[18%] lg:w-[12%]' },
                     { label: 'Aksi', className: 'w-[22%] lg:w-[12%] text-right' },
                 ]}
             >
@@ -164,19 +179,14 @@ export default function UserIndex({ users, filters }) {
                         </td>
                         <td className="hidden lg:table-cell">
                             {user.role === 'member' ? (
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-black text-store-charcoal">{user.balance_formatted}</span>
-                                    <span className="text-[10px] font-bold uppercase tracking-wide text-store-subtle">
-                                        {user.member_tier_label}
-                                    </span>
-                                </div>
+                                <span className="text-xs font-black text-store-charcoal">{user.balance_formatted}</span>
                             ) : (
                                 <span className="text-[10px] font-bold text-store-subtle">—</span>
                             )}
                         </td>
                         <td>
                             <Badge variant={user.role === 'admin' ? 'charcoal' : 'gray'}>
-                                {user.role}
+                                {user.role === 'admin' ? 'Administrator' : (user.member_tier_label || 'Member')}
                             </Badge>
                         </td>
                         <td className="text-right">
@@ -240,9 +250,9 @@ export default function UserIndex({ users, filters }) {
                         <div className="space-y-4 rounded-2xl border border-dashed border-store-border bg-admin-bg/50 p-5">
                             <p className="text-[10px] font-black uppercase tracking-widest text-store-subtle">Dompet &amp; paket member</p>
                             <Select label="Level paket" value={data.member_tier} onChange={e => setData('member_tier', e.target.value)} error={errors.member_tier}>
-                                <option value="standard">Member (standar)</option>
-                                <option value="reseller">Reseller</option>
-                                <option value="vip">VIP</option>
+                                {memberTiers.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
                             </Select>
                             <Input
                                 label="Saldo awal (Rp)"
@@ -284,9 +294,9 @@ export default function UserIndex({ users, filters }) {
                         <div className="space-y-4 rounded-2xl border border-dashed border-store-border bg-admin-bg/50 p-5">
                             <p className="text-[10px] font-black uppercase tracking-widest text-store-subtle">Dompet &amp; paket member</p>
                             <Select label="Level paket" value={data.member_tier} onChange={e => setData('member_tier', e.target.value)} error={errors.member_tier}>
-                                <option value="standard">Member (standar)</option>
-                                <option value="reseller">Reseller</option>
-                                <option value="vip">VIP</option>
+                                {memberTiers.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
                             </Select>
                             <Input
                                 label="Saldo dompet (Rp)"

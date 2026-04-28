@@ -75,7 +75,7 @@ export default function Home({ products = [], banners = [], gameCategories = [],
     const { site } = usePage().props;
 
     return (
-        <GuestLayout>
+        <>
             <Head title="Level up your Gaming Gears — Mall Store" />
 
             <section className="relative bg-guest-bg pb-0">
@@ -308,6 +308,6 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                     </div>
                 </div>
             </section>
-        </GuestLayout>
+        </>
     );
 }

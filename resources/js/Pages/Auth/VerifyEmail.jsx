@@ -4,9 +4,16 @@ import { AppIcons } from '@/Components/shared/AppIcon';
 import Spinner from '@/Components/ui/Spinner';
 
 export default function VerifyEmail({ status }) {
-    const { post, processing } = useForm({});
+    const { data, setData, post, processing, errors } = useForm({
+        code: '',
+    });
 
     const submit = (e) => {
+        e.preventDefault();
+        post(route('verification.verify-otp'));
+    };
+
+    const resendEmail = (e) => {
         e.preventDefault();
         post(route('verification.send'));
     };
@@ -63,20 +70,45 @@ export default function VerifyEmail({ status }) {
                     )}
 
                     <form onSubmit={submit} className="space-y-8">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block px-1 text-center">Kode OTP 6-Digit</label>
+                            <input
+                                type="text"
+                                maxLength="6"
+                                value={data.code}
+                                onChange={(e) => setData('code', e.target.value.replace(/\D/g, ''))}
+                                className={`w-full bg-white/5 border-2 ${errors.code ? 'border-red-500/50' : 'border-white/5'} focus:border-store-accent rounded-2xl py-5 text-center text-3xl font-black tracking-[0.5em] text-white transition-all outline-none md:px-12`}
+                                placeholder="------"
+                                autoFocus
+                            />
+                            {errors.code && <p className="text-center text-[10px] font-black text-red-400 uppercase italic tracking-wider">{errors.code}</p>}
+                        </div>
+
                         <button
                             type="submit"
                             disabled={processing}
                             className="w-full bg-store-accent hover:bg-white text-store-dark font-black uppercase tracking-widest py-5 rounded-2xl transition-all duration-300 shadow-accent-glow flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {processing ? (
-                                <><Spinner size="sm" color="dark" /> Mengirim Ulang...</>
+                                <><Spinner size="sm" color="dark" /> Verifikasi...</>
                             ) : (
                                 <>
-                                    Kirim Ulang Email Verifikasi
-                                    <AppIcons.mail size={18} strokeWidth={3} className="group-hover:-translate-y-0.5 transition-transform" />
+                                    Verifikasi Sekarang
+                                    <AppIcons.success_circle size={18} strokeWidth={3} className="group-hover:scale-110 transition-transform" />
                                 </>
                             )}
                         </button>
+
+                        <div className="flex justify-center">
+                            <button
+                                type="button"
+                                onClick={resendEmail}
+                                disabled={processing}
+                                className="text-[10px] font-black text-white/40 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2"
+                            >
+                                <AppIcons.mail size={14} /> Kirim Ulang Email Verifikasi
+                            </button>
+                        </div>
 
                         <div className="pt-8 border-t border-white/5 flex flex-col items-center gap-6">
                             <Link

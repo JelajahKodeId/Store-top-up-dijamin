@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UserRequest;
 use App\Http\Resources\Admin\UserResource;
+use App\Models\MemberTier;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Admin\UserService;
@@ -34,7 +35,11 @@ class UserController extends Controller
 
         return Inertia::render('Admin/Users/Index', [
             'users' => UserResource::collection($users),
-            'filters' => $request->only(['search', 'role']),
+            'filters' => $request->only(['search', 'role', 'tier']),
+            'memberTiers' => MemberTier::all()->map(fn($t) => [
+                'id' => $t->id,
+                'name' => $t->name,
+            ]),
         ]);
     }
 
