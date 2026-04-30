@@ -156,8 +156,8 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                             <div className="animate-marquee">
                                 <div className="flex items-center gap-12 px-6">
                                     {[1, 2, 3, 4].map((i) => (
-                                        <span key={i} className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em] [text-shadow:_0_1px_1px_rgb(0_0_0_/_8%)]">
-                                            <AppIcons.zap size={13} className="text-store-accent-dark" />
+                                        <span key={i} className="flex items-center gap-3 whitespace-nowrap text-[13px] font-bold uppercase tracking-wider">
+                                            <AppIcons.zap size={14} className="text-store-accent-dark" />
                                             {site.running_text}
                                         </span>
                                     ))}
@@ -165,8 +165,8 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                                 {/* Duplicate for seamless loop */}
                                 <div className="flex items-center gap-12 px-6">
                                     {[5, 6, 7, 8].map((i) => (
-                                        <span key={i} className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em] [text-shadow:_0_1px_1px_rgb(0_0_0_/_8%)]">
-                                            <AppIcons.zap size={13} className="text-store-accent-dark" />
+                                        <span key={i} className="flex items-center gap-3 whitespace-nowrap text-[13px] font-bold uppercase tracking-wider">
+                                            <AppIcons.zap size={14} className="text-store-accent-dark" />
                                             {site.running_text}
                                         </span>
                                     ))}
