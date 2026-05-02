@@ -450,9 +450,27 @@ export default function ProductDetail({
         });
     };
     const fallbackList = FALLBACK_BY_GATEWAY[checkoutGateway] || FALLBACK_BY_GATEWAY.mock;
-    const PAYMENT_METHODS = paymentChannels.length > 0
+    const basePaymentMethods = paymentChannels.length > 0
         ? paymentChannels.map(ch => ({ code: ch.code, label: ch.label, fee: ch.fee ?? 0, fee_pct: ch.fee_pct ?? 0, icon_url: ch.icon_url ?? null }))
         : fallbackList;
+
+    const PAYMENT_METHODS = useMemo(() => {
+        const methods = [...basePaymentMethods];
+        const user = auth?.user;
+        const isMember = user?.roles?.includes('member');
+
+        if (isMember) {
+            methods.unshift({
+                code: 'balance',
+                label: `Saldo Member (${formatPrice(user.balance)})`,
+                fee: 0,
+                fee_pct: 0,
+                balance: user.balance,
+                is_balance: true
+            });
+        }
+        return methods;
+    }, [basePaymentMethods, auth?.user]);
     const [selectedDuration, setSelectedDuration] = useState(null);
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -1208,17 +1226,27 @@ export default function ProductDetail({
                                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                                     {PAYMENT_METHODS.map((method) => {
                                         const isSelected = data.payment_method === method.code;
+                                        const isInsufficient = method.is_balance && selectedDuration && (() => {
+                                            const base = (isResellerEligible && selectedDuration.reseller_price !== null) ? selectedDuration.reseller_price : selectedDuration.price;
+                                            const final = voucherInfo?.valid ? voucherInfo.final_price : base;
+                                            return Number(method.balance) < Number(final);
+                                        })();
+
                                         return (
                                             <button
                                                 key={method.code}
                                                 type="button"
                                                 onClick={() => setData('payment_method', method.code)}
+                                                disabled={isInsufficient}
                                                 className={`flex min-h-[3.25rem] items-center justify-center rounded-xl border px-1 py-2 text-center text-xs font-semibold uppercase leading-snug tracking-wide transition-all active:scale-[0.98] sm:text-sm ${isSelected
                                                         ? 'border-store-accent bg-store-accent/10 text-store-accent'
-                                                        : 'border-guest-border bg-guest-elevated text-guest-muted hover:border-guest-subtle hover:text-guest-text'
+                                                        : isInsufficient
+                                                            ? 'border-guest-border bg-guest-elevated text-guest-subtle opacity-50 cursor-not-allowed'
+                                                            : 'border-guest-border bg-guest-elevated text-guest-muted hover:border-guest-subtle hover:text-guest-text'
                                                     }`}
                                             >
                                                 {method.label}
+                                                {isInsufficient && <span className="block mt-0.5 text-[8px] text-red-500">Saldo Kurang</span>}
                                             </button>
                                         );
                                     })}

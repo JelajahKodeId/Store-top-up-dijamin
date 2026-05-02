@@ -35,6 +35,10 @@ class PaymentLabels
             return $code;
         }
 
+        if ($code === 'balance') {
+            return 'Saldo Member';
+        }
+
         if ($gw !== '') {
             return ucfirst($gw);
         }

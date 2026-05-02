@@ -105,6 +105,18 @@ class CheckoutController extends Controller
                 $authUser = Auth::user();
                 $memberUserId = ($authUser && $authUser->hasRole('member')) ? $authUser->id : null;
 
+                if ($paymentMethod === 'balance') {
+                    if (!$authUser || !$authUser->hasRole('member')) {
+                        throw new \Exception('Metode pembayaran saldo hanya untuk member.');
+                    }
+                    if ((float) $authUser->balance < (float) $finalPrice) {
+                        throw new \Exception('Saldo Anda tidak cukup untuk melakukan pembelian ini.');
+                    }
+
+                    // Potong saldo
+                    $authUser->decrement('balance', $finalPrice);
+                }
+
                 $order = Order::create([
                     'user_id' => $memberUserId,
                     'customer_name' => $request->customer_name,
@@ -113,7 +125,7 @@ class CheckoutController extends Controller
                     'whatsapp_number' => $request->whatsapp,
                     'total_price' => $finalPrice,
                     'discount_amount' => $discountAmount,
-                    'status' => 'unpaid',
+                    'status' => $paymentMethod === 'balance' ? \App\Enums\OrderStatus::PAID : 'unpaid',
                     'payment_method' => $paymentMethod,
                     'voucher_id' => $voucher?->id,
                     'ip_address' => request()->ip(),
@@ -152,7 +164,23 @@ class CheckoutController extends Controller
 
             // Buat transaksi pembayaran via gateway (di luar DB transaction utama)
             $order->load('items');
-            if (! $this->createPayment($order, $paymentMethod)) {
+            if ($paymentMethod === 'balance') {
+                $payment = Payment::create([
+                    'order_id' => $order->id,
+                    'gateway' => 'internal',
+                    'reference_id' => 'BAL-' . $order->invoice_code,
+                    'amount' => $order->total_price,
+                    'status' => 'success',
+                    'paid_at' => now(),
+                    'payload' => ['method' => 'balance'],
+                ]);
+
+                $order->update([
+                    'payment_reference' => $payment->reference_id,
+                ]);
+
+                \App\Jobs\DeliverOrderKeysJob::dispatchSync($order->fresh());
+            } elseif (! $this->createPayment($order, $paymentMethod)) {
                 $this->rollbackCheckoutOrder($order);
 
                 return back()->with(
