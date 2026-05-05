@@ -43,7 +43,7 @@ class TripayService implements PaymentGatewayInterface
     {
         $signature = hash_hmac('sha256', $this->merchantCode.$order->invoice_code.(int) $order->total_price, $this->privateKey);
 
-        $expiredTime = now()->addHours(24)->timestamp;
+        $expiredTime = now()->addMinutes(20)->timestamp;
 
         $response = Http::withToken($this->apiKey)
             ->post("{$this->baseUrl}/transaction/create", [
@@ -76,7 +76,7 @@ class TripayService implements PaymentGatewayInterface
         return [
             'reference_id' => $data['reference'],
             'payment_url' => $data['checkout_url'] ?? null,
-            'expired_at' => isset($data['expired_time']) ? Carbon::createFromTimestamp($data['expired_time']) : now()->addHours(24),
+            'expired_at' => isset($data['expired_time']) ? Carbon::createFromTimestamp($data['expired_time']) : now()->addMinutes(20),
             'payload' => $data,
         ];
     }

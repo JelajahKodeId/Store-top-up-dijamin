@@ -81,7 +81,21 @@ export default function OrderStatus({ order, flash, app_env }) {
             }
         }
     }, [flash?.whatsapp_url, order.invoice_code]);
-    const [copiedKey, setCopiedKey] = useState(null);
+    const [isExpired, setIsExpired] = useState(false);
+    useEffect(() => {
+        if (order.payment_expired_at && order.status === 'unpaid') {
+            const check = () => {
+                const now = new Date();
+                const exp = new Date(order.payment_expired_at);
+                if (now > exp) {
+                    setIsExpired(true);
+                }
+            };
+            check();
+            const timer = setInterval(check, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [order.payment_expired_at, order.status]);
 
     const copyToClipboard = (text) => {
         if (!navigator.clipboard) {
@@ -345,7 +359,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                     </div>
 
                     {/* Midtrans Snap (prioritas) */}
-                    {order.status === 'unpaid' && order.midtrans_snap_token && order.midtrans_client_key && order.midtrans_snap_js && (
+                    {order.status === 'unpaid' && !isExpired && order.midtrans_snap_token && order.midtrans_client_key && order.midtrans_snap_js && (
                         <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-6 shadow-soft">
                             <p className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-amber-900">
                                 <AppIcons.wallet size={11} strokeWidth={2.5} />
@@ -395,7 +409,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                     )}
 
                     {/* Pak Kasir Direct Details (VA / QRIS) */}
-                    {order.status === 'unpaid' && order.pak_kasir_details && (
+                    {order.status === 'unpaid' && !isExpired && order.pak_kasir_details && (
                         <div className="relative space-y-5 overflow-hidden rounded-2xl border border-guest-border bg-guest-surface p-6 shadow-soft">
                             <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-full bg-store-accent/15 blur-[60px]" />
 
@@ -460,7 +474,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                     )}
 
                     {/* Payment URL (Tripay / redirect lain, jika tidak pakai Snap) */}
-                    {order.payment_url && order.status === 'unpaid' && !order.midtrans_snap_token && (
+                    {order.payment_url && order.status === 'unpaid' && !isExpired && !order.midtrans_snap_token && (
                         <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-6 shadow-soft">
                             <p className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-amber-900">
                                 <AppIcons.wallet size={11} strokeWidth={2.5} />

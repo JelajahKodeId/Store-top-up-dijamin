@@ -33,7 +33,7 @@ class MemberTierUpgradePaymentService
             'gateway' => 'mock',
             'gateway_payment_reference' => $ref,
             'payment_url' => url('/mock-payment/'.$ref),
-            'payment_expired_at' => now()->addHours(24),
+            'payment_expired_at' => now()->addMinutes(20),
             'payload' => ['gateway' => 'mock', 'reference' => $ref],
         ]);
 
@@ -58,7 +58,7 @@ class MemberTierUpgradePaymentService
 
         $amountInt = (int) $upgrade->amount;
         $signature = hash_hmac('sha256', $merchantCode.$upgrade->invoice_code.$amountInt, $privateKey);
-        $expiredTime = now()->addHours(24)->timestamp;
+        $expiredTime = now()->addMinutes(20)->timestamp;
         $itemName = 'Upgrade '.$upgrade->target_tier->label();
 
         $response = Http::withToken($apiKey)
@@ -98,7 +98,7 @@ class MemberTierUpgradePaymentService
             'payment_url' => $data['checkout_url'] ?? null,
             'payment_expired_at' => isset($data['expired_time'])
                 ? Carbon::createFromTimestamp($data['expired_time'])
-                : now()->addHours(24),
+                : now()->addMinutes(20),
             'payload' => $data,
         ]);
 
@@ -127,7 +127,7 @@ class MemberTierUpgradePaymentService
                 'gateway' => 'pak_kasir',
                 'gateway_payment_reference' => $orderId,
                 'payment_url' => $paymentUrl,
-                'payment_expired_at' => now()->addHours(24),
+                'payment_expired_at' => now()->addMinutes(20),
                 'payload' => ['mode' => 'universal_url'],
             ]);
 
@@ -163,7 +163,7 @@ class MemberTierUpgradePaymentService
             'gateway' => 'pak_kasir',
             'gateway_payment_reference' => $orderId,
             'payment_url' => $paymentUrl,
-            'payment_expired_at' => now()->addHours(24),
+            'payment_expired_at' => now()->addMinutes(20),
             'payload' => $data,
         ]);
 

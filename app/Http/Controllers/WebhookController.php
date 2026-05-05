@@ -81,6 +81,14 @@ class WebhookController extends Controller
                 return response('OK', 200);
             }
 
+            // Validasi Expiry (Jika lewat batas waktu, tandai gagal)
+            if ($order->payment_expired_at && now()->gt($order->payment_expired_at) && $status === 'paid') {
+                Log::warning("WebhookController: Pembayaran diterima setelah batas waktu (EXPIRED) untuk #{$order->invoice_code}");
+                $this->handleFailedWebhook($order, $payment, 'expired');
+
+                return response('Order expired', 200);
+            }
+
             if ($status === 'paid') {
                 $this->handlePaidWebhook($order, $payment, $parsed['raw']);
             } elseif ($status === 'failed' || $status === 'expired') {
@@ -115,6 +123,14 @@ class WebhookController extends Controller
 
             if ($status === 'pending') {
                 return response('OK', 200);
+            }
+
+            // Validasi Expiry
+            if ($topup->payment_expired_at && now()->gt($topup->payment_expired_at) && $status === 'paid') {
+                Log::warning("WebhookController: Topup diterima setelah batas waktu untuk #{$topup->invoice_code}");
+                $topup->update(['status' => 'failed', 'payload' => ['gateway_status' => 'expired']]);
+
+                return response('Topup expired', 200);
             }
 
             if ($status === 'paid') {
@@ -159,6 +175,14 @@ class WebhookController extends Controller
 
         if ($status === 'pending') {
             return response('OK', 200);
+        }
+
+        // Validasi Expiry
+        if ($tierUpgrade->payment_expired_at && now()->gt($tierUpgrade->payment_expired_at) && $status === 'paid') {
+            Log::warning("WebhookController: Tier upgrade diterima setelah batas waktu untuk #{$tierUpgrade->invoice_code}");
+            $tierUpgrade->update(['status' => 'failed', 'payload' => ['gateway_status' => 'expired']]);
+
+            return response('Upgrade expired', 200);
         }
 
         if ($status === 'paid') {

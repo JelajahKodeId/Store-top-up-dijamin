@@ -17,7 +17,7 @@ class MockPaymentService implements PaymentGatewayInterface
         return [
             'reference_id' => $reference,
             'payment_url' => url("/mock-payment/{$reference}"),
-            'expired_at' => now()->addHours(24),
+            'expired_at' => now()->addMinutes(20),
             'payload' => ['gateway' => 'mock', 'reference' => $reference],
         ];
     }
