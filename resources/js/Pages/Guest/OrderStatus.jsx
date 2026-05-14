@@ -47,6 +47,7 @@ export default function OrderStatus({ order, flash, app_env }) {
     // Auto-refresh saat status masih unpaid/paid (polling setiap 10 detik)
     const shouldPoll = ['unpaid', 'paid'].includes(order.status);
     const [countdown, setCountdown] = useState(10);
+    const [copiedKey, setCopiedKey] = useState(null);
 
     const refresh = useCallback(() => {
         router.reload({ only: ['order'] });
