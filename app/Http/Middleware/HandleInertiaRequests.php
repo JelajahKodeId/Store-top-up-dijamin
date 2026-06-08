@@ -51,13 +51,14 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
                 'info' => $request->session()->get('info'),
+                'whatsapp_url' => $request->session()->get('whatsapp_url'),
             ],
             'site' => Cache::remember('inertia_site_settings', 300, function () {
                 $s = Setting::whereIn('key', [
                     'site_name', 'site_description', 'logo_web', 'favicon',
                     'whatsapp_number', 'instagram_username', 'telegram_username', 'facebook_page', 'tiktok_username',
                     'whatsapp_channel', 'telegram_channel',
-                    'running_text',
+                    'running_text', 'site_keywords', 'announcement',
                 ])->pluck('value', 'key')->toArray();
 
                 return [
@@ -72,6 +73,65 @@ class HandleInertiaRequests extends Middleware
                     'wa_channel' => $s['whatsapp_channel'] ?? null,
                     'tg_channel' => $s['telegram_channel'] ?? null,
                     'running_text' => $s['running_text'] ?? null,
+                    'keywords' => $s['site_keywords'] ?? null,
+                    'announcement' => $s['announcement'] ?? null,
+                ];
+            }),
+            'shared_footer_data' => Cache::remember('shared_footer_data', 300, function () {
+                $gameImages = \App\Models\GameFooter::latest()
+                    ->get()
+                    ->map(fn ($p) => [
+                        'name' => $p->name,
+                        'image_url' => \Illuminate\Support\Facades\Storage::url($p->image),
+                    ]);
+                
+                $paymentChannels = [];
+                try {
+                    $gateway = app(\App\Services\Payment\PaymentGatewayInterface::class);
+                    $paymentChannels = $gateway->getPaymentChannels();
+                } catch (\Throwable $th) {
+                }
+
+                $manualMethods = \App\Models\ManualPaymentMethod::where('is_active', true)->get()->map(function ($m) {
+                    return [
+                        'code' => 'manual_' . $m->id,
+                        'label' => $m->name,
+                        'icon_url' => $m->image_url,
+                    ];
+                })->toArray();
+
+                return [
+                    'game_images' => $gameImages->toArray(),
+                    'payment_channels' => collect($paymentChannels)->map(function ($c) {
+                        $code = strtolower($c['code'] ?? '');
+                        $iconUrl = $c['icon_url'] ?? null;
+                        
+                        if (!$iconUrl) {
+                            if (str_contains($code, 'qris')) $iconUrl = '/img/payment/qris.png';
+                            elseif (str_contains($code, 'bni')) $iconUrl = '/img/payment/bni.png';
+                            elseif (str_contains($code, 'bri')) $iconUrl = '/img/payment/bri.png';
+                            elseif (str_contains($code, 'bca')) $iconUrl = '/img/payment/bca.webp';
+                            elseif (str_contains($code, 'mandiri')) $iconUrl = '/img/payment/mandiri.png';
+                            elseif (str_contains($code, 'cimb')) $iconUrl = '/img/payment/cimb.png';
+                            elseif (str_contains($code, 'permata')) $iconUrl = '/img/payment/permata.png';
+                            elseif (str_contains($code, 'ovo')) $iconUrl = '/img/payment/ovo.png';
+                            elseif (str_contains($code, 'dana')) $iconUrl = '/img/payment/dana.png';
+                            elseif (str_contains($code, 'shopee')) $iconUrl = '/img/payment/shopee.png';
+                            elseif (str_contains($code, 'alfamart')) $iconUrl = '/img/payment/alfamart.png';
+                            elseif (str_contains($code, 'indomaret')) $iconUrl = '/img/payment/indoemaret.png';
+                            elseif (str_contains($code, 'maybank')) $iconUrl = '/img/payment/maybank.png';
+                            elseif (str_contains($code, 'neo') || str_contains($code, 'bnc')) $iconUrl = '/img/payment/BNC.webp';
+                            elseif (str_contains($code, 'bersama')) $iconUrl = '/img/payment/bersama.png';
+                            elseif (str_contains($code, 'artha')) $iconUrl = '/img/payment/artha-graha.png';
+                            elseif (str_contains($code, 'sampoerna')) $iconUrl = '/img/payment/sahabat-sampoerna.png';
+                        }
+                        
+                        return [
+                            'code' => $code,
+                            'label' => $c['label'] ?? '',
+                            'icon_url' => $iconUrl,
+                        ];
+                    })->merge($manualMethods)->values()->toArray(),
                 ];
             }),
         ];

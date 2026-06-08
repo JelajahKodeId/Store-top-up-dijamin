@@ -56,6 +56,10 @@ class AppServiceProvider extends ServiceProvider
 
         Vite::prefetch(concurrency: 3);
 
+        if (str_contains(config('app.url'), 'https://')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         // Daftarkan Observer untuk Order — notifikasi email otomatis
         Order::observe(OrderObserver::class);
 

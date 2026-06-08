@@ -217,6 +217,21 @@ export default function OrderShow({ order }) {
                                     )}
                                 </div>
                             )}
+                            {o.payment_record && o.payment_record.gateway === 'manual' && o.payment_record.payload && (
+                                <div className="p-4 bg-white rounded-2xl border border-store-border space-y-2">
+                                    <span className="text-[9px] font-bold text-store-subtle uppercase tracking-tight block">Rincian Manual</span>
+                                    <div className="flex justify-between gap-2">
+                                        <span className="text-[9px] font-bold text-store-subtle">Metode</span>
+                                        <span className="text-[10px] font-black text-store-charcoal">{o.payment_record.payload.name}</span>
+                                    </div>
+                                    {o.payment_record.payload.account_number && (
+                                        <div className="flex justify-between gap-2">
+                                            <span className="text-[9px] font-bold text-store-subtle">Rekening</span>
+                                            <span className="text-[10px] font-black text-store-charcoal font-mono">{o.payment_record.payload.account_number} {o.payment_record.payload.account_name && `(${o.payment_record.payload.account_name})`}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             {o.payment_url && o.status === 'unpaid' && (
                                 <a
                                     href={o.payment_url}

@@ -8,22 +8,30 @@ import { Link, usePage } from '@inertiajs/react';
  * @param {'sm'|'md'|'lg'} size
  * @param {string} imageWrapperClassName — kelas tambahan untuk bingkai logo (mis. di footer gelap)
  */
-export default function AppLogo({ theme = 'dark', size = 'md', href = '/', className = '', imageWrapperClassName = '', subtitle = null }) {
+export default function AppLogo({
+    href = '/',
+    className = '',
+    imageWrapperClassName = '',
+    size = 'md',
+    theme = 'dark',
+    subtitle = null,
+    subtitleClassName = '',
+}) {
     const { site } = usePage().props;
 
     const siteName = site?.name || 'Mall Store';
-    const logoUrl  = site?.logo || null;
+    const logoUrl = site?.logo || null;
 
-    const textSizes = { sm: 'text-sm', md: 'text-base', lg: 'text-xl' };
-    const iconSizes = { sm: 'w-7 h-7', md: 'w-8 h-8', lg: 'w-10 h-10' };
-    const imgSizes  = { sm: 'h-7', md: 'h-8', lg: 'h-10' };
+    const textSizes = { sm: 'text-sm sm:text-base', md: 'text-base sm:text-lg', lg: 'text-xl sm:text-2xl' };
+    const iconSizes = { sm: 'w-6 h-6 sm:w-7 sm:h-7', md: 'w-7 h-7 sm:w-8 sm:h-8', lg: 'w-8 h-8 sm:w-10 sm:h-10' };
+    const subtitleSizes = { sm: 'text-[5px] sm:text-[6px]', md: 'text-[6px] sm:text-[7px]', lg: 'text-[6.67px] sm:text-[8px]' };
 
     const textColor = theme === 'light' ? 'text-white' : 'text-store-dark';
-    const subColor  = 'text-store-accent';
+    const subColor = 'text-store-accent';
 
     const nameParts = siteName.split(' ');
     const firstName = nameParts[0];
-    const restName  = nameParts.slice(1).join(' ');
+    const restName = nameParts.slice(1).join(' ');
 
     const circleFrame = 'rounded-full overflow-hidden ring-2 shadow-sm';
     const circleRing = theme === 'light'
@@ -48,15 +56,15 @@ export default function AppLogo({ theme = 'dark', size = 'md', href = '/', class
                 </div>
             )}
 
-            <div className="flex flex-col">
-                <span className={`font-black ${textSizes[size]} ${textColor} tracking-tight leading-none`}>
+            <div className="flex flex-col justify-center">
+                <span className={`font-sans font-black ${textSizes[size]} ${textColor} uppercase tracking-wider leading-none`}>
                     {firstName}
                     {restName && <> <span className={subColor}>{restName}</span></>}
                 </span>
                 {subtitle && (
-                    <div className="mt-1 flex flex-col gap-0.5">
+                    <div className="mt-0.5 sm:-mt-1 flex flex-col">
                         <div className={`h-[1px] w-full ${theme === 'light' ? 'bg-white/20' : 'bg-guest-border'}`} />
-                        <span className={`text-[7px] font-bold uppercase tracking-tighter sm:text-[8px] ${theme === 'light' ? 'text-zinc-400' : 'text-guest-subtle'}`}>
+                        <span className={`${subtitleSizes[size]} font-bold uppercase tracking-tight text-center leading-none mt-[2px] sm:mt-[3px] ${subtitleClassName || (theme === 'light' ? 'text-zinc-400' : 'text-guest-subtle')}`}>
                             {subtitle}
                         </span>
                     </div>

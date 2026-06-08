@@ -12,20 +12,13 @@ export default function PurchaseNotification() {
             const data = response.data.order;
 
             if (data) {
-                const sessionLastId = sessionStorage.getItem('last_notified_order_id');
-                
-                // Hanya tampilkan jika ID berbeda dengan yang terakhir ditampilkan di sesi ini
-                if (data.id.toString() !== lastId?.toString() && data.id.toString() !== sessionLastId) {
-                    setOrder(data);
-                    setLastId(data.id);
-                    sessionStorage.setItem('last_notified_order_id', data.id.toString());
-                    setIsVisible(true);
+                setOrder(data);
+                setIsVisible(true);
 
-                    // Sembunyikan setelah 7 detik
-                    setTimeout(() => {
-                        setIsVisible(false);
-                    }, 7000);
-                }
+                // Sembunyikan setelah 7 detik
+                setTimeout(() => {
+                    setIsVisible(false);
+                }, 7000);
             }
         } catch (error) {
             // Silently fail
@@ -36,10 +29,10 @@ export default function PurchaseNotification() {
         // Ambil data pertama kali
         fetchRecentOrder();
 
-        // Lakukan polling setiap 45 detik
-        const interval = setInterval(fetchRecentOrder, 45000);
+        // Lakukan polling setiap 15 detik untuk membuat notifikasi terus muncul
+        const interval = setInterval(fetchRecentOrder, 15000);
         return () => clearInterval(interval);
-    }, [lastId]);
+    }, []);
 
     if (!order) return null;
 

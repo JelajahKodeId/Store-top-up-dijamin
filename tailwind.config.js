@@ -46,10 +46,13 @@ export default {
                 'guest-subtle':   '#A1A1AA',
             },
             fontFamily: {
-                sans:  ['Outfit', ...defaultTheme.fontFamily.sans],
+                sans:  ['Poppins', ...defaultTheme.fontFamily.sans],
+                poppins: ['Poppins', 'sans-serif'],
+                outfit: ['Outfit', 'sans-serif'],
                 bebas: ['"Bebas Neue"', 'cursive'],
                 oswald: ['Oswald', 'sans-serif'],
                 mono:  ['"JetBrains Mono"', ...defaultTheme.fontFamily.mono],
+                syncopate: ['Syncopate', 'sans-serif'],
             },
             container: {
                 center: true,
@@ -79,6 +82,15 @@ export default {
             },
             transitionTimingFunction: {
                 spring: 'cubic-bezier(0.175,0.885,0.32,1.275)',
+            },
+            keyframes: {
+                scroll: {
+                    '0%': { transform: 'translateX(0)' },
+                    '100%': { transform: 'translateX(calc(-50% - 0.5rem))' },
+                }
+            },
+            animation: {
+                'scroll': 'scroll 40s linear infinite',
             },
         },
     },

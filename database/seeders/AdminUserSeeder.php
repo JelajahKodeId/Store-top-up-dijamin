@@ -20,6 +20,7 @@ class AdminUserSeeder extends Seeder
                 'password' => Hash::make('dsadsadsa'),
                 'phone_number' => '628123456781',
                 'balance' => 1000000,
+                'email_verified_at' => now(),
             ]
         );
 
@@ -32,6 +33,7 @@ class AdminUserSeeder extends Seeder
                 'password' => Hash::make('dsadsadsa'),
                 'phone_number' => '628123456782',
                 'balance' => 0,
+                'email_verified_at' => now(),
             ]
         );
 

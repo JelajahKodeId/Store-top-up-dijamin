@@ -36,6 +36,12 @@ class CheckoutController extends Controller
         ]);
 
         $product = Product::with('fields')->where('status', 'active')->findOrFail($request->product_id);
+
+        // Validasi Maintenance (Backend)
+        if ($product->platform_type === 'maintenance') {
+            return back()->with('error', 'Maaf, produk "' . $product->name . '" sedang dalam pemeliharaan (maintenance) dan tidak dapat dibeli saat ini.');
+        }
+
         $duration = ProductDuration::where('product_id', $product->id)
             ->where('is_active', true)
             ->findOrFail($request->duration_id);
@@ -66,9 +72,21 @@ class CheckoutController extends Controller
             : (float) $duration->price;
 
         if ($voucherCode) {
-            $preCheckVoucher = Voucher::active()->where('code', $voucherCode)->first();
+            $preCheckVoucher = Voucher::with('products')->where('code', $voucherCode)->first();
             if (! $preCheckVoucher) {
-                return back()->withErrors(['voucher_code' => 'Voucher tidak valid atau sudah kadaluarsa.']);
+                return back()->withErrors(['voucher_code' => 'Voucher tidak ditemukan.']);
+            }
+            if (! $preCheckVoucher->is_active) {
+                return back()->withErrors(['voucher_code' => 'Voucher sudah dinonaktifkan.']);
+            }
+            if ($preCheckVoucher->expired_at && $preCheckVoucher->expired_at <= now()) {
+                return back()->withErrors(['voucher_code' => 'Voucher sudah kadaluarsa.']);
+            }
+            if ($preCheckVoucher->quota !== null && $preCheckVoucher->used >= $preCheckVoucher->quota) {
+                return back()->withErrors(['voucher_code' => 'Kuota voucher sudah habis.']);
+            }
+            if ($preCheckVoucher->products->isNotEmpty() && !$preCheckVoucher->products->contains('id', $product->id)) {
+                return back()->withErrors(['voucher_code' => 'Voucher ini tidak berlaku untuk produk yang Anda pilih.']);
             }
             if ($preCheckVoucher->min_transaction && $basePrice < $preCheckVoucher->min_transaction) {
                 return back()->withErrors(['voucher_code' => 'Minimum transaksi untuk voucher ini adalah Rp '.number_format($preCheckVoucher->min_transaction, 0, ',', '.')]);
@@ -180,6 +198,34 @@ class CheckoutController extends Controller
                 ]);
 
                 \App\Jobs\DeliverOrderKeysJob::dispatchSync($order->fresh());
+            } elseif (str_starts_with($paymentMethod, 'manual_')) {
+                $manualId = (int) str_replace('manual_', '', $paymentMethod);
+                $manualMethod = \App\Models\ManualPaymentMethod::find($manualId);
+
+                if (!$manualMethod || !$manualMethod->is_active) {
+                    $this->rollbackCheckoutOrder($order);
+                    return back()->with('error', 'Metode pembayaran manual tidak valid atau sudah dinonaktifkan.');
+                }
+
+                $payment = Payment::create([
+                    'order_id' => $order->id,
+                    'gateway' => 'manual',
+                    'reference_id' => 'MAN-' . $order->invoice_code,
+                    'amount' => $order->total_price,
+                    'status' => 'pending',
+                    'payload' => [
+                        'method_id' => $manualMethod->id,
+                        'name' => $manualMethod->name,
+                        'account_number' => $manualMethod->account_number,
+                        'account_name' => $manualMethod->account_name,
+                        'instructions' => $manualMethod->instructions,
+                    ],
+                ]);
+
+                $order->update([
+                    'payment_reference' => $payment->reference_id,
+                    'payment_expired_at' => now()->addHours(24),
+                ]);
             } elseif (! $this->createPayment($order, $paymentMethod)) {
                 $this->rollbackCheckoutOrder($order);
 

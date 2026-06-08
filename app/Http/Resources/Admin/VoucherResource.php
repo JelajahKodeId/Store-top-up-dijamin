@@ -23,6 +23,7 @@ class VoucherResource extends JsonResource
             'expired_at' => $this->expired_at ? $this->expired_at->toISOString() : null,
             'is_active' => $this->is_active,
             'created_at' => $this->created_at->format('d M Y H:i'),
+            'product_ids' => $this->whenLoaded('products', fn() => $this->products->pluck('id')),
         ];
     }
 }

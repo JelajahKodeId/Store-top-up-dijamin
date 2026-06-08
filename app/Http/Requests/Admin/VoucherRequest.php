@@ -24,6 +24,8 @@ class VoucherRequest extends FormRequest
             'quota' => ['nullable', 'integer', 'min:1'],
             'expired_at' => ['nullable', 'date', 'after:today'],
             'is_active' => ['boolean'],
+            'product_ids' => ['nullable', 'array'],
+            'product_ids.*' => ['integer', 'exists:products,id'],
         ];
     }
 }

@@ -48,10 +48,12 @@ class ProductService
                 'slug' => $data['slug'],
                 'description' => $data['description'] ?? null,
                 'image' => $this->normalizedImage($data['image'] ?? null),
+                'banner_image' => $this->normalizedImage($data['banner_image'] ?? null),
                 'telegram_group_invite_url' => $this->normalizedTelegramUrl($data['telegram_group_invite_url'] ?? null),
                 'status' => $data['status'],
                 'platform_type' => $data['platform_type'] ?? null,
                 'game_category' => $this->normalizedGameCategory($data['game_category'] ?? null),
+                'fake_sold_count' => $data['fake_sold_count'] ?? 0,
             ]);
 
             if (isset($data['fields'])) {
@@ -81,10 +83,12 @@ class ProductService
                 'slug' => $data['slug'],
                 'description' => $data['description'] ?? null,
                 'image' => $this->normalizedImage($data['image'] ?? null),
+                'banner_image' => $this->normalizedImage($data['banner_image'] ?? null),
                 'telegram_group_invite_url' => $this->normalizedTelegramUrl($data['telegram_group_invite_url'] ?? null),
                 'status' => $data['status'],
                 'platform_type' => $data['platform_type'] ?? null,
                 'game_category' => $this->normalizedGameCategory($data['game_category'] ?? null),
+                'fake_sold_count' => $data['fake_sold_count'] ?? 0,
             ]);
 
             // Sync Fields — hapus yang tidak ada di payload, lalu upsert
@@ -143,6 +147,11 @@ class ProductService
         $path = $product->getRawOriginal('image');
         if (Product::isRelativeStoragePath($path)) {
             Storage::disk('public')->delete($path);
+        }
+
+        $bannerPath = $product->getRawOriginal('banner_image');
+        if (Product::isRelativeStoragePath($bannerPath)) {
+            Storage::disk('public')->delete($bannerPath);
         }
 
         return $product->delete();

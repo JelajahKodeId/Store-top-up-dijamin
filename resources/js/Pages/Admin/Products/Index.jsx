@@ -22,11 +22,16 @@ export default function ProductIndex({ products, filters }) {
         slug: '',
         description: '',
         image: '',
+        image_url: '',
         image_file: null,
+        banner_image: '',
+        banner_image_url: '',
+        banner_image_file: null,
         telegram_group_invite_url: '',
         status: 'active',
         platform_type: '',
         game_category: '',
+        fake_sold_count: 0,
         fields: [],
         durations: [{ name: '', duration_days: '', price: '', reseller_price: '', is_active: true }],
     });
@@ -46,11 +51,16 @@ export default function ProductIndex({ products, filters }) {
             slug: product.slug,
             description: product.description || '',
             image: product.image || '',
+            image_url: product.image_url || '',
             image_file: null,
+            banner_image: product.banner_image || '',
+            banner_image_url: product.banner_image_url || '',
+            banner_image_file: null,
             telegram_group_invite_url: product.telegram_group_invite_url || '',
             status: product.status,
             platform_type: product.platform_type || '',
             game_category: product.game_category || '',
+            fake_sold_count: product.fake_sold_count || 0,
             fields: product.fields || [],
             durations: product.durations || [],
         });
@@ -60,7 +70,7 @@ export default function ProductIndex({ products, filters }) {
 
     const submitCreate = (e) => {
         e.preventDefault();
-        const useMultipart = data.image_file instanceof File;
+        const useMultipart = data.image_file instanceof File || data.banner_image_file instanceof File;
         post(route('admin.products.store'), {
             forceFormData: useMultipart,
             onSuccess: () => {
@@ -72,7 +82,7 @@ export default function ProductIndex({ products, filters }) {
 
     const submitEdit = (e) => {
         e.preventDefault();
-        const useMultipart = data.image_file instanceof File;
+        const useMultipart = data.image_file instanceof File || data.banner_image_file instanceof File;
         put(route('admin.products.update', selectedProduct.id), {
             forceFormData: useMultipart,
             onSuccess: () => {
@@ -206,6 +216,12 @@ export default function ProductIndex({ products, filters }) {
                                         <span className="text-[9px] font-bold">Mobile</span>
                                     </Badge>
                                 )}
+                                {product.platform_type === 'maintenance' && (
+                                    <Badge variant="red" className="gap-1 px-1.5 py-0.5">
+                                        <AppIcons.warning size={10} className="text-red-500 animate-pulse" />
+                                        <span className="text-[9px] font-black uppercase tracking-tight">Maintenance</span>
+                                    </Badge>
+                                )}
                                 {!product.platform_type && <span className="text-[10px] text-store-subtle font-bold">—</span>}
                             </div>
                         </td>
@@ -317,21 +333,33 @@ export default function ProductIndex({ products, filters }) {
                                     <Input label="Nama Produk" value={data.name} onChange={e => setData('name', e.target.value)} error={errors.name} placeholder="Contoh: Mobile Legends" />
                                     <Input label="Slug (URL)" value={data.slug} onChange={e => setData('slug', e.target.value)} error={errors.slug} />
                                     <Textarea label="Deskripsi" value={data.description} onChange={e => setData('description', e.target.value)} error={errors.description} rows={4} />
+                                    {isEditModalOpen && (
+                                        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-store-border mt-2">
+                                            <div>
+                                                <label className="text-[10px] font-black text-store-charcoal uppercase tracking-widest block mb-1">Total Terjual (Real)</label>
+                                                <div className="bg-admin-bg border border-store-border rounded-xl px-4 py-2.5 text-xs font-bold text-store-muted cursor-not-allowed">
+                                                    {selectedProduct?.sold_count || 0} unit
+                                                </div>
+                                            </div>
+                                            <Input 
+                                                label="Manipulasi Terjual (+)" 
+                                                type="number" 
+                                                min="0"
+                                                value={data.fake_sold_count} 
+                                                onChange={e => setData('fake_sold_count', e.target.value)} 
+                                                error={errors.fake_sold_count} 
+                                                placeholder="Contoh: 200" 
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="space-y-6">
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black text-store-charcoal uppercase tracking-widest border-b border-store-border pb-3">Status & Brand</h4>
-                                    <Input
-                                        label="URL gambar (opsional)"
-                                        value={data.image}
-                                        onChange={e => setData('image', e.target.value)}
-                                        error={errors.image}
-                                        placeholder="https://… atau kosongkan jika unggah file"
-                                    />
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-bold text-store-subtle uppercase tracking-widest block">
-                                            Unggah gambar (opsional)
+                                            Unggah gambar ikon produk (opsional)
                                         </label>
                                         <input
                                             type="file"
@@ -342,9 +370,40 @@ export default function ProductIndex({ products, filters }) {
                                         {errors.image_file && (
                                             <p className="text-[10px] font-bold text-red-600">{errors.image_file}</p>
                                         )}
-                                        <p className="text-[9px] text-store-subtle font-medium leading-relaxed">
-                                            Jika file dipilih, file dipakai dan disimpan di <code className="text-[8px] bg-admin-bg px-1 rounded">storage/app/public/products</code>
-                                            (pastikan <code className="text-[8px] bg-admin-bg px-1 rounded">php artisan storage:link</code> sudah dijalankan).
+                                        {data.image_url && (
+                                            <div className="mt-2 text-[10px] text-store-subtle font-medium bg-admin-bg p-2 rounded-lg border border-store-border break-all">
+                                                <span>File tersimpan: </span>
+                                                <a href={data.image_url} target="_blank" rel="noreferrer" className="text-store-accent hover:underline">Lihat Gambar</a>
+                                            </div>
+                                        )}
+                                        <p className="text-[9px] text-store-subtle font-medium leading-relaxed mt-1">
+                                            Ikon produk kecil di bagian bawah hero banner.
+                                        </p>
+                                    </div>
+
+                                    <div className="pt-2 border-t border-store-border"></div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-bold text-store-subtle uppercase tracking-widest block">
+                                            Unggah banner gambar latar (opsional)
+                                        </label>
+                                        <input
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp,image/gif"
+                                            className="block w-full text-xs font-medium text-store-charcoal file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-store-charcoal file:text-white file:font-bold"
+                                            onChange={(e) => setData('banner_image_file', e.target.files?.[0] ?? null)}
+                                        />
+                                        {errors.banner_image_file && (
+                                            <p className="text-[10px] font-bold text-red-600">{errors.banner_image_file}</p>
+                                        )}
+                                        {data.banner_image_url && (
+                                            <div className="mt-2 text-[10px] text-store-subtle font-medium bg-admin-bg p-2 rounded-lg border border-store-border break-all">
+                                                <span>File tersimpan: </span>
+                                                <a href={data.banner_image_url} target="_blank" rel="noreferrer" className="text-store-accent hover:underline">Lihat Gambar</a>
+                                            </div>
+                                        )}
+                                        <p className="text-[9px] text-store-subtle font-medium leading-relaxed mt-1">
+                                            Gambar latar (banner) besar pada detail produk.
                                         </p>
                                     </div>
                                     <Select label="Status Produk" value={data.status} onChange={e => setData('status', e.target.value)} error={errors.status}>
@@ -356,6 +415,7 @@ export default function ProductIndex({ products, filters }) {
                                         <option value="android">Android Only</option>
                                         <option value="ios">iOS Only</option>
                                         <option value="both">Android & iOS</option>
+                                        <option value="maintenance">Maintenance</option>
                                     </Select>
                                     <div className="space-y-2">
                                         <Input

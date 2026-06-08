@@ -13,7 +13,7 @@ class VoucherController extends Controller
     public function index(Request $request)
     {
         \Illuminate\Support\Facades\Gate::authorize('viewAny', Voucher::class);
-        $query = Voucher::latest()->orderByDesc('id');
+        $query = Voucher::with('products')->latest()->orderByDesc('id');
 
         if ($request->search) {
             $query->where('code', 'like', '%' . $request->search . '%');
@@ -28,6 +28,7 @@ class VoucherController extends Controller
         return Inertia::render('Admin/Vouchers/Index', [
             'vouchers' => \App\Http\Resources\Admin\VoucherResource::collection($vouchers),
             'filters' => $request->only(['search', 'type']),
+            'products' => \App\Models\Product::select('id', 'name')->get(),
         ]);
     }
 
@@ -36,7 +37,10 @@ class VoucherController extends Controller
         \Illuminate\Support\Facades\Gate::authorize('create', Voucher::class);
         
         try {
-            Voucher::create($request->validated());
+            $voucher = Voucher::create($request->validated());
+            if ($request->has('product_ids')) {
+                $voucher->products()->sync($request->product_ids);
+            }
             return back()->with('success', 'Voucher berhasil ditambahkan.');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Voucher store failed: ' . $e->getMessage());
@@ -50,6 +54,9 @@ class VoucherController extends Controller
         
         try {
             $voucher->update($request->validated());
+            if ($request->has('product_ids')) {
+                $voucher->products()->sync($request->product_ids);
+            }
             return back()->with('success', 'Voucher berhasil diperbarui.');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Voucher update failed: ' . $e->getMessage());

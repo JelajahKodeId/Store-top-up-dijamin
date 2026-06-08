@@ -5,7 +5,7 @@ import { AppIcons } from '@/Components/shared/AppIcon';
  * GuestInput — field form halaman publik (tema terang).
  */
 const GuestInput = forwardRef(function GuestInput(
-    { label, error, icon, className = '', containerClassName = '', required, type, rows = 4, ...props },
+    { label, error, icon, solidIcon = false, className = '', containerClassName = '', required, type, rows = 4, ...props },
     ref
 ) {
     const Icon = typeof icon === 'string' ? (AppIcons[icon] ?? null) : icon;
@@ -36,13 +36,13 @@ const GuestInput = forwardRef(function GuestInput(
 
             <div className="group relative">
                 {Icon && !isTextarea && (
-                    <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-guest-subtle transition-colors duration-300 group-focus-within:text-store-accent">
+                    <div className={`pointer-events-none absolute inset-y-0 left-0 flex items-center justify-center transition-colors duration-300 ${solidIcon ? 'w-[3.25rem] bg-store-accent text-guest-bg rounded-l-md border-r border-store-accent/20' : 'w-12 left-0 text-guest-subtle group-focus-within:text-store-accent'}`}>
                         <Icon size={18} strokeWidth={2.5} />
                     </div>
                 )}
 
                 {Icon && isTextarea && (
-                    <div className="pointer-events-none absolute left-4 top-4 text-guest-subtle transition-colors duration-300 group-focus-within:text-store-accent">
+                    <div className={`pointer-events-none absolute left-0 top-0 bottom-0 flex w-[3.25rem] items-start justify-center pt-3.5 transition-colors duration-300 ${solidIcon ? 'bg-store-accent text-guest-bg rounded-l-md border-r border-store-accent/20' : 'left-0 text-guest-subtle group-focus-within:text-store-accent'}`}>
                         <Icon size={18} strokeWidth={2.5} />
                     </div>
                 )}
@@ -53,7 +53,7 @@ const GuestInput = forwardRef(function GuestInput(
                         ref={ref}
                         rows={rows}
                         required={required}
-                        className={`${baseClass} resize-none py-3 pr-4 ${Icon ? 'pl-12' : 'pl-4'}`}
+                        className={`${baseClass} resize-none py-3 pr-4 ${Icon ? (solidIcon ? 'pl-[4.25rem]' : 'pl-12') : 'pl-4'}`}
                     />
                 ) : (
                     <input
@@ -61,7 +61,7 @@ const GuestInput = forwardRef(function GuestInput(
                         ref={ref}
                         type={type}
                         required={required}
-                        className={`${baseClass} py-3 pr-4 ${Icon ? 'pl-12' : 'pl-4'}`}
+                        className={`${baseClass} py-3 pr-4 ${Icon ? (solidIcon ? 'pl-[4.25rem]' : 'pl-12') : 'pl-4'}`}
                     />
                 )}
             </div>

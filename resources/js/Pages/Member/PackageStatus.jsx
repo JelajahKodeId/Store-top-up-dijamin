@@ -24,6 +24,7 @@ export default function PackageStatus({ upgrade, app_env }) {
                     appEnv={app_env}
                     paymentUrl={upgrade.payment_url}
                     pakKasirDetails={upgrade.pak_kasir_details}
+                    manualPaymentDetails={upgrade.manual_payment_details}
                     paymentHint="Setelah pembayaran dikonfirmasi, level akun Anda akan diperbarui otomatis."
                     backHref={route('member.packages.index')}
                     backLabel="← Kembali ke pilih paket"

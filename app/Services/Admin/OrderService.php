@@ -19,7 +19,7 @@ class OrderService
      */
     public function getPaginatedOrders(array $filters = []): LengthAwarePaginator
     {
-        $query = Order::query()->with('payment')->newestFirst();
+        $query = Order::query()->with(['payment', 'items'])->newestFirst();
 
         if (! empty($filters['search'])) {
             $s = '%'.$filters['search'].'%';
@@ -34,6 +34,18 @@ class OrderService
 
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
+        }
+
+        if (! empty($filters['product_id'])) {
+            $query->whereHas('items', function ($q) use ($filters) {
+                $q->where('product_id', $filters['product_id']);
+            });
+        }
+
+        if (! empty($filters['duration_id'])) {
+            $query->whereHas('items', function ($q) use ($filters) {
+                $q->where('product_duration_id', $filters['duration_id']);
+            });
         }
 
         return $query->paginate(15)->withQueryString();

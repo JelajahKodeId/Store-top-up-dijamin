@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Product;
 use App\Services\Admin\OrderService;
 use App\Http\Resources\Admin\OrderResource;
 use Illuminate\Http\Request;
@@ -28,9 +29,22 @@ class OrderController extends Controller
 
         $orders = $this->orderService->getPaginatedOrders($request->all());
 
+        $products = Product::where('status', 'active')
+            ->with(['durations' => fn($q) => $q->where('is_active', true)])
+            ->get()
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'durations' => $p->durations->map(fn($d) => [
+                    'id' => $d->id,
+                    'name' => $d->name,
+                ]),
+            ]);
+
         return Inertia::render('Admin/Orders/Index', [
             'orders' => OrderResource::collection($orders),
-            'filters' => $request->only(['search', 'status']),
+            'filters' => $request->only(['search', 'status', 'product_id', 'duration_id']),
+            'productsList' => $products,
         ]);
     }
 

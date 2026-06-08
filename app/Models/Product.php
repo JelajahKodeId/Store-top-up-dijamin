@@ -14,13 +14,15 @@ class Product extends Model
         'slug',
         'description',
         'image',
+        'banner_image',
         'telegram_group_invite_url',
         'status',
         'platform_type',
         'game_category',
+        'fake_sold_count',
     ];
 
-    protected $appends = ['image_url', 'game_category_label'];
+    protected $appends = ['image_url', 'banner_image_url', 'game_category_label'];
 
     /**
      * Nilai kolom `image`: URL absolut, atau path relatif di disk public (mis. products/abc.jpg).
@@ -63,6 +65,13 @@ class Product extends Model
     {
         return Attribute::get(
             fn () => self::publicUrlForStoredImage($this->attributes['image'] ?? null)
+        );
+    }
+
+    protected function bannerImageUrl(): Attribute
+    {
+        return Attribute::get(
+            fn () => self::publicUrlForStoredImage($this->attributes['banner_image'] ?? null)
         );
     }
 

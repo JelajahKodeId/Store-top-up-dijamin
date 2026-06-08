@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\BannerController;
+use App\Http\Controllers\Admin\GameFooterController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductKeyController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VoucherController;
 use App\Http\Controllers\Admin\WhatsAppGatewayController;
+use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LandingController;
@@ -28,6 +30,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // ── Public Guest Routes ─────────────────────────────────────────────────────
+Route::get('/api/countries', [App\Http\Controllers\Api\CountryController::class, 'index'])->name('api.countries');
 Route::get('/', [LandingController::class, 'index'])->name('home');
 Route::get('/catalog', [LandingController::class, 'catalog'])->name('catalog');
 Route::get('/products/{slug}', [LandingController::class, 'show'])->name('products.show.public');
@@ -50,17 +53,48 @@ Route::post('/vouchers/check', function (Request $request) {
     $request->validate([
         'code' => ['required', 'string', 'max:50'],
         'price' => ['required', 'numeric', 'min:0'],
+        'product_id' => ['nullable', 'integer'],
     ]);
 
-    $voucher = Voucher::active()
+    $voucher = Voucher::with('products')
         ->where('code', strtoupper(trim($request->code)))
         ->first();
 
     if (! $voucher) {
         return response()->json([
             'valid' => false,
-            'message' => 'Voucher tidak valid atau sudah kadaluarsa.',
+            'message' => 'Voucher tidak ditemukan.',
         ]);
+    }
+
+    if (! $voucher->is_active) {
+        return response()->json([
+            'valid' => false,
+            'message' => 'Voucher sudah dinonaktifkan.',
+        ]);
+    }
+
+    if ($voucher->expired_at && $voucher->expired_at <= now()) {
+        return response()->json([
+            'valid' => false,
+            'message' => 'Voucher sudah kadaluarsa.',
+        ]);
+    }
+
+    if ($voucher->quota !== null && $voucher->used >= $voucher->quota) {
+        return response()->json([
+            'valid' => false,
+            'message' => 'Kuota voucher sudah habis.',
+        ]);
+    }
+
+    if ($voucher->products->isNotEmpty()) {
+        if (! $request->product_id || ! $voucher->products->contains('id', $request->product_id)) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'Voucher ini tidak berlaku untuk produk yang dipilih.',
+            ]);
+        }
     }
 
     $price = (float) $request->price;
@@ -190,6 +224,12 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         ->only(['index', 'store', 'update', 'destroy']);
 
     Route::resource('banners', BannerController::class)
+        ->only(['index', 'store', 'update', 'destroy']);
+
+    Route::resource('game-footers', GameFooterController::class)
+        ->only(['index', 'store', 'update', 'destroy']);
+
+    Route::resource('manual-payment-methods', \App\Http\Controllers\Admin\ManualPaymentMethodController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');

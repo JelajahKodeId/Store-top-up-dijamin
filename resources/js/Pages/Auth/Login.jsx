@@ -30,7 +30,7 @@ export default function Login({ status }) {
 
                 {/* ── Left Panel (branding) ── */}
                 <div className="hidden lg:flex flex-1 flex-col justify-between p-16 relative z-10">
-                    <AppLogo theme="light" size="lg" href="/" />
+                    <AppLogo theme="light" size="lg" href="/" subtitle="Layanan Voucher Game, Media Sosial" />
 
                     <div className="max-w-xl">
                         <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8">
@@ -68,7 +68,7 @@ export default function Login({ status }) {
                     <div className="w-full max-w-md space-y-10">
                         {/* Mobile logo */}
                         <div className="lg:hidden mb-12 flex justify-center">
-                            <AppLogo size="lg" href="/" theme="light" />
+                            <AppLogo size="lg" href="/" theme="light" subtitle="Layanan Voucher Game, Media Sosial" />
                         </div>
 
                         <div>

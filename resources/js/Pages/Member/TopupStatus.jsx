@@ -23,6 +23,7 @@ export default function TopupStatus({ topup, app_env }) {
                     appEnv={app_env}
                     paymentUrl={topup.payment_url}
                     pakKasirDetails={topup.pak_kasir_details}
+                    manualPaymentDetails={topup.manual_payment_details}
                     paymentHint="Saldo otomatis masuk ke akun Anda setelah pembayaran dikonfirmasi."
                     backHref={route('member.topup.index')}
                     backLabel="← Kembali ke Top Up"

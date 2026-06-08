@@ -38,9 +38,9 @@ class ProductReviewController extends Controller
             ->with('items')
             ->first();
 
-        if (! $order || $order->status !== OrderStatus::SUCCESS) {
+        if (! $order || !in_array($order->status, [OrderStatus::SUCCESS, OrderStatus::PAID])) {
             throw ValidationException::withMessages([
-                'invoice_code' => 'Invoice tidak ditemukan atau pesanan belum selesai. Ulasan hanya bisa dikirim setelah transaksi berhasil.',
+                'invoice_code' => 'Invoice tidak ditemukan atau pembayaran belum selesai.',
             ]);
         }
 

@@ -86,6 +86,7 @@ export const AppIcons = {
     orders: ShoppingCart,
     payments: CreditCard,
     banners: ImageIcon,
+    image: ImageIcon,
     users: Users,
     logout: LogOut,
     settings: Settings,

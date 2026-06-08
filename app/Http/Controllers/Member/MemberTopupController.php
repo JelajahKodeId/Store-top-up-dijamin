@@ -88,6 +88,11 @@ class MemberTopupController extends Controller
             }
         }
 
+        $manualPaymentDetails = null;
+        if ($topup && $topup->gateway === 'manual') {
+            $manualPaymentDetails = $topup->payload;
+        }
+
         return Inertia::render('Member/TopupStatus', [
             'topup' => [
                 'invoice_code' => $topup->invoice_code,
@@ -95,6 +100,7 @@ class MemberTopupController extends Controller
                 'status' => $topup->status,
                 'payment_url' => $topup->payment_url,
                 'pak_kasir_details' => $pakKasirDetails,
+                'manual_payment_details' => $manualPaymentDetails,
                 'payment_expired_at' => $topup->payment_expired_at?->toISOString(),
                 'created_at' => $topup->created_at->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
             ],

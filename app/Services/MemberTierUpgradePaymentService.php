@@ -196,7 +196,17 @@ class MemberTierUpgradePaymentService
     public function paymentChannelsForUi(): array
     {
         try {
-            return $this->paymentGateway->getPaymentChannels();
+            $channels = $this->paymentGateway->getPaymentChannels();
+
+            $manualMethods = \App\Models\ManualPaymentMethod::where('is_active', true)->get()->map(function ($m) {
+                return [
+                    'code' => 'manual_' . $m->id,
+                    'label' => $m->name,
+                    'icon_url' => $m->image_url,
+                ];
+            })->toArray();
+
+            return array_merge($channels, $manualMethods);
         } catch (\Throwable) {
             return [];
         }

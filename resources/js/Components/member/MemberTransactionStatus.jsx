@@ -47,7 +47,7 @@ export default function MemberTransactionStatus({
                 </div>
             )}
 
-            {pending && pakKasirDetails && !paymentUrl && (
+            {pending && pakKasirDetails && !paymentUrl && !manualPaymentDetails && (
                 <div className="mt-6 border-t border-guest-border pt-4">
                     {pakKasirDetails.is_qris ? (
                         <div className="flex flex-col items-center gap-4">
@@ -73,7 +73,41 @@ export default function MemberTransactionStatus({
                 </div>
             )}
 
-            {pending && !paymentUrl && !pakKasirDetails && (
+            {pending && manualPaymentDetails && !paymentUrl && (
+                <div className="mt-6 border-t border-guest-border pt-4 space-y-4">
+                    <div className="text-center">
+                        <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Pembayaran Manual</p>
+                        <p className="text-sm font-bold text-guest-text">{manualPaymentDetails.name}</p>
+                    </div>
+
+                    {manualPaymentDetails.account_number && (
+                        <div className="space-y-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-center">
+                            <p className="text-xs font-bold text-blue-800">Nomor Rekening / Akun:</p>
+                            <p className="font-mono text-xl font-bold tracking-wider text-blue-900">{manualPaymentDetails.account_number}</p>
+                            {manualPaymentDetails.account_name && (
+                                <p className="text-[10px] uppercase text-blue-700">a.n {manualPaymentDetails.account_name}</p>
+                            )}
+                        </div>
+                    )}
+
+                    {manualPaymentDetails.instructions && (
+                        <div className="rounded-xl border border-guest-border bg-guest-elevated p-4">
+                            <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle mb-1">Instruksi</p>
+                            <p className="text-xs font-medium leading-relaxed text-guest-text whitespace-pre-line">
+                                {manualPaymentDetails.instructions}
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="mt-4">
+                        <p className="text-[10px] font-bold text-guest-muted text-center uppercase tracking-wide">
+                            Mohon konfirmasi pembayaran melalui WhatsApp.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {pending && !paymentUrl && !pakKasirDetails && !manualPaymentDetails && (
                 <p className="mt-4 rounded-xl bg-amber-50 p-3 text-center text-xs font-medium text-amber-900">
                     Menunggu tautan pembayaran. Muat ulang halaman jika sudah lewat beberapa saat.
                 </p>

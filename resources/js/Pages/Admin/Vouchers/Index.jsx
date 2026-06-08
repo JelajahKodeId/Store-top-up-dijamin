@@ -9,7 +9,7 @@ import Input, { Select } from '@/Components/ui/Input';
 import DeleteConfirmModal from '@/Components/ui/DeleteConfirmModal';
 import { AppIcons } from '@/Components/shared/AppIcon';
 
-export default function VoucherIndex({ vouchers, filters }) {
+export default function VoucherIndex({ vouchers, filters, products }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -24,6 +24,7 @@ export default function VoucherIndex({ vouchers, filters }) {
         quota: '',
         expired_at: '',
         is_active: true,
+        product_ids: [],
     });
 
     const openCreateModal = () => {
@@ -42,6 +43,7 @@ export default function VoucherIndex({ vouchers, filters }) {
             quota: voucher.quota || '',
             expired_at: voucher.expired_at ? voucher.expired_at.split('T')[0] : '',
             is_active: voucher.is_active,
+            product_ids: voucher.product_ids || [],
         });
         clearErrors();
         setIsEditModalOpen(true);
@@ -141,6 +143,11 @@ export default function VoucherIndex({ vouchers, filters }) {
                             <div className="flex flex-col">
                                 <span className="font-black text-store-charcoal text-sm">{voucher.code}</span>
                                 <span className="text-[10px] text-store-subtle uppercase font-bold tracking-widest">{voucher.type === 'fixed' ? 'Potongan Harga' : 'Diskon Persen'}</span>
+                                {voucher.product_ids?.length > 0 ? (
+                                    <span className="text-[10px] text-amber-600 font-bold mt-1">Spesifik ({voucher.product_ids.length} Produk)</span>
+                                ) : (
+                                    <span className="text-[10px] text-green-600 font-bold mt-1">Semua Produk</span>
+                                )}
                             </div>
                         </td>
                         <td>
@@ -222,6 +229,34 @@ export default function VoucherIndex({ vouchers, filters }) {
 
                     <Input label="Tanggal Expired (Opsional)" type="date" value={data.expired_at} onChange={e => setData('expired_at', e.target.value)} error={errors.expired_at} />
 
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-store-charcoal uppercase tracking-tight font-sans">
+                            Berlaku Untuk Produk (Opsional)
+                        </label>
+                        <p className="text-[10px] text-store-subtle">
+                            Jika tidak ada yang dipilih, voucher berlaku untuk <strong>semua produk</strong>.
+                        </p>
+                        <div className="max-h-40 overflow-y-auto border border-store-border rounded-xl p-3 bg-admin-bg space-y-2">
+                            {products.map(product => (
+                                <label key={product.id} className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.product_ids.includes(product.id)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setData('product_ids', [...data.product_ids, product.id]);
+                                            } else {
+                                                setData('product_ids', data.product_ids.filter(id => id !== product.id));
+                                            }
+                                        }}
+                                        className="w-4 h-4 rounded text-store-charcoal focus:ring-store-charcoal"
+                                    />
+                                    <span className="text-xs font-semibold text-store-charcoal">{product.name}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="flex items-center gap-3 p-4 bg-admin-bg rounded-xl border border-store-border">
                         <input type="checkbox" id="is_active" checked={data.is_active} onChange={e => setData('is_active', e.target.checked)} className="w-5 h-5 rounded-md text-store-charcoal font-sans" />
                         <label htmlFor="is_active" className="text-[10px] font-black text-store-charcoal uppercase tracking-tight cursor-pointer font-sans">Voucher Aktif</label>
@@ -259,6 +294,34 @@ export default function VoucherIndex({ vouchers, filters }) {
                     </div>
 
                     <Input label="Tanggal Expired" type="date" value={data.expired_at} onChange={e => setData('expired_at', e.target.value)} error={errors.expired_at} />
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-store-charcoal uppercase tracking-tight font-sans">
+                            Berlaku Untuk Produk (Opsional)
+                        </label>
+                        <p className="text-[10px] text-store-subtle">
+                            Jika tidak ada yang dipilih, voucher berlaku untuk <strong>semua produk</strong>.
+                        </p>
+                        <div className="max-h-40 overflow-y-auto border border-store-border rounded-xl p-3 bg-admin-bg space-y-2">
+                            {products.map(product => (
+                                <label key={product.id} className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.product_ids.includes(product.id)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setData('product_ids', [...data.product_ids, product.id]);
+                                            } else {
+                                                setData('product_ids', data.product_ids.filter(id => id !== product.id));
+                                            }
+                                        }}
+                                        className="w-4 h-4 rounded text-store-charcoal focus:ring-store-charcoal"
+                                    />
+                                    <span className="text-xs font-semibold text-store-charcoal">{product.name}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
 
                     <div className="flex items-center gap-3 p-4 bg-admin-bg rounded-xl border border-store-border">
                         <input type="checkbox" id="edit_is_active" checked={data.is_active} onChange={e => setData('is_active', e.target.checked)} className="w-5 h-5 rounded-md text-store-charcoal font-sans" />

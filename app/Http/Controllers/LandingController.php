@@ -10,6 +10,7 @@ use App\Support\PaymentLabels;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Http\RedirectResponse;
 
 class LandingController extends Controller
 {
@@ -27,6 +28,14 @@ class LandingController extends Controller
 
         return Inertia::render('Guest/Home', [
             'products' => $this->catalogService->getActiveProducts($category),
+            'vouchers' => \App\Models\Voucher::active()->with('products:id,name,game_category')->get()->map(fn($v) => [
+                'code' => $v->code,
+                'products' => $v->products->map(fn($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'game_category' => $p->game_category,
+                ]),
+            ]),
             'banners' => $this->catalogService->getActiveBanners()->map(fn($b) => [
                 'id' => $b->id,
                 'title' => $b->title,
@@ -52,6 +61,14 @@ class LandingController extends Controller
             'title' => 'Katalog Produk',
             'subtitle' => 'Eksplorasi produk digital premium dengan pengiriman instan',
             'products' => $this->catalogService->getActiveProducts($category),
+            'vouchers' => \App\Models\Voucher::active()->with('products:id,name,game_category')->get()->map(fn($v) => [
+                'code' => $v->code,
+                'products' => $v->products->map(fn($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'game_category' => $p->game_category,
+                ]),
+            ]),
             'gameCategories' => $this->catalogService->getActiveGameCategoriesForFilter(),
             'filters' => [
                 'category' => $category,
@@ -79,7 +96,7 @@ class LandingController extends Controller
     /**
      * Display product detail page.
      */
-    public function show(Request $request, string $slug): Response
+    public function show(Request $request, string $slug): Response|RedirectResponse
     {
         $product = $this->catalogService->getProductDetails($slug);
 
@@ -87,8 +104,22 @@ class LandingController extends Controller
             abort(404);
         }
 
+        if ($product->platform_type === 'maintenance') {
+            return redirect()->route('catalog')->with('error', 'Produk "' . $product->name . '" sedang dalam pemeliharaan (maintenance).');
+        }
+
         $related = $this->catalogService->getRelatedProducts($product);
         $paymentChannels = $this->paymentGateway->getPaymentChannels();
+        
+        $manualMethods = \App\Models\ManualPaymentMethod::where('is_active', true)->get()->map(function ($m) {
+            return [
+                'code' => 'manual_' . $m->id,
+                'label' => $m->name,
+                'icon_url' => $m->image_url,
+            ];
+        })->toArray();
+
+        $paymentChannels = array_merge($paymentChannels, $manualMethods);
 
         $gateway = $this->paymentGateway->getGatewayName();
 
@@ -106,6 +137,7 @@ class LandingController extends Controller
             'midtransSandboxMode' => $gateway === 'midtrans'
                 && ! filter_var(config('services.midtrans.is_production'), FILTER_VALIDATE_BOOLEAN),
             'reviewInvoice' => $reviewInvoice,
+            'testimonials' => \App\Models\ProductReview::with('product:id,name')->where('is_published', true)->orderByDesc('created_at')->limit(50)->get(),
         ]);
     }
 
@@ -222,6 +254,11 @@ class LandingController extends Controller
         $midtransSandbox = $payment && $payment->gateway === 'midtrans'
             && ! filter_var(config('services.midtrans.is_production'), FILTER_VALIDATE_BOOLEAN);
 
+        $manualPaymentDetails = null;
+        if ($order->status === OrderStatus::UNPAID && $payment && $payment->gateway === 'manual') {
+            $manualPaymentDetails = $payment->payload;
+        }
+
         return [
             'invoice_code' => $order->invoice_code,
             'status' => $order->status->value,
@@ -241,7 +278,8 @@ class LandingController extends Controller
             'midtrans_snap_js' => $midtransSnapJs,
             'midtrans_is_sandbox' => $midtransSandbox,
             'pak_kasir_details' => $pakKasirDetails,
-            'needs_payment_help' => $order->status === OrderStatus::UNPAID && ! $canOpenPayment && ! $pakKasirDetails,
+            'manual_payment_details' => $manualPaymentDetails,
+            'needs_payment_help' => $order->status === OrderStatus::UNPAID && ! $canOpenPayment && ! $pakKasirDetails && ! $manualPaymentDetails,
             'payment_expired_at' => $order->payment_expired_at?->toISOString(),
             'created_at' => $order->created_at->format('d M Y, H:i'),
             'items' => $order->items->map(fn ($item) => [
@@ -264,13 +302,18 @@ class LandingController extends Controller
      */
     public function recentOrder()
     {
-        $order = Order::whereIn('status', [OrderStatus::PAID, OrderStatus::SUCCESS])
+        $orders = Order::whereIn('status', [OrderStatus::PAID, OrderStatus::SUCCESS])
             ->whereHas('payment', function($q) {
                 $q->whereNotNull('paid_at');
             })
             ->with(['items.product', 'payment'])
             ->latest('updated_at')
-            ->first();
+            ->take(10)
+            ->get();
+
+        if ($orders->isEmpty()) return response()->json(['order' => null]);
+        
+        $order = $orders->random();
 
         if (!$order || !$order->payment) return response()->json(['order' => null]);
 

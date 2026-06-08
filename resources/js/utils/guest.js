@@ -33,6 +33,18 @@ export function productImageSrc(product) {
     return `/storage/${u.replace(/^\//, '')}`;
 }
 
+export function productBannerImageSrc(product) {
+    if (!product) return null;
+    const raw = product.banner_image_url ?? product.banner_image;
+    if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+    const u = String(raw).trim();
+    if (/^https?:\/\//i.test(u) || u.startsWith('//') || u.startsWith('/storage/') || u.startsWith('data:')) {
+        return u;
+    }
+    if (u.startsWith('/')) return u;
+    return `/storage/${u.replace(/^\//, '')}`;
+}
+
 /**
  * Normalisasi nomor telepon Indonesia → link wa.me
  * Contoh: "08123456789" → "https://wa.me/628123456789"
@@ -78,7 +90,7 @@ export const orderStatusConfig = {
         pulse:  false,
         icon:   'badge',
         title:  'Pesanan Selesai',
-        desc:   'Key berhasil dikirim ke nomor WhatsApp Anda. Buka WhatsApp untuk melihat key lisensi.',
+        desc:   'TERIMAKASIH SUDAH ORDER DI MALL STORE, SELAMAT MENIKMATI😉',
     },
     failed: {
         color:  'text-red-800',

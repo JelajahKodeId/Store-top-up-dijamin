@@ -8,7 +8,7 @@ import Modal from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Input';
 import { AppIcons } from '@/Components/shared/AppIcon';
 
-export default function OrderIndex({ orders, filters }) {
+export default function OrderIndex({ orders, filters, productsList }) {
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
 
@@ -53,18 +53,57 @@ export default function OrderIndex({ orders, filters }) {
                 onSearch={handleSearch}
                 pagination={orders.meta}
                 actions={
-                    <select
-                        value={filters.status || ''}
-                        onChange={(e) => handleFilter('status', e.target.value)}
-                        className="bg-admin-bg border-1.5 border-store-border rounded-xl px-4 py-2.5 text-xs font-bold text-store-charcoal outline-none focus:border-store-charcoal transition-all"
-                    >
-                        <option value="">Semua Status</option>
-                        <option value="unpaid">Belum Bayar</option>
-                        <option value="paid">Dibayar</option>
-                        <option value="success">Berhasil</option>
-                        <option value="failed">Gagal</option>
-                        <option value="canceled">Dibatalkan</option>
-                    </select>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        {/* Status Filter */}
+                        <select
+                            value={filters.status || ''}
+                            onChange={(e) => handleFilter('status', e.target.value)}
+                            className="bg-admin-bg border-1.5 border-store-border rounded-xl px-4 py-2.5 text-xs font-bold text-store-charcoal outline-none focus:border-store-charcoal transition-all"
+                        >
+                            <option value="">Semua Status</option>
+                            <option value="unpaid">Belum Bayar</option>
+                            <option value="paid">Dibayar</option>
+                            <option value="success">Berhasil</option>
+                            <option value="failed">Gagal</option>
+                            <option value="canceled">Dibatalkan</option>
+                        </select>
+
+                        {/* Product Filter */}
+                        <select
+                            value={filters.product_id || ''}
+                            onChange={(e) => {
+                                const prodId = e.target.value;
+                                router.get(route('admin.orders.index'), { ...filters, product_id: prodId, duration_id: '' }, { preserveState: true });
+                            }}
+                            className="bg-admin-bg border-1.5 border-store-border rounded-xl px-4 py-2.5 text-xs font-bold text-store-charcoal outline-none focus:border-store-charcoal transition-all"
+                        >
+                            <option value="">Semua Produk</option>
+                            {(productsList || []).map((p) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.name}
+                                </option>
+                            ))}
+                        </select>
+
+                        {/* Duration Filter */}
+                        {filters.product_id && (
+                            <select
+                                value={filters.duration_id || ''}
+                                onChange={(e) => handleFilter('duration_id', e.target.value)}
+                                className="bg-admin-bg border-1.5 border-store-border rounded-xl px-4 py-2.5 text-xs font-bold text-store-charcoal outline-none focus:border-store-charcoal transition-all animate-in fade-in slide-in-from-left-1 duration-200"
+                            >
+                                <option value="">Semua Durasi</option>
+                                {(() => {
+                                    const selectedProd = (productsList || []).find((p) => String(p.id) === String(filters.product_id));
+                                    return selectedProd?.durations?.map((d) => (
+                                        <option key={d.id} value={d.id}>
+                                            {d.name}
+                                        </option>
+                                    )) || null;
+                                })()}
+                            </select>
+                        )}
+                    </div>
                 }
                 headers={[
                     { label: 'Invoice', className: 'w-[30%] sm:w-[20%]' },
@@ -79,6 +118,11 @@ export default function OrderIndex({ orders, filters }) {
                         <td>
                             <div className="flex flex-col">
                                 <span className="font-black text-store-charcoal text-sm">{order.invoice_code}</span>
+                                {order.items?.[0] && (
+                                    <span className="text-xs text-indigo-600 font-extrabold uppercase tracking-tight mt-0.5">
+                                        {order.items[0].product_name} ({order.items[0].duration_name})
+                                    </span>
+                                )}
                                 <span className="text-[10px] text-store-subtle uppercase font-bold tracking-widest">{order.created_at}</span>
                                 {order.payment_method_display && (
                                     <span className="text-[9px] text-store-muted font-bold mt-0.5 truncate max-w-[200px]" title={order.payment_method_display}>

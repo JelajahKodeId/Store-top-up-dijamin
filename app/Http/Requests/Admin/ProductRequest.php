@@ -34,10 +34,13 @@ class ProductRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'image' => ['nullable', 'string', 'max:2048'],
             'image_file' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'banner_image' => ['nullable', 'string', 'max:2048'],
+            'banner_image_file' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
             'telegram_group_invite_url' => ['nullable', 'string', 'max:2048', 'url'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
-            'platform_type' => ['nullable', Rule::in(['android', 'ios', 'both'])],
+            'platform_type' => ['nullable', Rule::in(['android', 'ios', 'both', 'maintenance'])],
             'game_category' => ['nullable', 'string', 'max:40', 'regex:/^[a-z0-9][a-z0-9_-]*$/'],
+            'fake_sold_count' => ['nullable', 'integer', 'min:0'],
 
             // Fields validation
             'fields' => ['nullable', 'array'],

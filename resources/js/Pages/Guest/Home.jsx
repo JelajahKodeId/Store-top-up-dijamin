@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Head, Link, usePage } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { AppIcons } from '@/Components/shared/AppIcon';
@@ -22,32 +22,18 @@ export default function Home({ products = [], banners = [], gameCategories = [],
         }
     }, [selectedCategory]);
 
+    const carouselRef = useRef(null);
+
     const nextSlide = useCallback(() => {
-        setActiveSlide((prev) => (prev + 1) % Math.max(activeBanners.length, 1));
+        if (!carouselRef.current || activeBanners.length <= 1) return;
+        const width = carouselRef.current.offsetWidth;
+        const currentScroll = carouselRef.current.scrollLeft;
+        const currentIndex = Math.round(currentScroll / (width + 16)); // 16px is gap-4
+        let nextIndex = currentIndex + 1;
+        if (nextIndex >= activeBanners.length) nextIndex = 0;
+        
+        carouselRef.current.scrollTo({ left: nextIndex * (width + 16), behavior: 'smooth' });
     }, [activeBanners.length]);
-
-    const prevSlide = useCallback(() => {
-        setActiveSlide((prev) => (prev - 1 + activeBanners.length) % Math.max(activeBanners.length, 1));
-    }, [activeBanners.length]);
-
-    const [touchStart, setTouchStart] = useState(null);
-    const [touchEnd, setTouchEnd] = useState(null);
-
-    const handleTouchStart = (e) => {
-        setTouchEnd(null);
-        setTouchStart(e.targetTouches[0].clientX);
-    };
-
-    const handleTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
-
-    const handleTouchEnd = () => {
-        if (!touchStart || !touchEnd) return;
-        const distance = touchStart - touchEnd;
-        const isLeftSwipe = distance > 50;
-        const isRightSwipe = distance < -50;
-        if (isLeftSwipe) nextSlide();
-        if (isRightSwipe) prevSlide();
-    };
 
     useEffect(() => {
         if (activeBanners.length <= 1) return;
@@ -55,7 +41,21 @@ export default function Home({ products = [], banners = [], gameCategories = [],
         return () => clearInterval(timer);
     }, [activeBanners.length, nextSlide]);
 
-    const goToSlide = (idx) => setActiveSlide(idx);
+    const goToSlide = (idx) => {
+        if (!carouselRef.current) return;
+        const width = carouselRef.current.offsetWidth;
+        carouselRef.current.scrollTo({ left: idx * (width + 16), behavior: 'smooth' });
+    };
+
+    const handleScroll = () => {
+        if (!carouselRef.current) return;
+        const scrollLeft = carouselRef.current.scrollLeft;
+        const width = carouselRef.current.offsetWidth;
+        const newIndex = Math.round(scrollLeft / (width + 16));
+        if (newIndex !== activeSlide) {
+            setActiveSlide(newIndex);
+        }
+    };
 
     const filteredProducts = useMemo(() => {
         let result = products;
@@ -72,7 +72,26 @@ export default function Home({ products = [], banners = [], gameCategories = [],
         return result;
     }, [products, search, selectedCategory]);
 
-    const { site } = usePage().props;
+    const { site, vouchers = [] } = usePage().props;
+
+    const activeCategoryLabel = useMemo(() => {
+        return gameCategories.find(c => c.value === selectedCategory)?.label;
+    }, [selectedCategory, gameCategories]);
+
+    const activeVouchers = useMemo(() => {
+        if (!selectedCategory) return [];
+        let applicable = [];
+        vouchers.forEach(v => {
+            const matchingProducts = v.products.filter(p => p.game_category === selectedCategory);
+            matchingProducts.forEach(p => {
+                applicable.push({
+                    productName: p.name,
+                    code: v.code
+                });
+            });
+        });
+        return applicable;
+    }, [selectedCategory, vouchers]);
 
     return (
         <>
@@ -80,74 +99,54 @@ export default function Home({ products = [], banners = [], gameCategories = [],
 
             <section className="relative bg-guest-bg pb-0">
                 <div className="section-container">
-                    <div 
-                        className="relative overflow-hidden rounded-xl bg-guest-surface shadow-lg"
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                    >
-                        <div className="relative aspect-[2/1] overflow-hidden md:aspect-[21/9] lg:aspect-[24/9]">
+                    <div className="relative rounded-sm bg-guest-surface shadow-lg">
+                        <div className="relative aspect-[2.5/1] overflow-hidden md:aspect-[21/9] lg:aspect-[24/9]">
                             {activeBanners.length > 0 ? (
-                                activeBanners.map((banner, idx) => {
-                                    const isExternal = banner.link?.startsWith('http');
-                                    const bannerProps = {
-                                        key: banner.id,
-                                        className: `absolute inset-0 block cursor-pointer transition-opacity duration-700 ease-in-out group ${idx === activeSlide
-                                                ? 'z-10 opacity-100'
-                                                : 'pointer-events-none z-0 opacity-0'
-                                            }`
-                                    };
+                                <div 
+                                    ref={carouselRef}
+                                    onScroll={handleScroll}
+                                    className="flex h-full w-full snap-x snap-mandatory overflow-x-auto gap-4 no-scrollbar scroll-smooth"
+                                >
+                                    {activeBanners.map((banner, idx) => {
+                                        const isExternal = banner.link?.startsWith('http');
+                                        const bannerProps = {
+                                            key: banner.id,
+                                            className: "relative h-full w-full flex-shrink-0 snap-center cursor-pointer group block rounded-sm overflow-hidden"
+                                        };
 
-                                    const content = (
-                                        <>
-                                            <img
-                                                src={banner.image_url}
-                                                alt={banner.title || 'Promotion'}
-                                                className="h-full w-full object-cover object-center transition-transform duration-1000 group-hover:scale-[1.03]"
-                                            />
-                                            <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_120px_rgba(0,0,0,0.12)]" />
-                                            <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
-                                        </>
-                                    );
-
-                                    if (isExternal) {
-                                        return (
-                                            <a {...bannerProps} href={banner.link} target="_blank" rel="noopener noreferrer">
-                                                {content}
-                                            </a>
+                                        const content = (
+                                            <>
+                                                <img
+                                                    src={banner.image_url}
+                                                    alt={banner.title || 'Promotion'}
+                                                    className="h-full w-full object-cover object-center transition-transform duration-1000 group-hover:scale-[1.03]"
+                                                />
+                                                <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_120px_rgba(0,0,0,0.12)]" />
+                                                <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
+                                            </>
                                         );
-                                    }
 
-                                    return (
-                                        <Link {...bannerProps} href={banner.link || '/catalog'}>
-                                            {content}
-                                        </Link>
-                                    );
-                                })
+                                        if (isExternal) {
+                                            return (
+                                                <a {...bannerProps} href={banner.link} target="_blank" rel="noopener noreferrer">
+                                                    {content}
+                                                </a>
+                                            );
+                                        }
+
+                                        return (
+                                            <Link {...bannerProps} href={banner.link || '/catalog'}>
+                                                {content}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
                             ) : (
                                 <div className="absolute inset-0 flex items-center justify-center text-guest-subtle opacity-40">
                                     <AppIcons.boxes size={40} />
                                 </div>
                             )}
 
-                            {activeBanners.length > 1 && (
-                                <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
-                                    {activeBanners.map((_, i) => (
-                                        <button
-                                            key={i}
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                goToSlide(i);
-                                            }}
-                                            className={`h-1 rounded-full transition-all duration-300 ${i === activeSlide
-                                                    ? 'w-8 bg-store-accent'
-                                                    : 'w-1.5 bg-white/80 hover:bg-white'
-                                                }`}
-                                        />
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     </div>
 
@@ -156,7 +155,7 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                             <div className="animate-marquee">
                                 <div className="flex items-center gap-12 px-6">
                                     {[1, 2, 3, 4].map((i) => (
-                                        <span key={i} className="flex items-center gap-3 whitespace-nowrap text-[13px] font-bold uppercase tracking-wider">
+                                        <span key={i} className="font-poppins flex items-center gap-3 whitespace-nowrap text-[13px] font-bold uppercase tracking-wider">
                                             <AppIcons.zap size={14} className="text-store-accent-dark" />
                                             {site.running_text}
                                         </span>
@@ -165,7 +164,7 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                                 {/* Duplicate for seamless loop */}
                                 <div className="flex items-center gap-12 px-6">
                                     {[5, 6, 7, 8].map((i) => (
-                                        <span key={i} className="flex items-center gap-3 whitespace-nowrap text-[13px] font-bold uppercase tracking-wider">
+                                        <span key={i} className="font-poppins flex items-center gap-3 whitespace-nowrap text-[13px] font-bold uppercase tracking-wider">
                                             <AppIcons.zap size={14} className="text-store-accent-dark" />
                                             {site.running_text}
                                         </span>
@@ -179,69 +178,62 @@ export default function Home({ products = [], banners = [], gameCategories = [],
 
             <section className="relative overflow-hidden bg-guest-bg pb-10 pt-6 sm:pb-12 sm:pt-8">
                 <div className="section-container relative z-10">
-                    <div className="mb-8 flex flex-col items-end justify-between gap-4 md:flex-row md:gap-6">
-                        <div className="max-w-2xl">
-                            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-store-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-900">
-                                <span className="flex h-1.5 w-1.5 animate-pulse rounded-full bg-store-accent" />
-                                Terpopuler Saat Ini
-                            </div>
-                            <h2 className="font-bebas text-2xl font-bold uppercase leading-tight tracking-wide text-guest-text [text-shadow:_0_2px_4px_rgb(0_0_0_/_20%)] sm:text-3xl md:text-4xl">Top Pick Product</h2>
-                            <p className="mt-1.5 text-sm font-medium leading-normal text-guest-text/80 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] sm:text-[15px]">Lisensi game digital & software premium dengan sistem pengiriman instan.</p>
-                            <div className="mt-5 h-[1.5px] w-20 bg-store-accent" />
-                            
-                            {/* Saluran Media Sosial */}
-                            <div className="mt-6 flex flex-wrap gap-3">
-                                {site?.wa_channel && (
-                                    <a 
-                                        href={site.wa_channel} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-2 rounded-lg bg-[#25D366] px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-md transition-all hover:scale-105 hover:bg-[#20bd5a] active:scale-95"
-                                    >
-                                        <AppIcons.speaker size={14} />
-                                        <span>Saluran WA</span>
-                                    </a>
-                                )}
-                                {site?.tg_channel && (
-                                    <a 
-                                        href={site.tg_channel} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-2 rounded-lg bg-[#0088cc] px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-md transition-all hover:scale-105 hover:bg-[#0077b5] active:scale-95"
-                                    >
-                                        <AppIcons.speaker size={14} />
-                                        <span>Saluran Telegram</span>
-                                    </a>
-                                )}
-                            </div>
+                    <div className="mb-6 flex flex-col gap-6">
+                        {/* Saluran Media Sosial */}
+                        <div className="grid grid-cols-2 gap-3">
+                            {site?.wa_channel && (
+                                <a 
+                                    href={site.wa_channel} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="font-poppins flex w-full items-center justify-center gap-1.5 rounded-sm bg-[#25D366] px-2 py-2 text-xs font-black uppercase tracking-widest text-white shadow-md transition-all hover:scale-105 hover:bg-[#20bd5a] active:scale-95 sm:gap-2.5 sm:py-3 sm:text-[15px]"
+                                >
+                                    <img src="/img/logo/whatsapp.webp" alt="WhatsApp" className="h-5 w-5 shrink-0 object-contain sm:h-6 sm:w-6" />
+                                    <span className="truncate">CHANEL</span>
+                                </a>
+                            )}
+                            {site?.tg_channel && (
+                                <a 
+                                    href={site.tg_channel} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="font-poppins flex w-full items-center justify-center gap-1.5 rounded-sm bg-[#0088cc] px-2 py-2 text-xs font-black uppercase tracking-widest text-white shadow-md transition-all hover:scale-105 hover:bg-[#0077b5] active:scale-95 sm:gap-2.5 sm:py-3 sm:text-[15px]"
+                                >
+                                    <img src="/img/logo/telegram.webp" alt="Telegram" className="h-5 w-5 shrink-0 object-contain sm:h-6 sm:w-6" />
+                                    <span className="truncate">CHANEL</span>
+                                </a>
+                            )}
                         </div>
-                        <Link href={route('catalog')}>
-                            <Button variant="dark" size="sm" className="rounded-xl shadow-md">
-                                Semua Produk <AppIcons.arrowRight size={14} />
-                            </Button>
-                        </Link>
                     </div>
 
-                    <div className="mb-8 flex flex-col items-start gap-6 sm:gap-7">
-                        <GuestInput
-                            icon="search"
-                            type="text"
-                            placeholder="Cari produk..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            containerClassName="w-full sm:max-w-md"
-                        />
+                    <div className="mb-4 flex flex-col items-start gap-6 sm:gap-7">
+                        <div className="flex w-full flex-col gap-3 sm:gap-4">
+                            <div className="w-full">
+                                <h2 className="font-poppins text-xl font-bold uppercase leading-tight tracking-wide text-guest-text sm:text-2xl md:text-3xl">
+                                    🔥TOP POPULAR
+                                </h2>
+                            </div>
+
+                            <GuestInput
+                                icon="search"
+                                solidIcon={true}
+                                type="text"
+                                placeholder="Mau Top Up Apa?"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                containerClassName="w-full sm:max-w-md"
+                            />
+                        </div>
 
                         <div className="flex w-full flex-col gap-3">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-guest-subtle">Filter Game</span>
                             <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
                                 {gameCategories.map((cat) => (
                                     <button
                                         key={cat.value}
                                         onClick={() => setSelectedCategory(cat.value)}
-                                        className={`flex-shrink-0 rounded-md px-5 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${selectedCategory === cat.value
-                                                ? 'bg-store-accent/15 text-store-accent-dark border border-store-accent shadow-sm'
-                                                : 'bg-white border border-guest-border text-guest-muted hover:border-guest-subtle shadow-sm'
+                                        className={`font-poppins flex-shrink-0 rounded-md px-5 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${selectedCategory === cat.value
+                                                ? 'bg-store-accent/15 text-black border border-store-accent shadow-sm'
+                                                : 'bg-white border border-guest-border text-black hover:border-guest-subtle shadow-sm'
                                             }`}
                                     >
                                         {cat.label}
@@ -252,18 +244,28 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                     </div>
 
                     {selectedCategory ? (
-                        filteredProducts.length > 0 ? (
-                            <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
-                                {filteredProducts.map((product) => (
-                                    <ProductCard key={product.id} product={product} />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="rounded-2xl bg-guest-surface py-16 text-center shadow-md sm:py-20">
-                                <AppIcons.boxes size={48} className="mx-auto mb-4 text-guest-subtle" />
-                                <p className="text-xs font-bold uppercase tracking-widest text-guest-muted">Stocking up catalogs...</p>
-                            </div>
-                        )
+                        <>
+                            {activeCategoryLabel && (
+                                <div className="mb-4 space-y-2">
+                                    <h3 className="font-poppins text-lg font-bold tracking-wide text-guest-text sm:text-xl uppercase">
+                                        {activeCategoryLabel?.toLowerCase() === '1 top' ? 'POPULER' : 'VOUCHER'} {activeCategoryLabel}
+                                    </h3>
+
+                                </div>
+                            )}
+                            {filteredProducts.length > 0 ? (
+                                <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
+                                    {filteredProducts.map((product) => (
+                                        <ProductCard key={product.id} product={product} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="rounded-2xl bg-guest-surface py-16 text-center shadow-md sm:py-20">
+                                    <AppIcons.boxes size={48} className="mx-auto mb-4 text-guest-subtle" />
+                                    <p className="text-xs font-bold uppercase tracking-widest text-guest-muted">Stocking up catalogs...</p>
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div className="rounded-2xl border-2 border-dashed border-guest-border py-16 text-center">
                             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-guest-elevated text-guest-subtle">
@@ -279,10 +281,10 @@ export default function Home({ products = [], banners = [], gameCategories = [],
             <section className="bg-white py-12 sm:py-14">
                 <div className="section-container">
                     <div className="mb-10 max-w-3xl">
-                        <h2 className="font-bebas text-2xl font-bold uppercase leading-tight text-guest-text sm:text-4xl md:text-5xl" style={{ letterSpacing: '0.01em' }}>
+                        <h2 className="text-[1.15rem] min-[380px]:text-xl font-bold uppercase leading-tight text-guest-text sm:text-4xl md:text-5xl whitespace-nowrap sm:whitespace-normal" style={{ letterSpacing: '0.01em' }}>
                             Belanja digital <span className="text-store-accent-dark">aman & cepat</span>
                         </h2>
-                        <p className="mt-3 text-sm font-normal leading-normal text-guest-muted sm:text-[15px]">
+                        <p className="mt-3 text-sm font-normal leading-normal text-black sm:text-[15px]">
                             Pembayaran terintegrasi, pengiriman key otomatis, dan tim siap membantu jika ada kendala — tanpa janji merek pihak ketiga yang tidak kami kelola.
                         </p>
                     </div>
@@ -296,12 +298,12 @@ export default function Home({ products = [], banners = [], gameCategories = [],
                         ].map((stat, i) => {
                             const StatIcon = AppIcons[stat.icon] ?? AppIcons.zap;
                             return (
-                                <div key={i} className="flex flex-col items-center rounded-2xl bg-guest-surface p-4 text-center shadow-md transition-all group-hover:shadow-lg sm:p-5 md:p-6">
-                                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-store-accent/10 text-store-accent-dark transition-transform group-hover:scale-110 sm:h-11 sm:w-11">
+                                <div key={i} className="group flex flex-col items-center rounded-2xl bg-[#1b5d20] p-4 text-center shadow-md transition-all hover:shadow-lg sm:p-5 md:p-6">
+                                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-white transition-transform group-hover:scale-110 sm:h-11 sm:w-11">
                                         <StatIcon size={22} />
                                     </div>
-                                    <span className="font-bebas text-2xl font-bold tracking-wide text-guest-text sm:text-3xl">{stat.value}</span>
-                                    <span className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-guest-subtle sm:text-xs">{stat.label}</span>
+                                    <span className="text-2xl font-bold tracking-wide text-white sm:text-3xl">{stat.value}</span>
+                                    <span className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-white/80 sm:text-xs">{stat.label}</span>
                                 </div>
                             );
                         })}

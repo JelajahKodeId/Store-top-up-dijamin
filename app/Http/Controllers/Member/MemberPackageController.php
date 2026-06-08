@@ -142,6 +142,11 @@ class MemberPackageController extends Controller
             }
         }
 
+        $manualPaymentDetails = null;
+        if ($upgrade && $upgrade->gateway === 'manual') {
+            $manualPaymentDetails = $upgrade->payload;
+        }
+
         return Inertia::render('Member/PackageStatus', [
             'upgrade' => [
                 'invoice_code' => $upgrade->invoice_code,
@@ -151,6 +156,7 @@ class MemberPackageController extends Controller
                 'status' => $upgrade->status,
                 'payment_url' => $upgrade->payment_url,
                 'pak_kasir_details' => $pakKasirDetails,
+                'manual_payment_details' => $manualPaymentDetails,
                 'payment_expired_at' => $upgrade->payment_expired_at?->toISOString(),
                 'created_at' => $upgrade->created_at->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
             ],

@@ -1,9 +1,102 @@
-import { Head, router, usePage, Link } from '@inertiajs/react';
+import { Head, router, usePage, Link, useForm } from '@inertiajs/react';
 import { useState, useEffect, useCallback } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { AppIcons } from '@/Components/shared/AppIcon';
 import Button from '@/Components/ui/Button';
+import GuestInput from '@/Components/guest/GuestInput';
 import { formatPrice, toWaLink, orderStatusConfig as statusConfig } from '@/utils/guest';
+
+function RatingPicker({ value, onChange, disabled }) {
+    const Star = AppIcons.star;
+    return (
+        <div className="flex flex-wrap items-center gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                    key={n}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onChange(n)}
+                    className="rounded-lg p-1.5 transition-colors hover:bg-zinc-100 disabled:opacity-40"
+                    aria-label={`${n} bintang`}
+                >
+                    <Star
+                        size={26}
+                        strokeWidth={2}
+                        className={value >= n ? 'fill-amber-500 text-amber-600' : 'fill-none text-zinc-400'}
+                    />
+                </button>
+            ))}
+        </div>
+    );
+}
+
+function ReviewForm({ productSlug, productName, invoiceCode, onSuccess }) {
+    const { data, setData, post, processing, errors } = useForm({
+        author_name: '',
+        rating: 5,
+        body: '',
+        invoice_code: invoiceCode,
+    });
+
+    const submit = (e) => {
+        e.preventDefault();
+        post(route('products.reviews.store', productSlug), {
+            preserveScroll: true,
+            onSuccess: () => onSuccess && onSuccess(),
+        });
+    };
+
+    return (
+        <div className="mt-2 space-y-4 rounded-xl border border-guest-border bg-white p-4">
+            <h4 className="text-xs font-bold uppercase tracking-wide text-zinc-900 mb-2">Ulasan: {productName}</h4>
+            {errors.invoice_code && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                    <p className="text-xs font-semibold text-red-700">{errors.invoice_code}</p>
+                </div>
+            )}
+            {errors.product_id && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                    <p className="text-xs font-semibold text-red-700">{errors.product_id}</p>
+                </div>
+            )}
+            <form onSubmit={submit} className="space-y-4">
+                <GuestInput
+                    label="Nama tampilan"
+                    icon="profile"
+                    type="text"
+                    value={data.author_name}
+                    onChange={(e) => setData('author_name', e.target.value)}
+                    error={errors.author_name}
+                    placeholder="Nama yang tampil di testimoni"
+                    required
+                />
+                <div className="space-y-2">
+                    <span className="ml-1 text-xs font-black uppercase tracking-wide text-zinc-800">Rating</span>
+                    <RatingPicker value={data.rating} onChange={(n) => setData('rating', n)} disabled={processing} />
+                    {errors.rating && <p className="ml-1 text-sm font-medium text-red-600">{errors.rating}</p>}
+                </div>
+                <GuestInput
+                    label="Testimoni"
+                    icon="pencil"
+                    type="textarea"
+                    rows={3}
+                    value={data.body}
+                    onChange={(e) => setData('body', e.target.value)}
+                    error={errors.body}
+                    placeholder="Ceritakan pengalaman Anda (minimal 10 karakter)."
+                    required
+                />
+                <button
+                    type="submit"
+                    disabled={processing}
+                    className="w-full rounded-xl bg-store-accent py-3.5 text-sm font-bold uppercase tracking-wide text-store-dark shadow-accent-glow transition-all hover:brightness-110 disabled:opacity-40"
+                >
+                    {processing ? 'Mengirim…' : 'Kirim testimoni'}
+                </button>
+            </form>
+        </div>
+    );
+}
 
 function CountdownTimer({ expiredAt }) {
     const [timeLeft, setTimeLeft] = useState('');
@@ -48,6 +141,7 @@ export default function OrderStatus({ order, flash, app_env }) {
     const shouldPoll = ['unpaid', 'paid'].includes(order.status);
     const [countdown, setCountdown] = useState(10);
     const [copiedKey, setCopiedKey] = useState(null);
+    const [isRedirecting, setIsRedirecting] = useState(false);
 
     const refresh = useCallback(() => {
         router.reload({ only: ['order'] });
@@ -77,6 +171,7 @@ export default function OrderStatus({ order, flash, app_env }) {
         if (flash?.whatsapp_url) {
             const redirectKey = `wa_sent_checkout_${order.invoice_code}`;
             if (!localStorage.getItem(redirectKey)) {
+                setIsRedirecting(true);
                 localStorage.setItem(redirectKey, '1');
                 window.location.href = flash.whatsapp_url;
             }
@@ -142,12 +237,35 @@ export default function OrderStatus({ order, flash, app_env }) {
                             </p>
                             <p className="text-[10px] font-medium leading-normal text-guest-muted">
                                 Sesi bayar tidak bisa dibuka (misalnya kunci Midtrans atau URL pembayaran kosong). Simpan invoice{' '}
-                                <span className="font-mono text-guest-text">{order.invoice_code}</span> dan hubungi CS bantuan.
+                                <span className=" text-guest-text">{order.invoice_code}</span> dan hubungi CS bantuan.
                             </p>
                         </div>
                     )}
 
-                    {/* Status Hero Card */}
+                    {isRedirecting ? (
+                        <div className="flex flex-col items-center justify-center space-y-6 rounded-2xl border border-store-accent/30 bg-guest-surface p-10 shadow-soft text-center">
+                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-50">
+                                <AppIcons.whatsapp size={40} className="text-green-500 animate-pulse" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-bold tracking-wide text-guest-text">
+                                    Mengarahkan ke WhatsApp...
+                                </h3>
+                                <p className="text-sm font-medium leading-relaxed text-guest-muted max-w-sm mx-auto">
+                                    Silakan kirim pesan WhatsApp otomatis untuk melanjutkan pembayaran Anda.
+                                </p>
+                            </div>
+                            <div className="pt-4">
+                                <a href={flash.whatsapp_url} target="_blank" rel="noopener noreferrer">
+                                    <Button variant="accent" className="rounded-xl px-8 py-3.5 text-xs font-bold uppercase tracking-widest shadow-lg shadow-store-accent/20">
+                                        Buka WhatsApp Sekarang
+                                    </Button>
+                                </a>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Status Hero Card */}
                     <div className={`relative overflow-hidden rounded-2xl border p-5 shadow-soft sm:p-6 md:p-7 ${cfg.bg} ${cfg.border}`}>
                         <div className={`pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full blur-[80px] opacity-25 ${cfg.dot}`} />
                         <div className="relative z-10 flex items-start gap-5">
@@ -211,7 +329,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                                                     <div className="space-y-2">
                                                         {item.keys.map((k, kIdx) => (
                                                             <div key={kIdx} className="group relative flex items-center justify-between gap-3 rounded-xl border border-guest-border bg-guest-elevated p-3 transition-all hover:border-green-300 hover:bg-green-50/50">
-                                                                <code className="min-w-0 flex-1 break-all font-mono text-xs font-bold tracking-wider text-guest-text">
+                                                                <code className="min-w-0 flex-1 break-all  text-xs font-bold tracking-wider text-guest-text">
                                                                     {k.key}
                                                                 </code>
                                                                 <button
@@ -242,39 +360,41 @@ export default function OrderStatus({ order, flash, app_env }) {
                                 </div>
 
 
-                                {(() => {
-                                    const seen = new Set();
-                                    const rows = (order.items ?? []).filter((it) => {
-                                        if (!it.product_slug || seen.has(it.product_slug)) return false;
-                                        seen.add(it.product_slug);
-                                        return true;
-                                    });
-                                    if (!rows.length) return null;
-                                    return (
-                                        <div className="mt-5 space-y-3 rounded-2xl border border-guest-border bg-guest-surface p-4">
-                                            <p className="text-sm font-semibold text-guest-text">Beri ulasan pembelian</p>
-                                            <p className="text-sm leading-normal text-guest-muted">
-                                                Bagikan rating untuk produk yang Anda beli. Invoice Anda sudah terisi otomatis di form.
-                                            </p>
-                                            <div className="flex flex-col gap-2">
-                                                {rows.map((it) => (
-                                                    <Link
-                                                        key={it.product_slug}
-                                                        href={`/products/${it.product_slug}?invoice=${encodeURIComponent(order.invoice_code)}`}
-                                                        className="flex items-center justify-center gap-2 rounded-xl bg-store-accent/15 px-4 py-3 text-sm font-semibold text-amber-950 transition-colors hover:bg-store-accent/25"
-                                                    >
-                                                        <AppIcons.star size={16} className="shrink-0 text-amber-600" strokeWidth={2.5} />
-                                                        <span className="truncate">Ulasan: {it.product_name}</span>
-                                                        <AppIcons.arrowRight size={14} className="shrink-0" strokeWidth={2.5} />
-                                                    </Link>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
                             </div>
                         </div>
                     )}
+
+                    {/* Form Ulasan Pembelian */}
+                    {isPaidOrSuccess && (() => {
+                        const seen = new Set();
+                        const rows = (order.items ?? []).filter((it) => {
+                            if (!it.product_slug || seen.has(it.product_slug)) return false;
+                            seen.add(it.product_slug);
+                            return true;
+                        });
+                        if (!rows.length) return null;
+                        return (
+                            <div className="space-y-3 rounded-2xl border border-guest-border bg-guest-surface p-5 shadow-soft">
+                                <div>
+                                    <p className="text-sm font-bold text-guest-text">Beri ulasan pembelian</p>
+                                    <p className="mt-0.5 text-[10px] font-medium leading-normal text-guest-muted">
+                                        Bagikan pengalaman Anda. Nomor Invoice sudah terisi otomatis.
+                                    </p>
+                                </div>
+                                <div className="flex flex-col gap-4">
+                                    {rows.map((it) => (
+                                        <ReviewForm 
+                                            key={it.product_slug}
+                                            productSlug={it.product_slug}
+                                            productName={it.product_name}
+                                            invoiceCode={order.invoice_code}
+                                            onSuccess={() => alert('Terima kasih atas ulasan Anda!')}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {/* Invoice & Info */}
                     <div className="overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
@@ -282,7 +402,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                         <div className="flex items-center justify-between gap-3 border-b border-guest-border bg-guest-elevated px-4 py-3 sm:px-5 sm:py-4">
                             <div>
                                 <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-guest-subtle">Nomor Invoice</p>
-                                <p className="font-bebas text-lg font-bold tracking-wide text-guest-text">{order.invoice_code}</p>
+                                <p className="text-lg font-bold tracking-wide text-guest-text">{order.invoice_code}</p>
                             </div>
                             <div className="text-right">
                                 <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-guest-subtle">Tanggal</p>
@@ -295,7 +415,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                             {order.whatsapp && (
                                 <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5 sm:py-3">
                                     <span className="flex-shrink-0 text-sm font-bold uppercase tracking-wide text-guest-subtle">WhatsApp</span>
-                                    <span className="font-mono text-xs font-bold text-guest-text">{order.whatsapp}</span>
+                                    <span className=" text-xs font-bold text-guest-text">{order.whatsapp}</span>
                                 </div>
                             )}
                             {order.customer_name && (
@@ -316,7 +436,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                             {order.payment_gateway && (
                                 <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:gap-4 sm:px-5 sm:py-3">
                                     <span className="flex-shrink-0 text-sm font-bold uppercase tracking-wide text-guest-subtle">Gateway</span>
-                                    <span className="font-mono text-[10px] font-bold uppercase text-guest-muted">{order.payment_gateway}</span>
+                                    <span className=" text-[10px] font-bold uppercase text-guest-muted">{order.payment_gateway}</span>
                                 </div>
                             )}
                         </div>
@@ -336,7 +456,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                                         {item.duration_name} × {item.quantity}
                                     </p>
                                 </div>
-                                <p className="flex-shrink-0 font-bebas text-sm font-bold text-store-accent">
+                                <p className="flex-shrink-0 text-sm font-bold text-store-accent">
                                     {formatPrice(item.price * item.quantity)}
                                 </p>
                             </div>
@@ -354,7 +474,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                             )}
                             <div className="flex items-center justify-between">
                                 <p className="text-sm font-bold uppercase tracking-wide text-guest-subtle">Total Pembayaran</p>
-                                <p className="font-bebas text-xl font-bold text-store-accent">{formatPrice(order.total_price)}</p>
+                                <p className="text-xl font-bold text-store-accent">{formatPrice(order.total_price)}</p>
                             </div>
                         </div>
                     </div>
@@ -442,7 +562,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                                                 Nomor {order.pak_kasir_details.method?.toUpperCase() || 'VA'}
                                             </p>
                                             <div className="flex items-center justify-between gap-4">
-                                                <p className="break-all font-mono text-2xl font-bold leading-tight tracking-wider text-guest-text">
+                                                <p className="break-all  text-2xl font-bold leading-tight tracking-wider text-guest-text">
                                                     {order.pak_kasir_details.number}
                                                 </p>
                                                 <button
@@ -465,11 +585,89 @@ export default function OrderStatus({ order, flash, app_env }) {
                                         <div className="rounded-2xl border border-guest-border bg-guest-elevated p-4">
                                             <div className="flex items-center justify-between">
                                                 <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Total Bayar</p>
-                                                <p className="font-bebas text-lg font-bold text-store-accent">{formatPrice(order.pak_kasir_details.total_payment)}</p>
+                                                <p className="text-lg font-bold text-store-accent">{formatPrice(order.pak_kasir_details.total_payment)}</p>
                                             </div>
                                         </div>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Manual Payment Details */}
+                    {order.status === 'unpaid' && !isExpired && order.manual_payment_details && (
+                        <div className="relative space-y-5 overflow-hidden rounded-2xl border border-guest-border bg-guest-surface p-6 shadow-soft">
+                            <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-full bg-store-accent/15 blur-[60px]" />
+
+                            <div className="relative z-10">
+                                <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-store-accent">
+                                    Instruksi Pembayaran Manual
+                                </p>
+
+                                <div className="space-y-4">
+                                    {order.manual_payment_details.account_number && (
+                                        <div className="group space-y-1.5 rounded-2xl border border-guest-border bg-guest-elevated p-5">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">
+                                                Nomor Rekening / Akun {order.manual_payment_details.name}
+                                            </p>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div>
+                                                    <p className="break-all  text-2xl font-bold leading-tight tracking-wider text-guest-text">
+                                                        {order.manual_payment_details.account_number}
+                                                    </p>
+                                                    {order.manual_payment_details.account_name && (
+                                                        <p className="text-sm font-bold text-guest-muted mt-1 uppercase tracking-wide">
+                                                            a.n {order.manual_payment_details.account_name}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const el = document.createElement('textarea');
+                                                        el.value = order.manual_payment_details.account_number;
+                                                        document.body.appendChild(el);
+                                                        el.select();
+                                                        document.execCommand('copy');
+                                                        document.body.removeChild(el);
+                                                        alert('Nomor berhasil disalin!');
+                                                    }}
+                                                    className="flex-shrink-0 rounded-xl border border-guest-border bg-guest-surface p-3 text-guest-muted transition-all hover:border-store-accent hover:bg-store-accent hover:text-store-dark active:scale-95"
+                                                >
+                                                    <AppIcons.copy size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {order.manual_payment_details.instructions && (
+                                        <div className="rounded-2xl border border-guest-border bg-guest-elevated p-5">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle mb-2">Instruksi</p>
+                                            <p className="text-sm font-medium leading-relaxed text-guest-text whitespace-pre-line">
+                                                {order.manual_payment_details.instructions}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div className="rounded-2xl border border-guest-border bg-guest-elevated p-4">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Total Bayar</p>
+                                            <p className="text-lg font-bold text-store-accent">{formatPrice(order.total_price)}</p>
+                                        </div>
+                                    </div>
+
+                                    {csWaLink && (
+                                        <a
+                                            href={`${csWaLink}?text=${encodeURIComponent(`Halo min, saya mau konfirmasi pembayaran manual untuk pesanan ${order.invoice_code} senilai ${formatPrice(order.total_price)} via ${order.manual_payment_details.name}. Ini bukti transfernya:`)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block"
+                                        >
+                                            <Button variant="accent" className="w-full py-4 rounded-xl text-xs font-bold uppercase tracking-[0.1em] flex items-center justify-center gap-2">
+                                                <AppIcons.whatsapp size={16} /> Konfirmasi via WhatsApp
+                                            </Button>
+                                        </a>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -566,6 +764,8 @@ export default function OrderStatus({ order, flash, app_env }) {
                                 <span className="text-guest-text">{order.invoice_code}</span>
                             </p>
                         </div>
+                    )}
+                        </>
                     )}
                 </div>
             </div>

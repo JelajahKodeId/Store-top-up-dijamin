@@ -65,7 +65,7 @@ export default function GuestNavbar({ memberArea = false }) {
                             href={inMemberArea && isMember ? route('member.home') : '/'}
                             size="lg"
                             theme="dark"
-                            subtitle="Layanan Voucher Game & Media Sosial"
+                            subtitle="Layanan Voucher Game, Media Sosial"
                         />
 
                         {!(inMemberArea && isMember) && (

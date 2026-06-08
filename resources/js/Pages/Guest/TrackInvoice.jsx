@@ -33,7 +33,7 @@ export default function TrackInvoice({ not_found = false, search_invoice = '' })
                                     <AppIcons.search size={21} strokeWidth={2.5} className="text-store-accent" />
                                 </div>
                                 <div>
-                                    <h2 className="font-bebas text-2xl font-bold uppercase tracking-wide text-guest-text">
+                                    <h2 className="text-2xl font-bold uppercase tracking-wide text-guest-text">
                                         Lacak Pesanan
                                     </h2>
                                     <p className="mt-0.5 text-xs font-bold uppercase tracking-wide text-guest-subtle">
@@ -104,13 +104,13 @@ export default function TrackInvoice({ not_found = false, search_invoice = '' })
                             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-red-200 bg-red-50 text-red-600">
                                 <AppIcons.help size={26} strokeWidth={2} />
                             </div>
-                            <h3 className="mb-1 font-bebas text-xl font-bold uppercase tracking-wide text-guest-text">
+                            <h3 className="mb-1 text-xl font-bold uppercase tracking-wide text-guest-text">
                                 Invoice Tidak Ditemukan
                             </h3>
                             <p className="mb-1 text-xs font-bold uppercase tracking-wide text-guest-subtle">
                                 Tidak ada pesanan dengan invoice
                             </p>
-                            <p className="font-mono text-sm font-bold text-guest-muted">{search_invoice}</p>
+                            <p className=" text-sm font-bold text-guest-muted">{search_invoice}</p>
                             <p className="mt-2 text-xs font-medium leading-normal text-guest-muted">
                                 Pastikan nomor invoice yang dimasukkan benar dan lengkap.
                             </p>

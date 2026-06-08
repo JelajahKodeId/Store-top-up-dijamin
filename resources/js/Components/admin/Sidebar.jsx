@@ -20,6 +20,11 @@ const navItems = [
                 route: 'admin.products.index',
                 icon: 'products',
             },
+            {
+                label: 'Game Footer',
+                route: 'admin.game-footers.index',
+                icon: 'image',
+            },
         ],
     },
     {
@@ -54,6 +59,11 @@ const navItems = [
                 label: 'Pengaturan Situs',
                 route: 'admin.settings.index',
                 icon: 'settings',
+            },
+            {
+                label: 'Metode Pembayaran',
+                route: 'admin.manual-payment-methods.index',
+                icon: 'orders',
             },
 
             {

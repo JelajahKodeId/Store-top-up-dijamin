@@ -1,10 +1,12 @@
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { AppIcons } from '@/Components/shared/AppIcon';
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, Fragment } from 'react';
+import { Popover, Transition, Disclosure } from '@headlessui/react';
 import { createPortal } from 'react-dom';
+import DOMPurify from 'dompurify';
 import GuestInput from '@/Components/guest/GuestInput';
-import { formatPrice, formatSoldCount, productImageSrc } from '@/utils/guest';
+import { formatPrice, formatSoldCount, productImageSrc, productBannerImageSrc } from '@/utils/guest';
 
 function fieldIcon(field) {
     const n = (field.name || field.label || '').toLowerCase();
@@ -97,6 +99,14 @@ function ReviewCard({ review }) {
                         {review.created_at && (
                             <span className="text-xs font-medium text-zinc-500">· {review.created_at}</span>
                         )}
+                        {review.product?.name && (
+                            <>
+                                <span className="text-xs font-medium text-zinc-300">|</span>
+                                <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">
+                                    {review.product.name}
+                                </span>
+                            </>
+                        )}
                     </div>
                     <p className="mt-2 text-sm leading-normal text-zinc-800 sm:text-[15px]">{review.body}</p>
                 </div>
@@ -110,7 +120,7 @@ function ConfirmRow({ label, value, mono = false, accent = false }) {
     return (
         <div className="flex flex-col gap-1 border-b border-guest-border py-2.5 last:border-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <span className="shrink-0 pt-0.5 text-xs font-semibold uppercase tracking-wide text-guest-subtle">{label}</span>
-            <span className={`break-words text-sm font-semibold leading-snug sm:max-w-[65%] sm:text-right ${mono ? 'font-mono' : ''} ${accent ? 'text-store-accent' : 'text-guest-text'}`}>
+            <span className={`break-words text-sm font-semibold leading-snug sm:max-w-[65%] sm:text-right ${mono ? '' : ''} ${accent ? 'text-store-accent' : 'text-guest-text'}`}>
                 {value || <span className="italic text-guest-subtle">-</span>}
             </span>
         </div>
@@ -179,7 +189,7 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                 {/* Header */}
                 <div className="flex shrink-0 items-center justify-between border-b border-guest-border bg-guest-elevated px-5 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-5">
                     <div className="min-w-0 pr-2">
-                        <h3 id="confirm-order-title" className="font-bebas text-xl font-bold uppercase tracking-wide text-guest-text">
+                        <h3 id="confirm-order-title" className="text-xl font-bold uppercase tracking-wide text-guest-text">
                             Konfirmasi Pesanan
                         </h3>
                         <p className="mt-0.5 text-sm font-bold uppercase tracking-wide text-guest-subtle">
@@ -199,11 +209,11 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 py-2 [-webkit-overflow-scrolling:touch] sm:px-6">
                     <div className="border-b border-guest-border py-3">
                         <p className="mb-1 text-xs font-bold uppercase tracking-wide text-guest-subtle">Produk</p>
-                        <p className="font-bebas text-base font-bold tracking-wide text-guest-text">{product.name}</p>
+                        <p className="text-base font-bold tracking-wide text-guest-text">{product.name}</p>
                     </div>
                     <ConfirmRow label="Layanan" value={selectedDuration?.name} />
                     <ConfirmRow label="Durasi" value={selectedDuration ? (selectedDuration.duration_days > 0 ? `${selectedDuration.duration_days} Hari` : 'Seumur Hidup') : '-'} />
-                    <ConfirmRow label="WhatsApp" value={data.whatsapp} mono />
+                    <ConfirmRow label="WhatsApp" value={`${data.countryCode}${data.whatsapp.replace(/^0+/, '')}`} mono />
                     <ConfirmRow label="Bayar Via" value={paymentLabel} />
                     {(product.fields || []).length > 0 && (
                         <>
@@ -228,20 +238,20 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                             <>
                                 <div className="flex items-center justify-between">
                                     <span className="flex items-center gap-1 text-sm font-bold uppercase tracking-wide text-green-700">
-                                        <AppIcons.tag size={9} /> Voucher <span className="font-mono">{data.voucher_code}</span>
+                                        <AppIcons.tag size={9} /> Voucher <span className="">{data.voucher_code}</span>
                                     </span>
                                     <span className="text-xs font-bold text-green-700">-{formatPrice(discountAmount)}</span>
                                 </div>
                                 <div className="flex items-center justify-between border-t border-guest-border pt-1.5">
                                     <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Total Bayar</span>
-                                    <span className="font-bebas text-xl font-bold text-store-accent">{formatPrice(finalPrice)}</span>
+                                    <span className="text-xl font-bold text-store-accent">{formatPrice(finalPrice)}</span>
                                 </div>
                             </>
                         )}
                         {!hasDiscount && (
                             <div className="flex items-center justify-between border-t border-guest-border pt-1.5">
                                 <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Total Bayar</span>
-                                <span className="font-bebas text-xl font-bold text-store-accent">{formatPrice(basePrice)}</span>
+                                <span className="text-xl font-bold text-store-accent">{formatPrice(basePrice)}</span>
                             </div>
                         )}
                     </div>
@@ -265,12 +275,12 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                             type="button"
                             onClick={onConfirm}
                             disabled={processing}
-                            className="flex items-center justify-center gap-2 rounded-xl bg-store-accent py-3.5 text-sm font-bold uppercase tracking-wide text-store-dark shadow-accent-glow transition-all hover:brightness-110 disabled:opacity-40"
+                            className="flex items-center justify-center gap-2 rounded-xl bg-store-accent py-3.5 text-[15px] font-semibold text-store-dark shadow-accent-glow transition-all hover:brightness-110 disabled:opacity-40"
                         >
                             {processing ? (
                                 <><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" /> Memproses...</>
                             ) : (
-                                <><AppIcons.listChecks size={13} strokeWidth={3} /> Konfirmasi & Bayar</>
+                                <>Konfirmasi & Bayar</>
                             )}
                         </button>
                     </div>
@@ -297,7 +307,7 @@ function StepHeader({ step, icon, title, subtitle, color = 'accent' }) {
             </div>
             <div>
                 <span className="text-xs font-black uppercase tracking-[0.25em] text-guest-subtle">Langkah {step}</span>
-                <h3 className="font-bebas text-base font-bold uppercase leading-tight tracking-wide text-guest-text">{title}</h3>
+                <h3 className="text-base font-bold uppercase leading-tight tracking-wide text-guest-text">{title}</h3>
                 {subtitle && <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">{subtitle}</p>}
             </div>
         </div>
@@ -311,7 +321,7 @@ function RelatedProductRow({ product }) {
     const hasMultiple = (product.durations?.length ?? 0) > 1;
     const inStock = (product.total_available_count ?? 0) > 0 || product.durations?.some(d => (d.available_keys_count ?? 0) > 0);
     const href = route('products.show.public', product.slug);
-    const soldLabel = formatSoldCount(product.sold_count);
+    const soldLabel = formatSoldCount(Number(product.sold_count || 0) + Number(product.fake_sold_count || 0));
 
     return (
         <Link
@@ -336,7 +346,7 @@ function RelatedProductRow({ product }) {
                 </p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                     {lowestPrice > 0 ? (
-                        <p className="font-bebas text-sm font-bold leading-none text-store-accent">
+                        <p className="text-sm font-bold leading-none text-store-accent">
                             {hasMultiple && <span className="mr-0.5 font-sans text-[10px] font-semibold normal-case text-guest-subtle">dari </span>}
                             {formatPrice(lowestPrice)}
                         </p>
@@ -373,6 +383,72 @@ function InfoPill({ icon, label }) {
 }
 
 // ── Main Page ────────────────────────────────────────────────────────────────
+function CountrySelector({ value, onChange, countries, className = '' }) {
+    const [search, setSearch] = useState('');
+    const selected = countries.find(c => c.dial_code === value) || { flag: '🇮🇩', dial_code: '+62' };
+    
+    const filtered = countries.filter(c => 
+        c.name.toLowerCase().includes(search.toLowerCase()) || 
+        c.dial_code.includes(search)
+    );
+
+    return (
+        <Popover className="relative h-full w-full">
+            {({ open, close }) => (
+                <>
+                    <Popover.Button className={`h-full w-full flex items-center justify-between rounded-md border border-guest-border bg-white py-3 pl-3 pr-2 text-sm font-medium text-guest-text shadow-sm outline-none transition-all hover:bg-guest-surface focus:border-store-accent/50 focus:ring-2 focus:ring-store-accent/15 ${className}`}>
+                        <span className="flex-1 text-left">{selected.flag} {selected.dial_code}</span>
+                        <AppIcons.chevronDown size={14} className="text-guest-subtle flex-shrink-0" />
+                    </Popover.Button>
+                    <Transition
+                        as={Fragment}
+                        enter="transition ease-out duration-100"
+                        enterFrom="transform opacity-0 scale-95"
+                        enterTo="transform opacity-100 scale-100"
+                        leave="transition ease-in duration-75"
+                        leaveFrom="transform opacity-100 scale-100"
+                        leaveTo="transform opacity-0 scale-95"
+                    >
+                        <Popover.Panel className="absolute z-50 mt-1 w-64 rounded-xl border border-guest-border bg-white p-2 shadow-lg sm:w-72 left-0 max-h-[300px] flex flex-col">
+                            <div className="mb-2">
+                                <input
+                                    type="text"
+                                    placeholder="Cari negara (ex: Malaysia, +60)"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full rounded-md border border-guest-border py-2 px-3 text-sm outline-none focus:border-store-accent focus:ring-1 focus:ring-store-accent"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </div>
+                            <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                {filtered.length === 0 ? (
+                                    <div className="p-2 text-xs text-guest-subtle text-center">Tidak ditemukan</div>
+                                ) : (
+                                    filtered.map(c => (
+                                        <button
+                                            key={c.code}
+                                            type="button"
+                                            onClick={() => {
+                                                onChange(c.dial_code);
+                                                close();
+                                                setSearch('');
+                                            }}
+                                            className="w-full flex items-center justify-between rounded-md p-2 text-left text-sm hover:bg-guest-elevated transition-colors"
+                                        >
+                                            <span className="truncate pr-2">{c.flag} {c.name}</span>
+                                            <span className="text-guest-subtle  text-xs flex-shrink-0">{c.dial_code}</span>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        </Popover.Panel>
+                    </Transition>
+                </>
+            )}
+        </Popover>
+    );
+}
+
 export default function ProductDetail({
     product,
     related = [],
@@ -380,12 +456,23 @@ export default function ProductDetail({
     checkoutGateway = 'mock',
     midtransSandboxMode = false,
     reviewInvoice = null,
+    testimonials = [],
 }) {
     const { auth, flash, site } = usePage().props;
     const isResellerEligible = Number(auth?.user?.member_level ?? 0) >= 2;
-    const reviews = product.reviews ?? [];
+    const reviews = testimonials ?? [];
     const [showAllReviews, setShowAllReviews] = useState(false);
     const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 5);
+    const [countries, setCountries] = useState([]);
+
+    useEffect(() => {
+        fetch('/api/countries')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setCountries(data);
+            })
+            .catch(() => {});
+    }, []);
 
     const reviewAvg = useMemo(() => {
         if (!reviews.length) return null;
@@ -471,6 +558,42 @@ export default function ProductDetail({
         }
         return methods;
     }, [basePaymentMethods, auth?.user]);
+
+    const PAYMENT_GROUPS = useMemo(() => {
+        const groups = {
+            'Saldo Akun': [],
+            'QRIS': [],
+            'Bank / Virtual Account': [],
+            'E-Wallet': [],
+            'Minimarket': [],
+            'International Payment': [],
+            'Lainnya': []
+        };
+
+        PAYMENT_METHODS.forEach(method => {
+            if (method.is_balance) {
+                groups['Saldo Akun'].push(method);
+            } else if (method.code.toLowerCase().startsWith('manual_')) {
+                groups['International Payment'].push(method);
+            } else {
+                const c = method.code.toLowerCase();
+                const l = method.label.toLowerCase();
+                if (c.includes('qris') || l.includes('qris')) {
+                    groups['QRIS'].push(method);
+                } else if (c.includes('bca') || c.includes('bni') || c.includes('bri') || c.includes('mandiri') || c.includes('cimb') || c.includes('permata') || c.includes('maybank') || c.includes('neo') || c.includes('bnc') || c.includes('artha') || c.includes('sampoerna') || c.includes('bank') || c.includes('va') || l.includes('va') || l.includes('bank')) {
+                    groups['Bank / Virtual Account'].push(method);
+                } else if (c.includes('dana') || c.includes('ovo') || c.includes('shopee') || c.includes('linkaja') || c.includes('gopay')) {
+                    groups['E-Wallet'].push(method);
+                } else if (c.includes('alfa') || c.includes('indo')) {
+                    groups['Minimarket'].push(method);
+                } else {
+                    groups['Lainnya'].push(method);
+                }
+            }
+        });
+
+        return Object.entries(groups).filter(([_, methods]) => methods.length > 0);
+    }, [PAYMENT_METHODS]);
     const [selectedDuration, setSelectedDuration] = useState(null);
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -491,14 +614,20 @@ export default function ProductDetail({
         return obj;
     };
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, transform } = useForm({
         product_id: product.id,
         duration_id: '',
+        countryCode: '+62',
         whatsapp: '',
         payment_method: PAYMENT_METHODS[0]?.code ?? '',
         voucher_code: '',
         fields: buildInitialFields(),
     });
+
+    transform((data) => ({
+        ...data,
+        whatsapp: data.countryCode + data.whatsapp.replace(/^0+/, ''),
+    }));
 
     const handleSelectDuration = (d) => {
         if (d.available_keys_count === 0) return;
@@ -527,7 +656,8 @@ export default function ProductDetail({
                     code, 
                     price: (isResellerEligible && selectedDuration.reseller_price !== null) 
                         ? selectedDuration.reseller_price 
-                        : selectedDuration.price 
+                        : selectedDuration.price,
+                    product_id: product.id
                 }),
             });
             const json = await res.json();
@@ -574,50 +704,26 @@ export default function ProductDetail({
         const reseller = d.reseller_price !== null ? Number(d.reseller_price) : null;
         return (isResellerEligible && reseller !== null) ? reseller : base;
     }).filter(p => p > 0) ?? [0]));
-    const soldDisplay = formatSoldCount(product.sold_count);
+    const soldDisplay = formatSoldCount(Number(product.sold_count || 0) + Number(product.fake_sold_count || 0));
 
-    const relatedBlock = related.length > 0 ? (
-        <section aria-labelledby="related-products-title" className="overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-guest-border bg-guest-elevated px-4 py-3 sm:px-5">
-                <h2 id="related-products-title" className="flex items-center gap-2 font-bebas text-lg font-bold uppercase tracking-wide text-guest-text">
-                    <AppIcons.layers size={14} className="text-guest-subtle" />
-                    Produk lainnya
-                </h2>
-                <Link
-                    href={route('catalog')}
-                    className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-guest-muted transition-colors hover:text-store-accent sm:text-xs"
-                >
-                    Lihat semua <AppIcons.arrowRight size={9} />
-                </Link>
-            </div>
-            <div className="divide-y divide-guest-border">
-                {related.map((rp) => (
-                    <RelatedProductRow key={rp.id} product={rp} />
-                ))}
-            </div>
-        </section>
-    ) : null;
+
 
     const reviewsBlock = (
         <section id="ulasan-pembeli" className="scroll-mt-28 overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
             <div className="border-b border-guest-border bg-guest-elevated px-4 py-2.5 sm:px-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h2 className="flex items-center gap-2 font-bebas text-base font-bold uppercase tracking-wide text-guest-text sm:text-lg">
+                    <h2 className="flex items-center gap-2 text-base font-bold uppercase tracking-wide text-guest-text sm:text-lg">
                         <AppIcons.star size={14} strokeWidth={2} className="text-amber-500" />
-                        Ulasan pembeli
+                        Testimoni pembeli
                     </h2>
-                    {reviews.length > 0 ? (
-                        <span className="text-xs font-bold uppercase tracking-wide text-guest-muted">
-                            {reviews.length} ulasan
-                        </span>
-                    ) : (
+                    {reviews.length === 0 && (
                         <span className="text-xs font-semibold text-guest-muted">Belum ada</span>
                     )}
                 </div>
             </div>
             <div className="p-4 sm:p-5">
                 <p className="mb-4 text-sm leading-normal text-zinc-600 sm:text-[15px]">
-                    Nama penulis, nilai bintang, dan teks ulasan ditampilkan di bawah. Menulis ulasan hanya untuk pesanan{' '}
+                    Nama penulis, nilai bintang, dan teks testimoni ditampilkan di bawah. Menulis testimoni hanya untuk pesanan{' '}
                     <strong className="font-bold text-zinc-900">berhasil (selesai)</strong>
                     — dari halaman status pesanan atau form di bawah.
                 </p>
@@ -635,13 +741,13 @@ export default function ProductDetail({
                                 onClick={() => setShowAllReviews(true)}
                                 className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl border border-guest-border bg-guest-elevated py-3 text-sm font-bold uppercase tracking-wide text-guest-muted transition-all hover:bg-guest-surface hover:text-guest-text"
                             >
-                                Lihat semua ({reviews.length}) ulasan
+                                Lihat semua testimoni
                                 <AppIcons.chevronDown size={14} />
                             </button>
                         )}
                     </>
                 ) : (
-                    <p className="mb-6 text-sm font-medium text-zinc-700">Belum ada ulasan untuk produk ini.</p>
+                    <p className="mb-6 text-sm font-medium text-zinc-700">Belum ada testimoni.</p>
                 )}
 
                 {!showReviewForm && (
@@ -654,13 +760,13 @@ export default function ProductDetail({
                             className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white shadow-sm transition-all hover:bg-zinc-800 sm:mt-4 sm:px-5 sm:py-3 sm:text-sm"
                         >
                             <AppIcons.star size={15} strokeWidth={2} className="text-amber-300" />
-                            Tulis ulasan (pembeli)
+                            Tulis testimoni
                         </button>
                     </div>
                 )}
                 {showReviewForm && (
                     <p className="text-center text-xs font-medium text-zinc-600 sm:text-sm">
-                        Form ulasan ada di bagian bawah halaman.
+                        Form testimoni ada di bagian bawah halaman.
                         {!reviewInvoice && (
                             <button
                                 type="button"
@@ -680,7 +786,7 @@ export default function ProductDetail({
         <div ref={reviewFormAnchorRef} id="form-ulasan-pembeli" className="scroll-mt-28">
             <div className="overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
                 <div className="border-b border-guest-border bg-guest-elevated px-4 py-3 sm:px-5">
-                    <p className="text-xs font-black uppercase tracking-wide text-zinc-900">Form ulasan pembeli</p>
+                    <p className="text-xs font-black uppercase tracking-wide text-zinc-900">Form testimoni pembeli</p>
                 </div>
                 <form onSubmit={submitReview} className="space-y-4 p-4 sm:space-y-5 sm:p-5">
                     <GuestInput
@@ -700,7 +806,7 @@ export default function ProductDetail({
                         value={reviewForm.data.author_name}
                         onChange={(e) => reviewForm.setData('author_name', e.target.value)}
                         error={reviewForm.errors.author_name}
-                        placeholder="Nama yang tampil di ulasan"
+                        placeholder="Nama yang tampil di testimoni"
                         required
                     />
                     <div className="space-y-2">
@@ -715,7 +821,7 @@ export default function ProductDetail({
                         )}
                     </div>
                     <GuestInput
-                        label="Ulasan"
+                        label="Testimoni"
                         icon="pencil"
                         type="textarea"
                         rows={4}
@@ -730,7 +836,7 @@ export default function ProductDetail({
                         disabled={reviewForm.processing}
                         className="w-full rounded-xl bg-store-accent py-3.5 text-sm font-bold uppercase tracking-wide text-store-dark shadow-accent-glow transition-all hover:brightness-110 disabled:opacity-40 sm:py-4"
                     >
-                        {reviewForm.processing ? 'Mengirim…' : 'Kirim ulasan'}
+                        {reviewForm.processing ? 'Mengirim…' : 'Kirim testimoni'}
                     </button>
                 </form>
             </div>
@@ -779,95 +885,87 @@ export default function ProductDetail({
                     {/* ── Detail Produk: kiri desktop; atas mobile ──────── */}
                     <div className="w-full space-y-3 lg:w-72 lg:flex-shrink-0 xl:w-80">
 
-                        {/* Gambar — landscape di mobile, portrait di desktop */}
-                        <div className="group relative overflow-hidden rounded-2xl bg-guest-surface shadow-lg">
-                            {/* Mobile: header image landscape + nama overlay */}
-                            <div className="lg:hidden">
-                                <div className="relative h-36 overflow-hidden sm:h-44">
-                                    <img
-                                        src={productImageSrc(product) || PLACEHOLDER}
-                                        alt={product.name}
-                                        className="h-full w-full object-cover"
+                        {/* Gambar & Judul Mobile */}
+                        <div className="lg:hidden flex flex-col items-center mb-4">
+                            <div className="relative w-full aspect-[1165/515] rounded-lg shadow-lg">
+                                <img
+                                    src={productBannerImageSrc(product) || productImageSrc(product) || PLACEHOLDER}
+                                    alt={`${product.name} Banner`}
+                                    className="h-full w-full object-cover rounded-lg"
+                                    onError={(e) => { e.target.src = PLACEHOLDER; }}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent rounded-lg" />
+                                {!hasStock && (
+                                    <span className="absolute left-3 top-3 rounded-lg bg-red-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white">Habis</span>
+                                )}
+                                
+                                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-20 h-20 sm:w-24 sm:h-24 sm:-bottom-12 rounded-lg overflow-hidden shadow-md z-10">
+                                    <img 
+                                        src={productImageSrc(product) || PLACEHOLDER} 
+                                        alt={`${product.name} Icon`} 
+                                        className="w-full h-full object-cover rounded-lg"
                                         onError={(e) => { e.target.src = PLACEHOLDER; }}
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-                                    {!hasStock && (
-                                        <span className="absolute left-3 top-3 rounded-lg bg-red-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white">Habis</span>
-                                    )}
-                                </div>
-                                {/* Nama + harga di bawah gambar (dalam card) */}
-                                <div className="px-4 pb-4 pt-3">
-                                    <h1 className="mb-1 font-bebas text-2xl font-bold leading-tight tracking-wide text-guest-text">
-                                        {product.name}
-                                    </h1>
-                                    {lowestPrice > 0 && lowestPrice < Infinity && (
-                                        <div className="mb-3 flex items-baseline gap-2">
-                                            <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">
-                                                {(product.durations?.length ?? 0) > 1 ? 'Mulai dari' : 'Harga'}
-                                            </p>
-                                            <p className="font-bebas text-xl font-bold leading-none text-store-accent">
-                                                {formatPrice(lowestPrice)}
-                                            </p>
-                                        </div>
-                                    )}
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        {hasStock ? (
-                                            <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-green-700">
-                                                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
-                                                {totalStock} Tersedia
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-red-600">
-                                                <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Habis
-                                            </span>
-                                        )}
-                                        <InfoPill icon="orders" label={`${soldDisplay} terjual`} />
-                                        {product.platform_type && (
-                                            <InfoPill
-                                                icon={product.platform_type === 'ios' ? 'ios' : 'android'}
-                                                label={product.platform_type === 'both' ? 'Mobile' : product.platform_type}
-                                            />
-                                        )}
-                                        <InfoPill icon="speed" label="Instan" />
-                                        <InfoPill icon="phone" label="Via WA" />
-                                        <InfoPill icon="shield" label="Aman" />
-                                    </div>
                                 </div>
                             </div>
+                            
+                            <div className="pt-14 sm:pt-16 flex flex-col items-center text-center px-4 w-full">
+                                <h1 className="mb-1 text-2xl sm:text-3xl font-bold leading-tight tracking-wide text-guest-text">
+                                    {product.name}
+                                </h1>
 
-                            {/* Desktop: tall portrait image */}
-                            <div className="hidden lg:block">
-                                <div className="aspect-[3/4] overflow-hidden">
-                                    <img
-                                        src={productImageSrc(product) || PLACEHOLDER}
-                                        alt={product.name}
-                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                        onError={(e) => { e.target.src = PLACEHOLDER; }}
-                                    />
+                            </div>
+                        </div>
+
+                        {/* Desktop: tall portrait image or banner + icon */}
+                        <div className="hidden lg:block relative group overflow-hidden rounded-lg bg-guest-surface shadow-lg">
+                            <div className="aspect-[1165/515] overflow-hidden">
+                                <img
+                                    src={productBannerImageSrc(product) || productImageSrc(product) || PLACEHOLDER}
+                                    alt={`${product.name} Banner`}
+                                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                    onError={(e) => { e.target.src = PLACEHOLDER; }}
+                                />
+                            </div>
+                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                                
+                                {/* Overlay Icon & Title on Desktop */}
+                                <div className="absolute bottom-0 left-0 w-full p-6 flex gap-4 items-end">
+                                    <div className="w-16 h-16 rounded-lg overflow-hidden shadow-md flex-shrink-0">
+                                        <img 
+                                            src={productImageSrc(product) || PLACEHOLDER} 
+                                            alt={`${product.name} Icon`} 
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => { e.target.src = PLACEHOLDER; }}
+                                        />
+                                    </div>
+                                    <div className="flex-1 pb-1">
+                                        <h1 className="text-3xl font-bold leading-none tracking-wide text-white drop-shadow-sm">
+                                            {product.name}
+                                        </h1>
+                                    </div>
                                 </div>
-                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
                                 {!hasStock && (
                                     <div className="absolute left-3 top-3">
                                         <span className="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white">Habis</span>
                                     </div>
                                 )}
                             </div>
-                        </div>
 
                         {/* Deskripsi */}
                         {product.description && (
                             <div className="rounded-2xl border border-guest-border bg-guest-surface p-4 shadow-soft">
                                 <div
                                     className="text-sm leading-normal text-guest-muted sm:text-[15px] [&_a]:text-store-accent [&_strong]:text-guest-text"
-                                    dangerouslySetInnerHTML={{ __html: product.description }}
+                                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description || '') }}
                                 />
                             </div>
                         )}
 
-                        {/* Ringkasan rating & WA — card kecil di bawah deskripsi */}
+                        {/* Ringkasan rating & WA — card kecil di bawah deskripsi (Hanya tampil di Desktop sekarang) */}
                         <div
-                            className={`grid gap-2 ${csWaHref ? 'grid-cols-2' : 'grid-cols-1'}`}
-                            aria-label="Ringkasan ulasan dan kontak"
+                            className={`hidden lg:grid gap-2 ${csWaHref ? 'grid-cols-2' : 'grid-cols-1'}`}
+                            aria-label="Ringkasan testimoni dan kontak"
                         >
                             <a
                                 href="#ulasan-pembeli"
@@ -877,7 +975,7 @@ export default function ProductDetail({
                                     <StarsDisplay rating={reviewAvg != null ? Math.round(reviewAvg) : 0} size={12} />
                                     {reviewAvg != null ? (
                                         <>
-                                            <span className="font-bebas text-base font-bold leading-none text-guest-text sm:text-lg">
+                                            <span className="text-base font-bold leading-none text-guest-text sm:text-lg">
                                                 {reviewAvg}
                                             </span>
                                             <span className="text-[10px] font-bold text-guest-muted">/5</span>
@@ -887,10 +985,10 @@ export default function ProductDetail({
                                     )}
                                 </div>
                                 <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-guest-subtle">
-                                    {reviews.length > 0 ? `${reviews.length} ulasan pembeli` : 'Belum ada ulasan'}
+                                    {reviews.length > 0 ? `${reviews.length} testimoni` : 'Belum ada testimoni'}
                                 </p>
                                 <p className="mt-0.5 flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-store-accent sm:text-[10px]">
-                                    Lihat ulasan
+                                    Lihat testimoni
                                     <AppIcons.arrowRight size={8} strokeWidth={3} className="transition-transform group-hover:translate-x-0.5" />
                                 </p>
                             </a>
@@ -923,15 +1021,15 @@ export default function ProductDetail({
                         </div>
 
                         {/* Info rows */}
-                        <div className="divide-y divide-guest-border overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
-                            {/* Mobile: 2×2 grid untuk 4 baris utama */}
+                        <div className="divide-y divide-guest-border overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft lg:mt-0 mt-4">
+                            {/* Mobile: 2×4 grid */}
                             <div className="grid grid-cols-2 divide-x divide-guest-border lg:hidden">
                                 <div className="flex items-center gap-2 px-3 py-2.5">
                                     <AppIcons.boxes size={12} className="flex-shrink-0 text-guest-subtle" />
                                     <div>
                                         <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Stok</p>
                                         {hasStock ? (
-                                            <p className="text-sm font-bold text-green-700">{totalStock} Lisensi</p>
+                                            <p className="text-sm font-bold text-green-700">Ready</p>
                                         ) : (
                                             <p className="text-sm font-bold text-red-600">Habis</p>
                                         )}
@@ -969,13 +1067,37 @@ export default function ProductDetail({
                                         </p>
                                     </div>
                                 </div>
-                                <div className="col-span-2 flex items-center gap-2 border-t border-guest-border px-3 py-2.5 lg:hidden">
+                                <a href="#ulasan-pembeli" className="flex items-center gap-2 border-t border-guest-border px-3 py-2.5 hover:bg-guest-elevated transition-colors">
+                                    <div className="flex-shrink-0 text-amber-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Ulasan</p>
+                                        <p className="text-sm font-bold text-guest-text">
+                                            {reviewAvg != null ? `${reviewAvg}/5` : 'Belum dinilai'}
+                                        </p>
+                                    </div>
+                                </a>
+                                <div className="flex items-center gap-2 border-t border-guest-border px-3 py-2.5">
                                     <AppIcons.orders size={12} className="flex-shrink-0 text-guest-subtle" />
                                     <div>
                                         <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Terjual</p>
                                         <p className="text-sm font-bold text-guest-text">{soldDisplay} unit selesai</p>
                                     </div>
                                 </div>
+                                {csWaHref ? (
+                                    <a href={csWaHref} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 border-t border-guest-border px-3 py-2.5 hover:bg-guest-elevated transition-colors">
+                                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#25D366] text-white">
+                                            <AppIcons.phone size={9} strokeWidth={2.5} />
+                                        </span>
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">WhatsApp</p>
+                                            <p className="text-sm font-bold text-guest-text">Tanya CS</p>
+                                        </div>
+                                    </a>
+                                ) : (
+                                    <div className="border-t border-guest-border px-3 py-2.5"></div>
+                                )}
                             </div>
 
                             {/* Desktop: list rows */}
@@ -986,10 +1108,7 @@ export default function ProductDetail({
                                         <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Stok</span>
                                     </div>
                                     {hasStock ? (
-                                        <div className="text-right">
-                                            <p className="text-base font-bold text-green-700">{totalStock} Lisensi</p>
-                                            <p className="text-xs font-bold uppercase text-guest-subtle">{activeDurationsCount} paket aktif</p>
-                                        </div>
+                                        <span className="text-sm font-bold text-green-700">Ready</span>
                                     ) : (
                                         <span className="text-sm font-bold text-red-600">Habis</span>
                                     )}
@@ -1035,29 +1154,7 @@ export default function ProductDetail({
                                 </div>
                             </div>
 
-                            {/* Ketersediaan paket — semua screen */}
-                            {product.durations && product.durations.length > 0 && (
-                                <div className="px-4 py-3">
-                                    <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-guest-subtle">
-                                        <AppIcons.layers size={10} /> Ketersediaan Paket
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 lg:grid-cols-1">
-                                        {product.durations.map(d => (
-                                            <div key={d.id} className="flex items-center justify-between">
-                                                <span className="max-w-[55%] truncate text-sm font-bold text-guest-muted">{d.name}</span>
-                                                {d.available_keys_count > 0 ? (
-                                                    <span className="flex items-center gap-1 text-xs font-bold text-green-700">
-                                                        <span className="h-1 w-1 rounded-full bg-green-500" />
-                                                        {d.available_keys_count} stok
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-xs font-bold text-red-600">Habis</span>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+
                         </div>
                     </div>
 
@@ -1110,38 +1207,36 @@ export default function ProductDetail({
                                             type="button"
                                             onClick={() => handleSelectDuration(duration)}
                                             disabled={outOfStock}
-                                            className={`rounded-xl border-2 p-2.5 text-left transition-all duration-200 ${outOfStock
+                                            className={`relative flex flex-col items-center justify-center rounded-md border-2 p-2.5 text-center transition-all duration-200 ${outOfStock
                                                     ? 'cursor-not-allowed border-guest-border bg-guest-elevated opacity-50'
                                                     : isSelected
                                                         ? 'border-store-accent bg-store-accent/10 shadow-accent-glow'
                                                         : 'border-guest-border bg-guest-elevated hover:border-guest-subtle hover:bg-guest-surface active:scale-[0.98]'
                                                 }`}
                                         >
-                                            <p className={`mb-0.5 truncate text-xs font-bold uppercase tracking-wide ${outOfStock ? 'text-guest-subtle' : isSelected ? 'text-store-accent' : 'text-guest-subtle'
-                                                }`}>
-                                                {duration.duration_days > 0 ? `${duration.duration_days}H` : 'Lifetime'}
-                                            </p>
-                                            <p className={`mb-1 truncate font-bebas text-xs font-bold uppercase leading-none ${outOfStock ? 'text-guest-subtle' : 'text-guest-text'
+                                            {isSelected && !outOfStock && (
+                                                <div className="absolute top-1.5 right-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-store-accent">
+                                                    <AppIcons.check size={8} strokeWidth={4} className="text-white" />
+                                                </div>
+                                            )}
+                                            {outOfStock && (
+                                                <div className="absolute top-1.5 right-1.5 rounded-sm bg-red-500/10 px-1 py-0.5">
+                                                    <span className="text-[6px] font-bold uppercase text-red-500">Habis</span>
+                                                </div>
+                                            )}
+
+                                            <p className={`mb-1 line-clamp-2 text-xs font-bold sm:text-sm ${outOfStock ? 'text-guest-subtle' : 'text-guest-text'
                                                 }`}>
                                                 {duration.name}
                                             </p>
-                                            <div className="flex items-center justify-between gap-1">
-                                                <div className="flex flex-col">
-                                                    <span className={`font-bebas text-xs font-bold leading-none ${outOfStock ? 'text-guest-subtle' : 'text-store-accent'}`}>
-                                                        {formatPrice((isResellerEligible && duration.reseller_price !== null && Number(duration.reseller_price) > 0) ? Number(duration.reseller_price) : Number(duration.price))}
-                                                    </span>
-                                                    {(isResellerEligible && duration.reseller_price !== null && Number(duration.reseller_price) > 0) && (
-                                                        <span className="mt-0.5 text-[6px] font-black uppercase tracking-wide text-sky-700">Reseller</span>
-                                                    )}
-                                                </div>
-                                                {isSelected && !outOfStock && <AppIcons.check size={10} strokeWidth={3} className="flex-shrink-0 text-store-accent" />}
-                                                {outOfStock && <span className="text-[6px] font-bold uppercase text-red-500">Habis</span>}
+                                            <div className="mt-0.5 flex flex-col items-center">
+                                                <span className={`text-xs font-bold tracking-tight ${outOfStock ? 'text-guest-subtle' : 'text-store-accent'}`}>
+                                                    {formatPrice((isResellerEligible && duration.reseller_price !== null && Number(duration.reseller_price) > 0) ? Number(duration.reseller_price) : Number(duration.price))}
+                                                </span>
+                                                {(isResellerEligible && duration.reseller_price !== null && Number(duration.reseller_price) > 0) && (
+                                                    <span className="mt-0.5 text-[6px] font-black uppercase tracking-wide text-sky-700 bg-sky-100 px-1 py-0.5 rounded-sm">Reseller</span>
+                                                )}
                                             </div>
-                                            {!outOfStock && duration.available_keys_count > 0 && duration.available_keys_count <= 5 && (
-                                                <p className="mt-0.5 text-[6px] font-bold uppercase text-amber-700">
-                                                    Sisa {duration.available_keys_count}
-                                                </p>
-                                            )}
                                         </button>
                                     );
                                 })}
@@ -1152,18 +1247,36 @@ export default function ProductDetail({
                         <div className="space-y-4 rounded-2xl border border-guest-border bg-guest-surface p-4 shadow-soft sm:p-6">
                             <StepHeader step={step3} icon="receipt" title="Detail Order" subtitle="Lengkapi informasi pemesanan" color="blue" />
 
-                            {/* WhatsApp */}
-                            <GuestInput
-                                label="Nomor WhatsApp / HP"
-                                icon="phone"
-                                type="tel"
-                                inputMode="numeric"
-                                placeholder="0812XXXXXXXX"
-                                value={data.whatsapp}
-                                onChange={(e) => setData('whatsapp', e.target.value)}
-                                error={errors.whatsapp}
-                                required
-                            />
+                            {/* WhatsApp with Country Code */}
+                            <div className="space-y-1.5">
+                                <label className="ml-1 flex items-center gap-2">
+                                    <span className="text-[11px] font-bold uppercase tracking-wide text-guest-muted">
+                                        Nomor WhatsApp / HP
+                                    </span>
+                                </label>
+                                <div className="flex -space-x-px">
+                                    <div className="relative shrink-0 w-[110px] z-10 focus-within:z-20">
+                                        <CountrySelector 
+                                            value={data.countryCode}
+                                            onChange={(val) => setData('countryCode', val)}
+                                            countries={countries}
+                                            className="rounded-r-none"
+                                        />
+                                    </div>
+                                    <div className="flex-1 z-0 focus-within:z-20">
+                                        <GuestInput
+                                            type="tel"
+                                            inputMode="numeric"
+                                            value={data.whatsapp}
+                                            onChange={(e) => setData('whatsapp', e.target.value.replace(/\D/g, ''))}
+                                            error={errors.whatsapp}
+                                            placeholder="Contoh: 8123456789"
+                                            required
+                                            className="rounded-l-none focus:relative"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* Voucher */}
                             <div className="space-y-2">
@@ -1174,7 +1287,7 @@ export default function ProductDetail({
                                             icon="ticket"
                                             type="text"
                                             autoCapitalize="characters"
-                                            placeholder="CONTOH10"
+                                            placeholder="Masukin Kode Voucher"
                                             value={data.voucher_code}
                                             onChange={(e) => {
                                                 setData('voucher_code', e.target.value.toUpperCase());
@@ -1218,38 +1331,108 @@ export default function ProductDetail({
                             </div>
 
                             {/* Metode Pembayaran */}
-                            <div className="space-y-2">
+                            <div className="space-y-4">
                                 <label className="flex items-center gap-2 px-1">
                                     <AppIcons.wallet size={11} className="text-guest-muted" />
                                     <span className="text-sm font-black uppercase tracking-[0.25em] text-guest-muted">Metode Pembayaran</span>
                                 </label>
-                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                                    {PAYMENT_METHODS.map((method) => {
-                                        const isSelected = data.payment_method === method.code;
-                                        const isInsufficient = method.is_balance && selectedDuration && (() => {
-                                            const base = (isResellerEligible && selectedDuration.reseller_price !== null) ? selectedDuration.reseller_price : selectedDuration.price;
-                                            const final = voucherInfo?.valid ? voucherInfo.final_price : base;
-                                            return Number(method.balance) < Number(final);
-                                        })();
+                                
+                                <div className="space-y-3">
+                                    {PAYMENT_GROUPS.map(([groupName, methods], idx) => (
+                                        <Disclosure key={groupName} defaultOpen={idx === 0}>
+                                            {({ open }) => (
+                                                <div className="rounded-xl border border-guest-border bg-guest-elevated/50 overflow-hidden">
+                                                    <Disclosure.Button className="flex w-full items-center justify-between bg-guest-elevated px-3 py-3 text-left transition-colors hover:bg-guest-surface">
+                                                        <span className="text-sm font-semibold text-black">
+                                                            {groupName}
+                                                        </span>
+                                                        <AppIcons.chevronDown
+                                                            size={14}
+                                                            className={`text-guest-muted transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                                                        />
+                                                    </Disclosure.Button>
+                                                    <Transition
+                                                        enter="transition duration-200 ease-out"
+                                                        enterFrom="transform opacity-0 -translate-y-2"
+                                                        enterTo="transform opacity-100 translate-y-0"
+                                                        leave="transition duration-150 ease-out"
+                                                        leaveFrom="transform opacity-100 translate-y-0"
+                                                        leaveTo="transform opacity-0 -translate-y-2"
+                                                    >
+                                                        <Disclosure.Panel className="p-3 border-t border-guest-border/50">
+                                                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                                                {methods.map((method) => {
+                                                                    const isSelected = data.payment_method === method.code;
+                                                                    const isInsufficient = method.is_balance && selectedDuration && (() => {
+                                                                        const base = (isResellerEligible && selectedDuration.reseller_price !== null) ? selectedDuration.reseller_price : selectedDuration.price;
+                                                                        const final = voucherInfo?.valid ? voucherInfo.final_price : base;
+                                                                        return Number(method.balance) < Number(final);
+                                                                    })();
 
-                                        return (
-                                            <button
-                                                key={method.code}
-                                                type="button"
-                                                onClick={() => setData('payment_method', method.code)}
-                                                disabled={isInsufficient}
-                                                className={`flex min-h-[3.25rem] items-center justify-center rounded-xl border px-1 py-2 text-center text-xs font-semibold uppercase leading-snug tracking-wide transition-all active:scale-[0.98] sm:text-sm ${isSelected
-                                                        ? 'border-store-accent bg-store-accent/10 text-store-accent'
-                                                        : isInsufficient
-                                                            ? 'border-guest-border bg-guest-elevated text-guest-subtle opacity-50 cursor-not-allowed'
-                                                            : 'border-guest-border bg-guest-elevated text-guest-muted hover:border-guest-subtle hover:text-guest-text'
-                                                    }`}
-                                            >
-                                                {method.label}
-                                                {isInsufficient && <span className="block mt-0.5 text-[8px] text-red-500">Saldo Kurang</span>}
-                                            </button>
-                                        );
-                                    })}
+                                                                    return (
+                                                                        <button
+                                                                            key={method.code}
+                                                                            type="button"
+                                                                            onClick={() => setData('payment_method', method.code)}
+                                                                            disabled={isInsufficient}
+                                                                            className={`group relative flex h-14 items-center justify-center rounded-xl border px-1 py-1 text-center transition-all active:scale-[0.98] overflow-hidden ${isSelected
+                                                                                    ? 'border-store-accent bg-store-accent/10 shadow-[0_0_0_1px_rgba(var(--store-accent-rgb),0.3)]'
+                                                                                    : isInsufficient
+                                                                                        ? 'border-guest-border bg-guest-elevated opacity-50 cursor-not-allowed'
+                                                                                        : 'border-guest-border bg-guest-elevated hover:border-guest-subtle'
+                                                                                }`}
+                                                                            title={method.label}
+                                                                        >
+                                                                            {(() => {
+                                                                                let imgSrc = method.icon_url;
+                                                                                if (!imgSrc && !method.is_balance) {
+                                                                                    const c = method.code.toLowerCase();
+                                                                                    if (c.includes('bca')) imgSrc = '/img/payment/bca.webp';
+                                                                                    else if (c.includes('bni')) imgSrc = '/img/payment/bni.png';
+                                                                                    else if (c.includes('bri')) imgSrc = '/img/payment/bri.png';
+                                                                                    else if (c.includes('mandiri')) imgSrc = '/img/payment/mandiri.png';
+                                                                                    else if (c.includes('cimb')) imgSrc = '/img/payment/cimb.png';
+                                                                                    else if (c.includes('permata')) imgSrc = '/img/payment/permata.png';
+                                                                                    else if (c.includes('maybank')) imgSrc = '/img/payment/maybank.png';
+                                                                                    else if (c.includes('bnc') || c.includes('neo')) imgSrc = '/img/payment/BNC.webp';
+                                                                                    else if (c.includes('alfamart')) imgSrc = '/img/payment/alfamart.png';
+                                                                                    else if (c.includes('indomaret') || c.includes('indoemaret')) imgSrc = '/img/payment/indoemaret.png';
+                                                                                    else if (c.includes('dana')) imgSrc = '/img/payment/dana.png';
+                                                                                    else if (c.includes('ovo')) imgSrc = '/img/payment/ovo.png';
+                                                                                    else if (c.includes('shopee')) imgSrc = '/img/payment/shopee.png';
+                                                                                    else if (c.includes('bersama')) imgSrc = '/img/payment/bersama.png';
+                                                                                    else if (c.includes('qris')) imgSrc = '/img/payment/qris.png';
+                                                                                    else if (c.includes('sahabat') || c.includes('sampoerna')) imgSrc = '/img/payment/sahabat-sampoerna.png';
+                                                                                    else if (c.includes('artha') || c.includes('graha')) imgSrc = '/img/payment/artha-graha.png';
+                                                                                }
+
+                                                                                if (method.is_balance) {
+                                                                                    return (
+                                                                                        <div className="flex flex-col items-center">
+                                                                                            <AppIcons.wallet size={20} className={isSelected ? 'text-store-accent' : 'text-guest-muted'} />
+                                                                                            <span className={`mt-0.5 text-[9px] font-bold uppercase tracking-wide ${isSelected ? 'text-store-accent' : 'text-guest-text'}`}>Saldo Akun</span>
+                                                                                        </div>
+                                                                                    );
+                                                                                }
+
+                                                                                if (imgSrc) {
+                                                                                    return <img src={imgSrc} alt={method.label} className={`max-h-8 max-w-[80%] object-contain transition-all ${!isSelected && !isInsufficient ? 'grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100' : ''} ${isSelected ? 'scale-105' : ''}`} />;
+                                                                                }
+
+                                                                                return <span className={`text-[10px] font-bold uppercase leading-snug tracking-wide ${isSelected ? 'text-store-accent' : 'text-guest-muted'}`}>{method.label}</span>;
+                                                                            })()}
+                                                                            
+                                                                            {isInsufficient && <div className="absolute inset-x-0 bottom-0 bg-red-500/90 py-0.5"><span className="block text-center text-[7px] font-bold text-white uppercase tracking-wider">Saldo Kurang</span></div>}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </Disclosure.Panel>
+                                                    </Transition>
+                                                </div>
+                                            )}
+                                        </Disclosure>
+                                    ))}
                                 </div>
                             </div>
 
@@ -1284,7 +1467,7 @@ export default function ProductDetail({
                                         <div className="flex items-center justify-between gap-4">
                                             <div>
                                                 <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-guest-subtle">Total Bayar</p>
-                                                <p className="font-bebas text-2xl font-bold leading-none text-store-accent">
+                                                <p className="text-2xl font-bold leading-none text-store-accent">
                                                     {formatPrice(displayPrice)}
                                                 </p>
                                                 {(isResellerEligible && selectedDuration.reseller_price !== null && Number(selectedDuration.reseller_price) > 0) && (
@@ -1328,7 +1511,7 @@ export default function ProductDetail({
                                 type="button"
                                 onClick={handleSubmitClick}
                                 disabled={!canSubmit}
-                                className="w-full bg-store-accent hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-store-dark font-black uppercase tracking-wide py-4 rounded-xl transition-all shadow-accent-glow flex items-center justify-center gap-2.5 text-base"
+                                className="w-full bg-store-accent hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-store-dark font-semibold py-4 rounded-xl transition-all shadow-accent-glow flex items-center justify-center gap-2.5 text-[15px]"
                             >
                                 Cek & Konfirmasi Pesanan
                                 <AppIcons.arrowRight size={14} strokeWidth={3} />
@@ -1341,7 +1524,7 @@ export default function ProductDetail({
                     </div>
                 </div>
 
-                {/* Satu blok: Telegram → produk lain → ulasan → form (tanpa duplikasi) */}
+                {/* Satu blok: Telegram → produk lain → testimoni → form (tanpa duplikasi) */}
                 <div className="mt-6 space-y-4 sm:mt-8 sm:space-y-5">
                     {product.telegram_group_invite_url?.trim?.() && (
                         <div className="overflow-hidden rounded-2xl border border-guest-border bg-guest-surface shadow-soft">
@@ -1351,7 +1534,7 @@ export default function ProductDetail({
                                         <AppIcons.download size={18} strokeWidth={2.5} />
                                     </span>
                                     <div className="min-w-0">
-                                        <p className="font-bebas text-lg font-bold uppercase tracking-wide text-guest-text">Grup Telegram</p>
+                                        <p className="text-lg font-bold uppercase tracking-wide text-guest-text">Grup Telegram</p>
                                         <p className="mt-0.5 text-sm leading-normal text-guest-muted">
                                             Gabung komunitas untuk info & bantuan produk ini.
                                         </p>
@@ -1371,7 +1554,6 @@ export default function ProductDetail({
                         </div>
                     )}
 
-                    {relatedBlock}
                     {reviewsBlock}
                     {reviewFormSection}
                 </div>
