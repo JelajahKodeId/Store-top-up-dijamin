@@ -1300,7 +1300,7 @@ export default function ProductDetail({
                                         type="button"
                                         onClick={checkVoucher}
                                         disabled={!data.voucher_code.trim() || !selectedDuration || voucherLoading}
-                                        className="flex-shrink-0 rounded-xl border border-guest-border bg-guest-elevated px-4 py-3 text-sm font-bold uppercase tracking-wide text-guest-muted transition-all hover:border-store-accent/40 hover:bg-guest-surface hover:text-guest-text disabled:cursor-not-allowed disabled:opacity-30"
+                                        className="flex-shrink-0 rounded-xl border border-yellow-400 bg-yellow-400 px-4 py-3 text-sm font-bold uppercase tracking-wide text-yellow-950 transition-all hover:bg-yellow-500 hover:border-yellow-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-guest-elevated disabled:border-guest-border disabled:text-guest-muted disabled:hover:bg-guest-elevated disabled:hover:border-guest-border"
                                     >
                                         {voucherLoading ? (
                                             <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />

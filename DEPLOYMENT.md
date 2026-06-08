@@ -29,7 +29,7 @@ mulai dari persiapan server hingga konfigurasi queue dan cron.
 | Komponen       | Minimum               | Direkomendasikan       |
 |----------------|-----------------------|------------------------|
 | OS             | Ubuntu 22.04 LTS      | Ubuntu 24.04 LTS       |
-| PHP            | 8.3+                  | 8.3+ (dengan OPcache)  |
+| PHP            | 8.4+                  | 8.4+ (dengan OPcache)  |
 | MySQL          | 8.0+                  | 8.0+ atau MariaDB 10.6 |
 | Node.js        | 20+                   | 20 LTS                 |
 | Composer       | 2.x                   | 2.x                    |
@@ -40,9 +40,9 @@ mulai dari persiapan server hingga konfigurasi queue dan cron.
 ### PHP Extensions yang Dibutuhkan
 
 ```
-php8.3-cli php8.3-fpm php8.3-mysql php8.3-mbstring php8.3-xml
-php8.3-bcmath php8.3-curl php8.3-zip php8.3-intl php8.3-gd
-php8.3-redis (jika pakai Redis)
+php8.4-cli php8.4-fpm php8.4-mysql php8.4-mbstring php8.4-xml
+php8.4-bcmath php8.4-curl php8.4-zip php8.4-intl php8.4-gd
+php8.4-redis (jika pakai Redis)
 ```
 
 ---
@@ -56,11 +56,11 @@ sudo apt update && sudo apt upgrade -y
 # Install dependencies
 sudo apt install -y git curl unzip nginx mysql-server
 
-# Install PHP 8.3
+# Install PHP 8.4
 sudo add-apt-repository ppa:ondrej/php -y
 sudo apt update
-sudo apt install -y php8.3-fpm php8.3-cli php8.3-mysql php8.3-mbstring \
-    php8.3-xml php8.3-bcmath php8.3-curl php8.3-zip php8.3-intl php8.3-gd
+sudo apt install -y php8.4-fpm php8.4-cli php8.4-mysql php8.4-mbstring \
+    php8.4-xml php8.4-bcmath php8.4-curl php8.4-zip php8.4-intl php8.4-gd
 
 # Install Composer
 curl -sS https://getcomposer.org/installer | php
@@ -152,16 +152,11 @@ CACHE_STORE=database
 # SESSION_DRIVER=redis
 # SESSION_CONNECTION=session
 
-# Payment Gateway
-TRIPAY_API_KEY=isi_dengan_api_key_merchant
-TRIPAY_PRIVATE_KEY=isi_dengan_private_key
-TRIPAY_MERCHANT_CODE=isi_dengan_kode_merchant
-TRIPAY_MODE=production
-
-# WhatsApp (wa-server — lihat checklist & wa-server/README.md)
-WA_SERVER_URL=http://127.0.0.1:3000
-WHATSAPP_SERVER_SECRET=
-WA_ADMIN_NUMBER=628xxxxxxxxxx
+# Payment Gateway (Pak Kasir)
+PAYMENT_GATEWAY=pak_kasir
+PAK_KASIR_API_KEY=isi_dengan_api_key_anda
+PAK_KASIR_SLUG=isi_dengan_slug_proyek_anda
+PAK_KASIR_MODE=production
 
 EMAIL_NOTIFICATIONS_ENABLED=false
 ```
@@ -174,7 +169,7 @@ EMAIL_NOTIFICATIONS_ENABLED=false
 
 | Penggunaan | Manfaat |
 |------------|---------|
-| **Cache** (`CACHE_STORE=redis`) | `Cache::remember` untuk channel Tripay & setting site tidak membebani MySQL; TTL otomatis. |
+| **Cache** (`CACHE_STORE=redis`) | `Cache::remember` untuk channel payment & setting site tidak membebani MySQL; TTL otomatis. |
 | **Queue** (`QUEUE_CONNECTION=redis`) | Job (notifikasi, tugas latar belakang) tidak mengisi tabel `jobs` dan lebih ringan saat traffic naik. |
 | **Session** (`SESSION_DRIVER=redis` + `SESSION_CONNECTION=session`) | Kurangi write session ke DB; cocok untuk banyak admin login bersamaan. |
 
@@ -287,7 +282,7 @@ server {
     location = /robots.txt  { access_log off; log_not_found off; }
 
     location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
         fastcgi_hide_header X-Powered-By;
@@ -338,7 +333,7 @@ sudo systemctl status certbot.timer
 
 ## 9. Queue Worker (Systemd)
 
-Laravel Queue digunakan untuk proses background (notifikasi WA, dsb).
+Laravel Queue digunakan untuk proses background (seperti pengiriman email notifikasi, dsb).
 
 ```bash
 sudo nano /etc/systemd/system/store-queue.service
@@ -404,16 +399,11 @@ Jalankan semua item ini sebelum go-live:
 - [ ] `SESSION_ENCRYPT=true` di `.env`
 - [ ] `LOG_LEVEL=error` di `.env`
 
-### Payment Gateway (Tripay)
-- [ ] `TRIPAY_MODE=production`
-- [ ] `TRIPAY_API_KEY`, `TRIPAY_PRIVATE_KEY`, `TRIPAY_MERCHANT_CODE` sudah diisi
+### Payment Gateway (Pak Kasir)
+- [ ] `PAK_KASIR_MODE=production`
+- [ ] `PAK_KASIR_API_KEY` dan `PAK_KASIR_SLUG` sudah diisi
 - [ ] `callback_url` dapat diakses dari internet (bukan localhost)
 - [ ] Uji dengan transaksi kecil di sandbox sebelum production
-
-### WhatsApp
-- [ ] `wa-server/` berjalan (Node); `WA_SERVER_URL` & `WHATSAPP_SERVER_SECRET` di `.env` Laravel; secret sama di wa-server.
-- [ ] Scan QR di **Admin → WhatsApp**; status **ready**.
-- [ ] Nomor admin notifikasi: Pengaturan Situs → WhatsApp atau `WA_ADMIN_NUMBER`.
 
 ### Database
 - [ ] Migrasi sudah dijalankan (`php artisan migrate --force`)
@@ -527,16 +517,11 @@ sudo chmod -R 775 storage bootstrap/cache
 php artisan optimize:clear
 ```
 
-### Webhook Tripay tidak diterima
+### Webhook Payment tidak diterima
 - Pastikan `APP_URL` di `.env` sudah HTTPS dan bisa diakses dari internet
 - Cek log: `tail -f storage/logs/laravel.log | grep -i webhook`
 - Pastikan route `/webhooks/payment` tidak diblokir firewall
-- Verifikasi `TRIPAY_PRIVATE_KEY` sama dengan yang di dashboard Tripay
-
-### WhatsApp tidak terkirim
-- Cek proses Node (`wa-server`); `curl -s -H "Authorization: Bearer SECRET" http://127.0.0.1:3000/status` harus JSON; status **ready** setelah scan QR di admin.
-- Log Laravel: `grep -i whatsapp storage/logs/laravel.log`; format nomor `628xxxx`.
-- `WA_SERVER_URL` dari sisi PHP (`www-data`) harus mencapai Node (localhost atau IP internal).
+- Verifikasi API Key Pak Kasir sama dengan yang ada di dashboard
 
 ### Queue tidak berjalan
 ```bash
