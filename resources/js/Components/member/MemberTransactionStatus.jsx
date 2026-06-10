@@ -13,6 +13,7 @@ export default function MemberTransactionStatus({
     appEnv,
     paymentUrl,
     pakKasirDetails,
+    manualPaymentDetails,
     paymentHint,
     backHref,
     backLabel,
