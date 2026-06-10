@@ -16,8 +16,21 @@ class CountryController extends Controller
     {
         $countries = Cache::remember('api_countries_list', 86400, function () {
             $apiKey = env('DATA_COUNTRY_API_KEY');
+            
+            $fallbackCountries = [
+                ['code' => 'ID', 'name' => 'Indonesia', 'flag' => '🇮🇩', 'dial_code' => '+62'],
+                ['code' => 'MY', 'name' => 'Malaysia', 'flag' => '🇲🇾', 'dial_code' => '+60'],
+                ['code' => 'SG', 'name' => 'Singapore', 'flag' => '🇸🇬', 'dial_code' => '+65'],
+                ['code' => 'PH', 'name' => 'Philippines', 'flag' => '🇵🇭', 'dial_code' => '+63'],
+                ['code' => 'TH', 'name' => 'Thailand', 'flag' => '🇹🇭', 'dial_code' => '+66'],
+                ['code' => 'VN', 'name' => 'Vietnam', 'flag' => '🇻🇳', 'dial_code' => '+84'],
+                ['code' => 'BR', 'name' => 'Brazil', 'flag' => '🇧🇷', 'dial_code' => '+55'],
+                ['code' => 'US', 'name' => 'United States', 'flag' => '🇺🇸', 'dial_code' => '+1'],
+                ['code' => 'GB', 'name' => 'United Kingdom', 'flag' => '🇬🇧', 'dial_code' => '+44'],
+            ];
+
             if (empty($apiKey)) {
-                return [];
+                return $fallbackCountries;
             }
 
             try {
@@ -46,7 +59,7 @@ class CountryController extends Controller
                 }
 
                 if (empty($allData)) {
-                    return [];
+                    return $fallbackCountries;
                 }
                 
                 $data = $allData;
@@ -100,7 +113,7 @@ class CountryController extends Controller
 
                 return $formatted;
             } catch (\Exception $e) {
-                return [];
+                return $fallbackCountries;
             }
         });
 
