@@ -28,14 +28,18 @@ class AntiDdosMiddleware
 
         // 1. Cek apakah IP ini sudah masuk daftar hitam (banned)
         if (Cache::has($bannedKey)) {
-            // Langsung hentikan request dengan string polos agar sangat ringan untuk CPU
+            if ($request->wantsJson() || $request->header('X-Inertia')) {
+                return response()->json([
+                    'message' => '403 Forbidden. IP Anda diblokir karena aktivitas yang tidak wajar.'
+                ], 403);
+            }
             return response('403 Forbidden. IP Anda diblokir karena aktivitas yang tidak wajar.', 403)
                 ->header('Content-Type', 'text/plain');
         }
 
         // 2. Pantau kecepatan request per IP
         $limitKey = 'ddos_track:' . $ip;
-        $maxAttempts = 100; // Maksimal 100 request
+        $maxAttempts = 300; // Ditingkatkan menjadi 300 request agar aman untuk React/Inertia yang memuat banyak aset/API
         $decayMinutes = 1;  // Dalam 1 menit
 
         if (RateLimiter::tooManyAttempts($limitKey, $maxAttempts)) {
@@ -45,6 +49,11 @@ class AntiDdosMiddleware
             // Bersihkan data tracking
             RateLimiter::clear($limitKey);
 
+            if ($request->wantsJson() || $request->header('X-Inertia')) {
+                return response()->json([
+                    'message' => '403 Forbidden. IP Anda diblokir karena aktivitas yang tidak wajar.'
+                ], 403);
+            }
             return response('403 Forbidden. IP Anda diblokir karena aktivitas yang tidak wajar.', 403)
                 ->header('Content-Type', 'text/plain');
         }
