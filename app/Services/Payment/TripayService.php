@@ -41,7 +41,8 @@ class TripayService implements PaymentGatewayInterface
 
     public function createTransaction(Order $order, string $paymentMethod): array
     {
-        $signature = hash_hmac('sha256', $this->merchantCode.$order->invoice_code.(int) $order->total_price, $this->privateKey);
+        $baseAmount = (int) ($order->total_price - ($order->fee_amount ?? 0));
+        $signature = hash_hmac('sha256', $this->merchantCode.$order->invoice_code.$baseAmount, $this->privateKey);
 
         $expiredTime = now()->addMinutes(20)->timestamp;
 
@@ -49,7 +50,7 @@ class TripayService implements PaymentGatewayInterface
             ->post("{$this->baseUrl}/transaction/create", [
                 'method' => $paymentMethod,
                 'merchant_ref' => $order->invoice_code,
-                'amount' => (int) $order->total_price,
+                'amount' => $baseAmount,
                 'customer_name' => $order->customer_name ?? 'Customer',
                 'customer_email' => $order->customer_email ?? 'noreply@store.local',
                 'customer_phone' => $order->whatsapp_number ?? '',
@@ -57,7 +58,7 @@ class TripayService implements PaymentGatewayInterface
                     [
                         'sku' => 'ORDER',
                         'name' => "Order #{$order->invoice_code}",
-                        'price' => (int) $order->total_price,
+                        'price' => $baseAmount,
                         'quantity' => 1,
                     ]
                 ],

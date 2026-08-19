@@ -58,7 +58,7 @@ class HandleInertiaRequests extends Middleware
                     'site_name', 'site_description', 'logo_web', 'favicon',
                     'whatsapp_number', 'instagram_username', 'telegram_username', 'facebook_page', 'tiktok_username',
                     'whatsapp_channel', 'telegram_channel',
-                    'running_text', 'site_keywords', 'announcement',
+                    'running_text', 'site_keywords', 'announcement', 'contact_email', 'contact_phone',
                 ])->pluck('value', 'key')->toArray();
 
                 return [
@@ -75,6 +75,8 @@ class HandleInertiaRequests extends Middleware
                     'running_text' => $s['running_text'] ?? null,
                     'keywords' => $s['site_keywords'] ?? null,
                     'announcement' => $s['announcement'] ?? null,
+                    'contact_email' => $s['contact_email'] ?? null,
+                    'contact_phone' => $s['contact_phone'] ?? null,
                 ];
             }),
             'shared_footer_data' => Cache::remember('shared_footer_data', 300, function () {

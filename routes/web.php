@@ -44,6 +44,11 @@ Route::get('/track-invoice/search', [LandingController::class, 'trackInvoiceSear
 Route::get('/orders/{invoice}', [LandingController::class, 'orderStatus'])->name('orders.status');
 Route::get('/api/recent-order', [LandingController::class, 'recentOrder'])->name('api.recent-order');
 
+Route::get('/syarat-dan-ketentuan', fn() => inertia('Guest/Static/Terms'))->name('pages.terms');
+Route::get('/kebijakan-privasi', fn() => inertia('Guest/Static/Privacy'))->name('pages.privacy');
+Route::get('/kebijakan-refund', fn() => inertia('Guest/Static/Refund'))->name('pages.refund');
+Route::get('/kontak', fn() => inertia('Guest/Static/Contact'))->name('pages.contact');
+
 Route::post('/checkout', [CheckoutController::class, 'store'])
     ->middleware('throttle:checkout')
     ->name('checkout.store');

@@ -9,7 +9,10 @@ export default function PackageStatus({ upgrade, app_env }) {
     const rows = [
         { label: 'Paket', value: upgrade.target_label },
         { label: 'Nominal', value: formatRp(upgrade.amount) },
+        { label: 'Biaya Layanan', value: formatRp(upgrade.fee_amount || 0) },
+        { label: 'Total Pembayaran', value: formatRp(upgrade.amount + (upgrade.fee_amount || 0)) },
         { label: 'Dibuat', value: upgrade.created_at },
+        ...(pending && upgrade.payment_expired_at ? [{ label: 'Batas Bayar', value: upgrade.payment_expired_at }] : []),
     ];
 
     return (
@@ -23,7 +26,7 @@ export default function PackageStatus({ upgrade, app_env }) {
                     invoiceCode={upgrade.invoice_code}
                     appEnv={app_env}
                     paymentUrl={upgrade.payment_url}
-                    pakKasirDetails={upgrade.pak_kasir_details}
+                    directPaymentDetails={upgrade.direct_payment_details}
                     manualPaymentDetails={upgrade.manual_payment_details}
                     paymentHint="Setelah pembayaran dikonfirmasi, level akun Anda akan diperbarui otomatis."
                     backHref={route('member.packages.index')}

@@ -141,15 +141,24 @@ class MemberPackageController extends Controller
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        $pakKasirDetails = null;
-        if ($upgrade->status === 'pending' && $upgrade->gateway === 'pak_kasir') {
+        $directPaymentDetails = null;
+        if ($upgrade->status === 'pending') {
             $p = $upgrade->payload['payment'] ?? $upgrade->payload ?? [];
-            if (isset($p['payment_number'])) {
-                $pakKasirDetails = [
+            if ($upgrade->gateway === 'pak_kasir' && isset($p['payment_number'])) {
+                $directPaymentDetails = [
                     'number' => $p['payment_number'],
                     'total_payment' => $p['total_payment'] ?? $p['amount'] ?? $upgrade->amount,
                     'method' => $p['payment_method'] ?? $upgrade->payment_method ?? 'qris',
                     'is_qris' => str_contains(strtolower($p['payment_method'] ?? 'qris'), 'qris'),
+                    'qr_url' => null,
+                ];
+            } elseif ($upgrade->gateway === 'tripay' && (isset($p['pay_code']) || isset($p['qr_url']))) {
+                $directPaymentDetails = [
+                    'number' => $p['pay_code'] ?? null,
+                    'total_payment' => $p['total_amount'] ?? $p['amount'] ?? $upgrade->amount,
+                    'method' => $p['payment_name'] ?? $upgrade->payment_method ?? 'qris',
+                    'is_qris' => isset($p['qr_url']) && $p['qr_url'] !== null,
+                    'qr_url' => $p['qr_url'] ?? null,
                 ];
             }
         }
@@ -165,11 +174,12 @@ class MemberPackageController extends Controller
                 'target_tier' => $upgrade->targetTier ? $upgrade->targetTier->id : $upgrade->target_tier,
                 'target_label' => $upgrade->targetTier ? $upgrade->targetTier->name : 'Upgrade',
                 'amount' => (float) $upgrade->amount,
+                'fee_amount' => (float) $upgrade->fee_amount,
                 'status' => $upgrade->status,
                 'payment_url' => $upgrade->payment_url,
-                'pak_kasir_details' => $pakKasirDetails,
+                'direct_payment_details' => $directPaymentDetails,
                 'manual_payment_details' => $manualPaymentDetails,
-                'payment_expired_at' => $upgrade->payment_expired_at?->toISOString(),
+                'payment_expired_at' => $upgrade->payment_expired_at?->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
                 'created_at' => $upgrade->created_at->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
             ],
             'app_env' => app()->environment(),

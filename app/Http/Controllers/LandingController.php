@@ -228,16 +228,25 @@ class LandingController extends Controller
                 : 'https://app.sandbox.midtrans.com/snap/snap.js';
         }
 
-        // Pak Kasir Payload
-        $pakKasirDetails = null;
-        if ($order->status === OrderStatus::UNPAID && $payment && $payment->gateway === 'pak_kasir') {
+        // Direct Payment Payload (Pak Kasir / Tripay)
+        $directPaymentDetails = null;
+        if ($order->status === OrderStatus::UNPAID && $payment) {
             $p = $payment->payload['payment'] ?? $payment->payload ?? [];
-            if (isset($p['payment_number'])) {
-                $pakKasirDetails = [
+            if ($payment->gateway === 'pak_kasir' && isset($p['payment_number'])) {
+                $directPaymentDetails = [
                     'number' => $p['payment_number'],
                     'total_payment' => $p['total_payment'] ?? $p['amount'] ?? $order->total_price,
                     'method' => $p['payment_method'] ?? $order->payment_method,
                     'is_qris' => str_contains(strtolower($p['payment_method'] ?? ''), 'qris'),
+                    'qr_url' => null,
+                ];
+            } elseif ($payment->gateway === 'tripay' && (isset($p['pay_code']) || isset($p['qr_url']))) {
+                $directPaymentDetails = [
+                    'number' => $p['pay_code'] ?? null,
+                    'total_payment' => $p['total_amount'] ?? $p['amount'] ?? $order->total_price,
+                    'method' => $p['payment_name'] ?? $order->payment_method,
+                    'is_qris' => isset($p['qr_url']) && $p['qr_url'] !== null,
+                    'qr_url' => $p['qr_url'] ?? null,
                 ];
             }
         }
@@ -265,6 +274,7 @@ class LandingController extends Controller
             'status_label' => $order->status->label(),
             'status_color' => $order->status->color(),
             'total_price' => $order->total_price,
+            'fee_amount' => $order->fee_amount ?? 0,
             'discount_amount' => $order->discount_amount ?? 0,
             'customer_name' => $order->customer_name,
             // customer_email tidak dikirim ke frontend — tidak dikumpulkan dari guest
@@ -277,9 +287,9 @@ class LandingController extends Controller
             'midtrans_client_key' => $midtransClientKey,
             'midtrans_snap_js' => $midtransSnapJs,
             'midtrans_is_sandbox' => $midtransSandbox,
-            'pak_kasir_details' => $pakKasirDetails,
+            'direct_payment_details' => $directPaymentDetails,
             'manual_payment_details' => $manualPaymentDetails,
-            'needs_payment_help' => $order->status === OrderStatus::UNPAID && ! $canOpenPayment && ! $pakKasirDetails && ! $manualPaymentDetails,
+            'needs_payment_help' => $order->status === OrderStatus::UNPAID && ! $canOpenPayment && ! $directPaymentDetails && ! $manualPaymentDetails,
             'payment_expired_at' => $order->payment_expired_at?->toISOString(),
             'created_at' => $order->created_at->format('d M Y, H:i'),
             'items' => $order->items->map(fn ($item) => [

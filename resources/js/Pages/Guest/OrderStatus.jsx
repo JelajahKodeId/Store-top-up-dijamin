@@ -464,6 +464,14 @@ export default function OrderStatus({ order, flash, app_env }) {
 
                         {/* Total */}
                         <div className="space-y-2 bg-guest-elevated px-4 py-3 sm:px-5 sm:py-4">
+                            {order.fee_amount > 0 && (
+                                <div className="flex items-center justify-between">
+                                    <p className="flex items-center gap-1 text-sm font-bold uppercase tracking-wide text-guest-subtle">
+                                        Biaya Transaksi
+                                    </p>
+                                    <p className="text-xs font-bold text-guest-text">{formatPrice(order.fee_amount)}</p>
+                                </div>
+                            )}
                             {order.discount_amount > 0 && (
                                 <div className="flex items-center justify-between">
                                     <p className="flex items-center gap-1 text-sm font-bold uppercase tracking-wide text-green-700">
@@ -472,9 +480,17 @@ export default function OrderStatus({ order, flash, app_env }) {
                                     <p className="text-xs font-bold text-green-700">-{formatPrice(order.discount_amount)}</p>
                                 </div>
                             )}
+                            {order.direct_payment_details?.total_payment > order.total_price && (
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-bold uppercase tracking-wide text-guest-subtle">Biaya Layanan Gateway</p>
+                                    <p className="text-xs font-bold text-guest-text">{formatPrice(order.direct_payment_details.total_payment - order.total_price)}</p>
+                                </div>
+                            )}
                             <div className="flex items-center justify-between">
                                 <p className="text-sm font-bold uppercase tracking-wide text-guest-subtle">Total Pembayaran</p>
-                                <p className="text-xl font-bold text-store-accent">{formatPrice(order.total_price)}</p>
+                                <p className="text-xl font-bold text-store-accent">
+                                    {formatPrice(order.direct_payment_details?.total_payment || order.total_price)}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -529,8 +545,8 @@ export default function OrderStatus({ order, flash, app_env }) {
                         </div>
                     )}
 
-                    {/* Pak Kasir Direct Details (VA / QRIS) */}
-                    {order.status === 'unpaid' && !isExpired && order.pak_kasir_details && (
+                    {/* Direct Details (VA / QRIS from Tripay or Pak Kasir) */}
+                    {order.status === 'unpaid' && !isExpired && order.direct_payment_details && (
                         <div className="relative space-y-5 overflow-hidden rounded-2xl border border-guest-border bg-guest-surface p-6 shadow-soft">
                             <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-full bg-store-accent/15 blur-[60px]" />
 
@@ -539,11 +555,11 @@ export default function OrderStatus({ order, flash, app_env }) {
                                     Instruksi Pembayaran
                                 </p>
 
-                                {order.pak_kasir_details.is_qris ? (
+                                {order.direct_payment_details.is_qris ? (
                                     <div className="flex flex-col items-center gap-4">
                                         <div className="rounded-2xl border-4 border-guest-border bg-white p-4 shadow-card">
                                             <img
-                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(order.pak_kasir_details.number)}`}
+                                                src={order.direct_payment_details.qr_url || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(order.direct_payment_details.number)}`}
                                                 alt="QRIS Code"
                                                 className="mx-auto block h-48 w-48"
                                             />
@@ -559,16 +575,16 @@ export default function OrderStatus({ order, flash, app_env }) {
                                     <div className="space-y-4">
                                         <div className="group space-y-1.5 rounded-2xl border border-guest-border bg-guest-elevated p-5">
                                             <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">
-                                                Nomor {order.pak_kasir_details.method?.toUpperCase() || 'VA'}
+                                                Nomor {order.direct_payment_details.method?.toUpperCase() || 'VA'}
                                             </p>
                                             <div className="flex items-center justify-between gap-4">
                                                 <p className="break-all  text-2xl font-bold leading-tight tracking-wider text-guest-text">
-                                                    {order.pak_kasir_details.number}
+                                                    {order.direct_payment_details.number}
                                                 </p>
                                                 <button
                                                     onClick={() => {
                                                         const el = document.createElement('textarea');
-                                                        el.value = order.pak_kasir_details.number;
+                                                        el.value = order.direct_payment_details.number;
                                                         document.body.appendChild(el);
                                                         el.select();
                                                         document.execCommand('copy');
@@ -585,7 +601,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                                         <div className="rounded-2xl border border-guest-border bg-guest-elevated p-4">
                                             <div className="flex items-center justify-between">
                                                 <p className="text-xs font-bold uppercase tracking-wide text-guest-subtle">Total Bayar</p>
-                                                <p className="text-lg font-bold text-store-accent">{formatPrice(order.pak_kasir_details.total_payment)}</p>
+                                                <p className="text-lg font-bold text-store-accent">{formatPrice(order.direct_payment_details.total_payment)}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -673,7 +689,7 @@ export default function OrderStatus({ order, flash, app_env }) {
                     )}
 
                     {/* Payment URL (Tripay / redirect lain, jika tidak pakai Snap) */}
-                    {order.payment_url && order.status === 'unpaid' && !isExpired && !order.midtrans_snap_token && (
+                    {order.payment_url && order.status === 'unpaid' && !isExpired && !order.midtrans_snap_token && !order.direct_payment_details && !order.manual_payment_details && (
                         <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-6 shadow-soft">
                             <p className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-amber-900">
                                 <AppIcons.wallet size={11} strokeWidth={2.5} />

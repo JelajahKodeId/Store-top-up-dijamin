@@ -20,6 +20,7 @@ class Order extends Model
         'whatsapp_number',
         'invoice_code',
         'total_price',
+        'fee_amount',
         'discount_amount',
         'status',
         'payment_method',

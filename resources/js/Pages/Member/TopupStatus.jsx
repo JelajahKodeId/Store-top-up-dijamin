@@ -8,7 +8,10 @@ export default function TopupStatus({ topup, app_env }) {
 
     const rows = [
         { label: 'Nominal', value: formatRp(topup.amount) },
+        { label: 'Biaya Layanan', value: formatRp(topup.fee_amount || 0) },
+        { label: 'Total Pembayaran', value: formatRp(topup.amount + (topup.fee_amount || 0)) },
         { label: 'Dibuat', value: topup.created_at },
+        ...(pending && topup.payment_expired_at ? [{ label: 'Batas Bayar', value: topup.payment_expired_at }] : []),
     ];
 
     return (
@@ -22,7 +25,7 @@ export default function TopupStatus({ topup, app_env }) {
                     invoiceCode={topup.invoice_code}
                     appEnv={app_env}
                     paymentUrl={topup.payment_url}
-                    pakKasirDetails={topup.pak_kasir_details}
+                    directPaymentDetails={topup.direct_payment_details}
                     manualPaymentDetails={topup.manual_payment_details}
                     paymentHint="Saldo otomatis masuk ke akun Anda setelah pembayaran dikonfirmasi."
                     backHref={route('member.topup.index')}

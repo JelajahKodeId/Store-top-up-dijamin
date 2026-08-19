@@ -8,7 +8,12 @@ const footerLinks = {
         { label: 'Katalog Produk', href: '/catalog' },
         { label: 'Lacak Pesanan', href: '/track-invoice' },
     ],
-    bantuan: [],
+    bantuan: [
+        { label: 'Syarat dan Ketentuan', href: '/syarat-dan-ketentuan' },
+        { label: 'Kebijakan Privasi', href: '/kebijakan-privasi' },
+        { label: 'Kebijakan Refund', href: '/kebijakan-refund' },
+        { label: 'Kontak Support', href: '/kontak' },
+    ],
 };
 
 export default function GuestFooter() {

@@ -12,6 +12,7 @@ class WalletTopup extends Model
         'user_id',
         'invoice_code',
         'amount',
+        'fee_amount',
         'status',
         'gateway',
         'gateway_payment_reference',

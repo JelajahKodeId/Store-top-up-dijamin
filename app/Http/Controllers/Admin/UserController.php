@@ -85,7 +85,7 @@ class UserController extends Controller
             ->get()
             ->map(fn ($u) => [
                 'invoice_code' => $u->invoice_code,
-                'target_label' => $u->target_tier->label(),
+                'target_label' => $u->targetTier ? $u->targetTier->name : $u->target_tier,
                 'amount_formatted' => 'Rp '.number_format((float) $u->amount, 0, ',', '.'),
                 'status' => $u->status,
                 'created_at' => $u->created_at->format('d M Y H:i'),

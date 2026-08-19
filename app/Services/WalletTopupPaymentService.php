@@ -62,7 +62,7 @@ class WalletTopupPaymentService
             throw new \RuntimeException('Konfigurasi Tripay belum lengkap.');
         }
 
-        $amountInt = (int) ($topup->amount + ($topup->fee_amount ?? 0));
+        $amountInt = (int) $topup->amount;
         $signature = hash_hmac('sha256', $merchantCode.$topup->invoice_code.$amountInt, $privateKey);
         $expiredTime = now()->addMinutes(20)->timestamp;
 

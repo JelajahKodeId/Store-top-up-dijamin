@@ -62,10 +62,10 @@ class MemberTierUpgradePaymentService
             throw new \RuntimeException('Konfigurasi Tripay belum lengkap.');
         }
 
-        $amountInt = (int) ($upgrade->amount + ($upgrade->fee_amount ?? 0));
+        $amountInt = (int) $upgrade->amount;
         $signature = hash_hmac('sha256', $merchantCode.$upgrade->invoice_code.$amountInt, $privateKey);
         $expiredTime = now()->addMinutes(20)->timestamp;
-        $itemName = 'Upgrade '.$upgrade->target_tier->label();
+        $itemName = 'Upgrade '.$upgrade->targetTier->name;
 
         $response = Http::withToken($apiKey)
             ->post("{$baseUrl}/transaction/create", [
@@ -77,7 +77,7 @@ class MemberTierUpgradePaymentService
                 'customer_phone' => $user->phone_number ?? '',
                 'order_items' => [
                     [
-                        'sku' => 'TIER_'.$upgrade->target_tier->value,
+                        'sku' => 'TIER_'.$upgrade->target_tier,
                         'name' => $itemName,
                         'price' => $amountInt,
                         'quantity' => 1,

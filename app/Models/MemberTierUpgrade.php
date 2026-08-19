@@ -13,6 +13,7 @@ class MemberTierUpgrade extends Model
         'target_tier',
         'invoice_code',
         'amount',
+        'fee_amount',
         'status',
         'gateway',
         'gateway_payment_reference',
