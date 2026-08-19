@@ -15,6 +15,17 @@ export default function Topup({ history, paymentChannels, checkoutGateway, minAm
         payment_method: defaultMethod,
     });
 
+    const selectedChannel = paymentChannels?.find(c => c.code === data.payment_method);
+    const amountNum = Number(data.amount) || 0;
+    
+    let feeAmount = 0;
+    if (selectedChannel && !selectedChannel.code.startsWith('manual_')) {
+        const feeFlat = Number(selectedChannel.fee) || 0;
+        const feePct = Number(selectedChannel.fee_pct) || 0;
+        feeAmount = feeFlat + (amountNum * feePct / 100);
+    }
+    const totalPay = amountNum + feeAmount;
+
     const submit = (e) => {
         e.preventDefault();
         post(route('member.topup.store'));
@@ -40,19 +51,34 @@ export default function Topup({ history, paymentChannels, checkoutGateway, minAm
                             required
                         />
                         {paymentChannels?.length > 0 && (
-                            <div>
-                                <label className="mb-1.5 block text-xs font-bold text-guest-muted">Metode Pembayaran</label>
-                                <select
-                                    value={data.payment_method}
-                                    onChange={(e) => setData('payment_method', e.target.value)}
-                                    className="w-full rounded-xl border border-guest-border bg-white px-3 py-2.5 text-sm font-medium text-guest-text"
-                                >
-                                    {paymentChannels.map((ch) => (
-                                        <option key={ch.code} value={ch.code}>
-                                            {ch.label}
-                                        </option>
-                                    ))}
-                                </select>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-bold text-guest-muted">Metode Pembayaran</label>
+                                    <select
+                                        value={data.payment_method}
+                                        onChange={(e) => setData('payment_method', e.target.value)}
+                                        className="w-full rounded-xl border border-guest-border bg-white px-3 py-2.5 text-sm font-medium text-guest-text"
+                                    >
+                                        {paymentChannels.map((ch) => (
+                                            <option key={ch.code} value={ch.code}>
+                                                {ch.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                {amountNum > 0 && (
+                                    <div className="rounded-xl border border-guest-border bg-guest-elevated p-4">
+                                        <div className="flex items-center justify-between border-b border-guest-border/50 pb-2 mb-2 text-sm">
+                                            <span className="font-medium text-guest-muted">Biaya Admin</span>
+                                            <span className="font-bold text-guest-text">{formatRp(feeAmount)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-base">
+                                            <span className="font-bold text-guest-subtle">Total Bayar</span>
+                                            <span className="font-bold text-store-accent-dark">{formatRp(totalPay)}</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                         <Button type="submit" variant="dark" className="w-full" disabled={processing}>

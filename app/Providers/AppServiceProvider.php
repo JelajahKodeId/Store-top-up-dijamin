@@ -4,9 +4,7 @@ namespace App\Providers;
 
 use App\Models\Order;
 use App\Observers\OrderObserver;
-use App\Services\Payment\MidtransService;
-use App\Services\Payment\MockPaymentService;
-use App\Services\Payment\PakKasirService;
+
 use App\Services\Payment\PaymentGatewayInterface;
 use App\Services\Payment\TripayService;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -24,26 +22,13 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(PaymentGatewayInterface::class, function ($app) {
-            $driver = strtolower((string) config('services.payment.driver', 'midtrans'));
-
-            if ($driver === 'tripay') {
-                return new TripayService;
-            }
-
-            if ($driver === 'midtrans' && filled(config('services.midtrans.server_key'))) {
-                return new MidtransService;
-            }
-
-            if ($driver === 'pak_kasir') {
-                return new PakKasirService;
-            }
+            $driver = strtolower((string) config('services.payment.driver', 'tripay'));
 
             if ($driver === 'mock') {
                 return new MockPaymentService;
             }
 
-            // Tanpa kunci Midtrans → mock (lokal / staging)
-            return new MockPaymentService;
+            return new TripayService;
         });
     }
 

@@ -25,7 +25,6 @@ class WalletTopupPaymentService
         return match ($driver) {
             'mock' => $this->startMock($topup),
             'tripay' => $this->startTripay($topup, $user, $paymentMethod),
-            'pak_kasir' => $this->startPakKasir($topup, $paymentMethod),
             default => throw new \RuntimeException('Top up saldo belum didukung untuk gateway pembayaran ini. Silakan hubungi administrator.'),
         };
     }
@@ -63,7 +62,7 @@ class WalletTopupPaymentService
             throw new \RuntimeException('Konfigurasi Tripay belum lengkap.');
         }
 
-        $amountInt = (int) $topup->amount;
+        $amountInt = (int) ($topup->amount + ($topup->fee_amount ?? 0));
         $signature = hash_hmac('sha256', $merchantCode.$topup->invoice_code.$amountInt, $privateKey);
         $expiredTime = now()->addMinutes(20)->timestamp;
 
@@ -103,7 +102,7 @@ class WalletTopupPaymentService
             'gateway_payment_reference' => $data['reference'] ?? null,
             'payment_url' => $data['checkout_url'] ?? null,
             'payment_expired_at' => isset($data['expired_time'])
-                ? Carbon::createFromTimestamp($data['expired_time'])
+                ? Carbon::createFromTimestamp($data['expired_time'], config('app.timezone'))
                 : now()->addMinutes(20),
             'payload' => $data,
         ]);
@@ -111,90 +110,7 @@ class WalletTopupPaymentService
         return ['payment_url' => $topup->payment_url];
     }
 
-    /**
-     * @return array{payment_url: ?string}
-     */
-    protected function startPakKasir(WalletTopup $topup, string $paymentMethod): array
-    {
-        $apiKey = (string) config('services.pak_kasir.api_key', '');
-        $slug = (string) config('services.pak_kasir.slug', '');
 
-        if ($apiKey === '' || $slug === '') {
-            throw new \RuntimeException('Konfigurasi Pak Kasir belum lengkap.');
-        }
-
-        $orderId = $topup->invoice_code;
-        $amount = (int) round((float) $topup->amount);
-        $redirectUrl = route('member.topup.show', $topup->invoice_code);
-
-        if (in_array(strtolower($paymentMethod), ['pak_kasir_all', 'universal', 'checkout_page'], true)) {
-            $paymentUrl = "https://app.pakasir.com/pay/{$slug}/{$amount}?order_id={$orderId}&redirect=".urlencode($redirectUrl);
-            $topup->update([
-                'gateway' => 'pak_kasir',
-                'gateway_payment_reference' => $orderId,
-                'payment_url' => $paymentUrl,
-                'payment_expired_at' => now()->addMinutes(20),
-                'payload' => ['mode' => 'universal_url'],
-            ]);
-
-            return ['payment_url' => $paymentUrl];
-        }
-
-        $baseUrl = 'https://app.pakasir.com/api';
-        $method = $this->normalizePakKasirMethod($paymentMethod);
-
-        $payload = [
-            'project' => $slug,
-            'order_id' => $orderId,
-            'amount' => $amount,
-            'api_key' => $apiKey,
-        ];
-
-        $response = Http::asJson()
-            ->timeout(30)
-            ->post("{$baseUrl}/transactioncreate/{$method}", $payload);
-
-        if (! $response->successful()) {
-            Log::error('WalletTopupPaymentService PakKasir: create failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-            throw new \RuntimeException('Payment gateway error: '.$response->json('message', 'Gagal membuat transaksi Pak Kasir'));
-        }
-
-        $data = $response->json();
-        $paymentUrl = $data['payment_url'] ?? $data['checkout_url'] ?? null;
-
-        $topup->update([
-            'gateway' => 'pak_kasir',
-            'gateway_payment_reference' => $orderId,
-            'payment_url' => $paymentUrl,
-            'payment_expired_at' => now()->addMinutes(20),
-            'payload' => $data,
-        ]);
-
-        return ['payment_url' => $paymentUrl];
-    }
-
-    protected function normalizePakKasirMethod(string $method): string
-    {
-        $map = [
-            'QRIS' => 'qris',
-            'BNI' => 'bni_va',
-            'BNI_VA' => 'bni_va',
-            'BRI' => 'bri_va',
-            'BRI_VA' => 'bri_va',
-            'MANDIRI' => 'mandiri_va',
-            'MANDIRI_VA' => 'mandiri_va',
-            'PERMATA' => 'permata_va',
-            'PERMATA_VA' => 'permata_va',
-            'CIMB' => 'cimb_niaga_va',
-            'CIMB_VA' => 'cimb_niaga_va',
-            'RETAIL' => 'retail',
-        ];
-
-        return $map[strtoupper($method)] ?? strtolower($method);
-    }
 
     /**
      * Untuk halaman top-up member: salin channel dari gateway order jika didukung.
@@ -226,8 +142,6 @@ class WalletTopupPaymentService
 
         return match ($gateway) {
             'tripay' => 'QRIS',
-            'midtrans' => 'midtrans_snap',
-            'pak_kasir' => 'qris',
             default => 'MOCK_QRIS',
         };
     }

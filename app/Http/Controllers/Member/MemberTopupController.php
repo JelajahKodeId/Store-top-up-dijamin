@@ -45,11 +45,23 @@ class MemberTopupController extends Controller
         $amount = round((float) $request->validated('amount'), 2);
         $paymentMethod = $request->input('payment_method') ?: $walletTopup->defaultPaymentMethod();
 
+        $feeAmount = 0;
+        if (!str_starts_with($paymentMethod, 'manual_')) {
+            $channels = $walletTopup->paymentChannelsForUi();
+            $selectedChannel = collect($channels)->firstWhere('code', $paymentMethod);
+            if ($selectedChannel) {
+                $feeFlat = (float) ($selectedChannel['fee'] ?? 0);
+                $feePct = (float) ($selectedChannel['fee_pct'] ?? 0);
+                $feeAmount = $feeFlat + ($amount * $feePct / 100);
+            }
+        }
+
         try {
-            $topup = DB::transaction(function () use ($user, $amount, $paymentMethod, $walletTopup) {
+            $topup = DB::transaction(function () use ($user, $amount, $feeAmount, $paymentMethod, $walletTopup) {
                 $topup = WalletTopup::create([
                     'user_id' => $user->id,
                     'amount' => $amount,
+                    'fee_amount' => $feeAmount,
                     'status' => 'pending',
                     'payment_method' => $paymentMethod,
                 ]);

@@ -53,12 +53,14 @@ class TripayService implements PaymentGatewayInterface
                 'customer_name' => $order->customer_name ?? 'Customer',
                 'customer_email' => $order->customer_email ?? 'noreply@store.local',
                 'customer_phone' => $order->whatsapp_number ?? '',
-                'order_items' => $order->items->map(fn ($item) => [
-                    'sku' => (string) $item->id,
-                    'name' => "{$item->product_name} ({$item->duration_name})",
-                    'price' => (int) $item->price,
-                    'quantity' => $item->quantity,
-                ])->toArray(),
+                'order_items' => [
+                    [
+                        'sku' => 'ORDER',
+                        'name' => "Order #{$order->invoice_code}",
+                        'price' => (int) $order->total_price,
+                        'quantity' => 1,
+                    ]
+                ],
                 'callback_url' => route('webhooks.payment'),
                 'return_url' => route('orders.status', $order->invoice_code),
                 'signature' => $signature,
@@ -76,7 +78,7 @@ class TripayService implements PaymentGatewayInterface
         return [
             'reference_id' => $data['reference'],
             'payment_url' => $data['checkout_url'] ?? null,
-            'expired_at' => isset($data['expired_time']) ? Carbon::createFromTimestamp($data['expired_time']) : now()->addMinutes(20),
+            'expired_at' => isset($data['expired_time']) ? Carbon::createFromTimestamp($data['expired_time'], config('app.timezone')) : now()->addMinutes(20),
             'payload' => $data,
         ];
     }

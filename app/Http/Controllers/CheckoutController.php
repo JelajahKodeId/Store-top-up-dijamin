@@ -54,8 +54,6 @@ class CheckoutController extends Controller
         $gateway = app(PaymentGatewayInterface::class);
         $defaultMethod = match ($gateway->getGatewayName()) {
             'tripay' => 'QRIS',
-            'midtrans' => 'midtrans_snap',
-            'pak_kasir' => 'qris',
             default => 'MOCK_QRIS',
         };
         $paymentMethod = $request->payment_method ?? $defaultMethod;
@@ -123,16 +121,30 @@ class CheckoutController extends Controller
                 $authUser = Auth::user();
                 $memberUserId = ($authUser && $authUser->hasRole('member')) ? $authUser->id : null;
 
+                $feeAmount = 0;
+                if ($paymentMethod !== 'balance' && !str_starts_with($paymentMethod, 'manual_')) {
+                    $gatewayInstance = app(PaymentGatewayInterface::class);
+                    $channels = $gatewayInstance->getPaymentChannels();
+                    $selectedChannel = collect($channels)->firstWhere('code', $paymentMethod);
+                    if ($selectedChannel) {
+                        $feeFlat = (float) ($selectedChannel['fee'] ?? 0);
+                        $feePct = (float) ($selectedChannel['fee_pct'] ?? 0);
+                        $feeAmount = $feeFlat + ($finalPrice * $feePct / 100);
+                    }
+                }
+                
+                $totalPriceWithFee = $finalPrice + $feeAmount;
+
                 if ($paymentMethod === 'balance') {
                     if (!$authUser || !$authUser->hasRole('member')) {
                         throw new \Exception('Metode pembayaran saldo hanya untuk member.');
                     }
-                    if ((float) $authUser->balance < (float) $finalPrice) {
+                    if ((float) $authUser->balance < (float) $totalPriceWithFee) {
                         throw new \Exception('Saldo Anda tidak cukup untuk melakukan pembelian ini.');
                     }
 
                     // Potong saldo
-                    $authUser->decrement('balance', $finalPrice);
+                    $authUser->decrement('balance', $totalPriceWithFee);
                 }
 
                 $order = Order::create([
@@ -141,7 +153,8 @@ class CheckoutController extends Controller
                     // customer_email tidak dikumpulkan — notifikasi via WhatsApp
                     'customer_phone' => $request->whatsapp,
                     'whatsapp_number' => $request->whatsapp,
-                    'total_price' => $finalPrice,
+                    'total_price' => $totalPriceWithFee,
+                    'fee_amount' => $feeAmount,
                     'discount_amount' => $discountAmount,
                     'status' => $paymentMethod === 'balance' ? \App\Enums\OrderStatus::PAID : 'unpaid',
                     'payment_method' => $paymentMethod,

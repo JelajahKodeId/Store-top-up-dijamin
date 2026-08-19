@@ -129,6 +129,9 @@ function ConfirmRow({ label, value, mono = false, accent = false }) {
 
 // ── Modal Konfirmasi — portal + kunci scroll; selalu di tengah (mobile & desktop) ─
 function ConfirmModal({ open, onClose, onConfirm, processing, data, product, selectedDuration, voucherInfo, paymentMethods = [] }) {
+    const { auth } = usePage().props;
+    const isResellerEligible = Number(auth?.user?.member_level ?? 0) >= 2;
+
     useEffect(() => {
         if (!open) {
             return;
@@ -158,17 +161,23 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
         return null;
     }
 
-    const { auth } = usePage().props;
-    const isResellerEligible = Number(auth?.user?.member_level ?? 0) >= 2;
-
-    const paymentLabel = paymentMethods.find(m => m.code === data.payment_method)?.label ?? data.payment_method;
+    const paymentMethodObj = paymentMethods.find(m => m.code === data.payment_method);
+    const paymentLabel = paymentMethodObj?.label ?? data.payment_method;
     const basePrice = (isResellerEligible && selectedDuration?.reseller_price !== null && Number(selectedDuration?.reseller_price) > 0)
         ? Number(selectedDuration?.reseller_price)
         : (Number(selectedDuration?.price) ?? 0);
     
-    const discountAmount = voucherInfo?.valid ? voucherInfo.discount_amount : 0;
-    const finalPrice = voucherInfo?.valid ? voucherInfo.final_price : basePrice;
+    const discountAmount = voucherInfo?.valid ? Number(voucherInfo.discount_amount) : 0;
+    const priceAfterVoucher = voucherInfo?.valid ? Number(voucherInfo.final_price) : basePrice;
     const hasDiscount = discountAmount > 0;
+
+    let feeAmount = 0;
+    if (paymentMethodObj && !paymentMethodObj.is_balance && !paymentMethodObj.code.startsWith('manual_')) {
+        const feeFlat = Number(paymentMethodObj.fee) || 0;
+        const feePct = Number(paymentMethodObj.fee_pct) || 0;
+        feeAmount = feeFlat + (priceAfterVoucher * feePct / 100);
+    }
+    const finalPrice = priceAfterVoucher + feeAmount;
 
     const modal = (
         <div
@@ -235,25 +244,23 @@ function ConfirmModal({ open, onClose, onConfirm, processing, data, product, sel
                             </span>
                         </div>
                         {hasDiscount && (
-                            <>
-                                <div className="flex items-center justify-between">
-                                    <span className="flex items-center gap-1 text-sm font-bold uppercase tracking-wide text-green-700">
-                                        <AppIcons.tag size={9} /> Voucher <span className="">{data.voucher_code}</span>
-                                    </span>
-                                    <span className="text-xs font-bold text-green-700">-{formatPrice(discountAmount)}</span>
-                                </div>
-                                <div className="flex items-center justify-between border-t border-guest-border pt-1.5">
-                                    <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Total Bayar</span>
-                                    <span className="text-xl font-bold text-store-accent">{formatPrice(finalPrice)}</span>
-                                </div>
-                            </>
-                        )}
-                        {!hasDiscount && (
-                            <div className="flex items-center justify-between border-t border-guest-border pt-1.5">
-                                <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Total Bayar</span>
-                                <span className="text-xl font-bold text-store-accent">{formatPrice(basePrice)}</span>
+                            <div className="flex items-center justify-between">
+                                <span className="flex items-center gap-1 text-sm font-bold uppercase tracking-wide text-green-700">
+                                    <AppIcons.tag size={9} /> Voucher <span className="">{data.voucher_code}</span>
+                                </span>
+                                <span className="text-xs font-bold text-green-700">-{formatPrice(discountAmount)}</span>
                             </div>
                         )}
+                        {feeAmount > 0 && (
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-bold uppercase tracking-wide text-guest-subtle">Biaya Admin</span>
+                                <span className="text-xs font-bold text-guest-text">+{formatPrice(feeAmount)}</span>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between border-t border-guest-border pt-1.5">
+                            <span className="text-sm font-bold uppercase tracking-wide text-guest-muted">Total Bayar</span>
+                            <span className="text-xl font-bold text-store-accent">{formatPrice(finalPrice)}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -1444,23 +1451,45 @@ export default function ProductDetail({
                                 </div>
                             )}
 
-                            {/* Ringkasan harga + diskon voucher */}
+                            {/* Ringkasan harga + diskon voucher + biaya admin */}
                             {selectedDuration && (() => {
                                 const hasVoucherDiscount = voucherInfo?.valid && voucherInfo.discount_amount > 0;
-                                const basePrice = (isResellerEligible && selectedDuration.reseller_price !== null) ? selectedDuration.reseller_price : selectedDuration.price;
-                                const displayPrice = hasVoucherDiscount ? voucherInfo.final_price : basePrice;
+                                const basePriceStr = (isResellerEligible && selectedDuration.reseller_price !== null) ? selectedDuration.reseller_price : selectedDuration.price;
+                                const basePrice = Number(basePriceStr);
+                                const priceAfterVoucher = hasVoucherDiscount ? Number(voucherInfo.final_price) : basePrice;
+                                
+                                const selectedMethod = PAYMENT_METHODS.find(m => m.code === data.payment_method);
+                                let feeAmount = 0;
+                                if (selectedMethod && !selectedMethod.is_balance && !selectedMethod.code.startsWith('manual_')) {
+                                    const feeFlat = Number(selectedMethod.fee) || 0;
+                                    const feePct = Number(selectedMethod.fee_pct) || 0;
+                                    feeAmount = feeFlat + (priceAfterVoucher * feePct / 100);
+                                }
+                                
+                                const displayPrice = priceAfterVoucher + feeAmount;
+
                                 return (
                                     <div className={`rounded-xl border p-3.5 transition-colors ${hasVoucherDiscount
                                             ? 'border-green-200 bg-green-50/80'
                                             : 'border-guest-border bg-guest-elevated'
                                         }`}>
                                         {hasVoucherDiscount && (
-                                            <div className="mb-2 flex items-center justify-between">
+                                            <div className="mb-2 flex items-center justify-between border-b border-guest-border/50 pb-2">
                                                 <span className="text-xs font-bold uppercase tracking-wide text-guest-subtle line-through">
                                                     {formatPrice((isResellerEligible && selectedDuration.reseller_price !== null) ? selectedDuration.reseller_price : selectedDuration.price)}
                                                 </span>
                                                 <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-green-800">
                                                     <AppIcons.tag size={9} /> -{formatPrice(voucherInfo.discount_amount)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {feeAmount > 0 && (
+                                            <div className="mb-2 flex items-center justify-between border-b border-guest-border/50 pb-2">
+                                                <span className="text-xs font-bold uppercase tracking-wide text-guest-subtle">
+                                                    Biaya Admin
+                                                </span>
+                                                <span className="text-xs font-bold text-guest-text">
+                                                    +{formatPrice(feeAmount)}
                                                 </span>
                                             </div>
                                         )}
@@ -1481,7 +1510,7 @@ export default function ProductDetail({
                                                     <AppIcons.speed size={8} /> Instan
                                                 </p>
                                                 <p className="text-xs uppercase text-guest-subtle">
-                                                    {PAYMENT_METHODS.find(m => m.code === data.payment_method)?.label}
+                                                    {selectedMethod?.label}
                                                 </p>
                                             </div>
                                         </div>

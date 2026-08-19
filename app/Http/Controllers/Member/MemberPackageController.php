@@ -60,7 +60,7 @@ class MemberPackageController extends Controller
             'currentTier' => $currentTier ? $currentTier->id : 'standard',
             'currentTierLabel' => $currentTier ? $currentTier->name : 'Member',
             'paymentChannels' => $payments->paymentChannelsForUi(),
-            'checkoutGateway' => app(\App\Services\Payment\PakKasirService::class)->getGatewayName(),
+            'checkoutGateway' => app(\App\Services\Payment\PaymentGatewayInterface::class)->getGatewayName(),
             'history' => $history,
         ]);
     }
@@ -98,12 +98,24 @@ class MemberPackageController extends Controller
 
         $paymentMethod = $request->input('payment_method') ?: $payments->defaultPaymentMethod();
 
+        $feeAmount = 0;
+        if (!str_starts_with($paymentMethod, 'manual_')) {
+            $channels = $payments->paymentChannelsForUi();
+            $selectedChannel = collect($channels)->firstWhere('code', $paymentMethod);
+            if ($selectedChannel) {
+                $feeFlat = (float) ($selectedChannel['fee'] ?? 0);
+                $feePct = (float) ($selectedChannel['fee_pct'] ?? 0);
+                $feeAmount = $feeFlat + ($price * $feePct / 100);
+            }
+        }
+
         try {
-            $upgrade = DB::transaction(function () use ($user, $target, $price, $paymentMethod, $payments) {
+            $upgrade = DB::transaction(function () use ($user, $target, $price, $feeAmount, $paymentMethod, $payments) {
                 $row = MemberTierUpgrade::create([
                     'user_id' => $user->id,
                     'target_tier' => $target->id,
                     'amount' => $price,
+                    'fee_amount' => $feeAmount,
                     'status' => 'pending',
                     'payment_method' => $paymentMethod,
                 ]);

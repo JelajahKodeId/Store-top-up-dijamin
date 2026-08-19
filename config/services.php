@@ -66,32 +66,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Payment — driver: midtrans (default), tripay, atau mock implisit tanpa kunci
+    | Payment — driver: tripay
     |--------------------------------------------------------------------------
     */
     'payment' => [
-        'driver' => env('PAYMENT_GATEWAY', 'midtrans'),
+        'driver' => env('PAYMENT_GATEWAY', 'tripay'),
     ],
 
-    'midtrans' => [
-        'server_key' => env('MIDTRANS_SERVER_KEY'),
-        'client_key' => env('MIDTRANS_CLIENT_KEY'),
-        /*
-         * false = API + Snap sandbox (uji transaksi).
-         * true = production — hanya setelah go-live dan kunci production.
-         */
-        'is_production' => filter_var(env('MIDTRANS_IS_PRODUCTION', false), FILTER_VALIDATE_BOOLEAN),
-        /*
-         * Izinkan MIDTRANS_IS_PRODUCTION=true saat APP_ENV=local (default: tidak).
-         * Hanya aktifkan jika Anda sengaja menguji hit production dari mesin lokal.
-         */
-        'allow_production_in_local' => filter_var(env('MIDTRANS_ALLOW_PRODUCTION_IN_LOCAL', false), FILTER_VALIDATE_BOOLEAN),
-    ],
 
-    'pak_kasir' => [
-        'api_key' => env('PAK_KASIR_API_KEY'),
-        'slug' => env('PAK_KASIR_SLUG'),
-        'mode' => env('PAK_KASIR_MODE', 'sandbox'),
-    ],
 
 ];

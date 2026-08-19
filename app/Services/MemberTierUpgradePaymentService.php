@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 class MemberTierUpgradePaymentService
 {
     public function __construct(
-        protected \App\Services\Payment\PakKasirService $paymentGateway,
+        protected \App\Services\Payment\PaymentGatewayInterface $paymentGateway,
     ) {}
 
     /**
@@ -20,7 +20,13 @@ class MemberTierUpgradePaymentService
      */
     public function startGatewaySession(MemberTierUpgrade $upgrade, User $user, string $paymentMethod): array
     {
-        return $this->startPakKasir($upgrade, $paymentMethod);
+        $driver = $this->paymentGateway->getGatewayName();
+
+        return match ($driver) {
+            'mock' => $this->startMock($upgrade),
+            'tripay' => $this->startTripay($upgrade, $user, $paymentMethod),
+            default => throw new \RuntimeException('Top up saldo belum didukung untuk gateway pembayaran ini. Silakan hubungi administrator.'),
+        };
     }
 
     /**
@@ -56,7 +62,7 @@ class MemberTierUpgradePaymentService
             throw new \RuntimeException('Konfigurasi Tripay belum lengkap.');
         }
 
-        $amountInt = (int) $upgrade->amount;
+        $amountInt = (int) ($upgrade->amount + ($upgrade->fee_amount ?? 0));
         $signature = hash_hmac('sha256', $merchantCode.$upgrade->invoice_code.$amountInt, $privateKey);
         $expiredTime = now()->addMinutes(20)->timestamp;
         $itemName = 'Upgrade '.$upgrade->target_tier->label();
@@ -97,7 +103,7 @@ class MemberTierUpgradePaymentService
             'gateway_payment_reference' => $data['reference'] ?? null,
             'payment_url' => $data['checkout_url'] ?? null,
             'payment_expired_at' => isset($data['expired_time'])
-                ? Carbon::createFromTimestamp($data['expired_time'])
+                ? Carbon::createFromTimestamp($data['expired_time'], config('app.timezone'))
                 : now()->addMinutes(20),
             'payload' => $data,
         ]);
@@ -105,90 +111,7 @@ class MemberTierUpgradePaymentService
         return ['payment_url' => $upgrade->payment_url];
     }
 
-    /**
-     * @return array{payment_url: ?string}
-     */
-    protected function startPakKasir(MemberTierUpgrade $upgrade, string $paymentMethod): array
-    {
-        $apiKey = (string) config('services.pak_kasir.api_key', '');
-        $slug = (string) config('services.pak_kasir.slug', '');
 
-        if ($apiKey === '' || $slug === '') {
-            throw new \RuntimeException('Konfigurasi Pak Kasir belum lengkap.');
-        }
-
-        $orderId = $upgrade->invoice_code;
-        $amount = (int) round((float) $upgrade->amount);
-        $redirectUrl = route('member.packages.show', $upgrade->invoice_code);
-
-        if (in_array(strtolower($paymentMethod), ['pak_kasir_all', 'universal', 'checkout_page'], true)) {
-            $paymentUrl = "https://app.pakasir.com/pay/{$slug}/{$amount}?order_id={$orderId}&redirect=".urlencode($redirectUrl);
-            $upgrade->update([
-                'gateway' => 'pak_kasir',
-                'gateway_payment_reference' => $orderId,
-                'payment_url' => $paymentUrl,
-                'payment_expired_at' => now()->addMinutes(20),
-                'payload' => ['mode' => 'universal_url'],
-            ]);
-
-            return ['payment_url' => $paymentUrl];
-        }
-
-        $baseUrl = 'https://app.pakasir.com/api';
-        $method = $this->normalizePakKasirMethod($paymentMethod);
-
-        $payload = [
-            'project' => $slug,
-            'order_id' => $orderId,
-            'amount' => $amount,
-            'api_key' => $apiKey,
-        ];
-
-        $response = Http::asJson()
-            ->timeout(30)
-            ->post("{$baseUrl}/transactioncreate/{$method}", $payload);
-
-        if (! $response->successful()) {
-            Log::error('MemberTierUpgradePaymentService PakKasir: create failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-            throw new \RuntimeException('Payment gateway error: '.$response->json('message', 'Gagal membuat transaksi Pak Kasir'));
-        }
-
-        $data = $response->json();
-        $paymentUrl = $data['payment_url'] ?? $data['checkout_url'] ?? null;
-
-        $upgrade->update([
-            'gateway' => 'pak_kasir',
-            'gateway_payment_reference' => $orderId,
-            'payment_url' => $paymentUrl,
-            'payment_expired_at' => now()->addMinutes(20),
-            'payload' => $data,
-        ]);
-
-        return ['payment_url' => $paymentUrl];
-    }
-
-    protected function normalizePakKasirMethod(string $method): string
-    {
-        $map = [
-            'QRIS' => 'qris',
-            'BNI' => 'bni_va',
-            'BNI_VA' => 'bni_va',
-            'BRI' => 'bri_va',
-            'BRI_VA' => 'bri_va',
-            'MANDIRI' => 'mandiri_va',
-            'MANDIRI_VA' => 'mandiri_va',
-            'PERMATA' => 'permata_va',
-            'PERMATA_VA' => 'permata_va',
-            'CIMB' => 'cimb_niaga_va',
-            'CIMB_VA' => 'cimb_niaga_va',
-            'RETAIL' => 'retail',
-        ];
-
-        return $map[strtoupper($method)] ?? strtolower($method);
-    }
 
     /**
      * @return array<int, array{code: string, label: string, icon_url: ?string, fee: int|float, fee_pct: int|float}>
@@ -218,8 +141,6 @@ class MemberTierUpgradePaymentService
 
         return match ($gateway) {
             'tripay' => 'QRIS',
-            'midtrans' => 'midtrans_snap',
-            'pak_kasir' => 'qris',
             default => 'MOCK_QRIS',
         };
     }
