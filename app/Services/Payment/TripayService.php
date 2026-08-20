@@ -78,7 +78,7 @@ class TripayService implements PaymentGatewayInterface
 
         return [
             'reference_id' => $data['reference'],
-            'payment_url' => $data['checkout_url'] ?? null,
+            'payment_url' => $data['pay_url'] ?? $data['checkout_url'] ?? null,
             'expired_at' => isset($data['expired_time']) ? Carbon::createFromTimestamp($data['expired_time'], config('app.timezone')) : now()->addMinutes(20),
             'payload' => $data,
         ];
