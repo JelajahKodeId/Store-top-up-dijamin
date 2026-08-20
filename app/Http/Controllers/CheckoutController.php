@@ -239,13 +239,13 @@ class CheckoutController extends Controller
                     'payment_reference' => $payment->reference_id,
                     'payment_expired_at' => now()->addHours(24),
                 ]);
-            } elseif (! $this->createPayment($order, $paymentMethod)) {
-                $this->rollbackCheckoutOrder($order);
-
-                return back()->with(
-                    'error',
-                    'Gagal membuka sesi pembayaran. Periksa konfigurasi gateway atau koneksi internet Anda, lalu coba lagi.'
-                );
+            } else {
+                try {
+                    $this->createPayment($order, $paymentMethod);
+                } catch (\Throwable $e) {
+                    $this->rollbackCheckoutOrder($order);
+                    return back()->with('error', 'Gagal membuat sesi pembayaran: ' . $e->getMessage());
+                }
             }
 
 
@@ -263,32 +263,24 @@ class CheckoutController extends Controller
         }
     }
 
-    protected function createPayment(Order $order, string $paymentMethod): bool
+    protected function createPayment(Order $order, string $paymentMethod): void
     {
-        try {
-            $txData = $this->paymentGateway->createTransaction($order, $paymentMethod);
+        $txData = $this->paymentGateway->createTransaction($order, $paymentMethod);
 
-            Payment::create([
-                'order_id' => $order->id,
-                'gateway' => $this->paymentGateway->getGatewayName(),
-                'reference_id' => $txData['reference_id'],
-                'amount' => $order->total_price,
-                'status' => 'pending',
-                'payload' => $txData['payload'] ?? null,
-            ]);
+        Payment::create([
+            'order_id' => $order->id,
+            'gateway' => $this->paymentGateway->getGatewayName(),
+            'reference_id' => $txData['reference_id'],
+            'amount' => $order->total_price,
+            'status' => 'pending',
+            'payload' => $txData['payload'] ?? null,
+        ]);
 
-            $order->update([
-                'payment_reference' => $txData['reference_id'],
-                'payment_url' => $txData['payment_url'] ?? null,
-                'payment_expired_at' => $txData['expired_at'] ?? null,
-            ]);
-
-            return true;
-        } catch (\Throwable $e) {
-            Log::error("CheckoutController: Gagal buat payment untuk order #{$order->invoice_code} — {$e->getMessage()}");
-
-            return false;
-        }
+        $order->update([
+            'payment_reference' => $txData['reference_id'],
+            'payment_url' => $txData['payment_url'] ?? null,
+            'payment_expired_at' => $txData['expired_at'] ?? null,
+        ]);
     }
 
     /**
