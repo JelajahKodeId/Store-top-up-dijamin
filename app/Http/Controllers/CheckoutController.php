@@ -53,7 +53,7 @@ class CheckoutController extends Controller
 
         $gateway = app(PaymentGatewayInterface::class);
         $defaultMethod = match ($gateway->getGatewayName()) {
-            'tripay' => 'QRIS',
+            'genspay' => 'qris',
             default => 'MOCK_QRIS',
         };
         $paymentMethod = $request->payment_method ?? $defaultMethod;

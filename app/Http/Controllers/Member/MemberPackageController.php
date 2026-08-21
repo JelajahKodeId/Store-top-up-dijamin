@@ -152,14 +152,24 @@ class MemberPackageController extends Controller
                     'is_qris' => str_contains(strtolower($p['payment_method'] ?? 'qris'), 'qris'),
                     'qr_url' => null,
                 ];
-            } elseif ($upgrade->gateway === 'tripay' && (isset($p['pay_code']) || isset($p['qr_url']))) {
-                $directPaymentDetails = [
-                    'number' => $p['pay_code'] ?? null,
-                    'total_payment' => $p['total_amount'] ?? $p['amount'] ?? $upgrade->amount,
-                    'method' => $p['payment_name'] ?? $upgrade->payment_method ?? 'qris',
-                    'is_qris' => isset($p['qr_url']) && $p['qr_url'] !== null,
-                    'qr_url' => $p['qr_url'] ?? null,
-                ];
+            } elseif ($upgrade->gateway === 'genspay') {
+                if (isset($p['qr_string'])) {
+                    $directPaymentDetails = [
+                        'number' => $p['qr_string'],
+                        'total_payment' => $p['amount'] ?? $upgrade->amount,
+                        'method' => 'QRIS',
+                        'is_qris' => true,
+                        'qr_url' => null, // We'll generate QR client-side from qr_string
+                    ];
+                } elseif (isset($p['pay_address'])) {
+                    $directPaymentDetails = [
+                        'number' => $p['pay_address'],
+                        'total_payment' => $p['pay_amount'],
+                        'method' => 'USDT (BSC)',
+                        'is_qris' => false,
+                        'qr_url' => null,
+                    ];
+                }
             }
         }
 

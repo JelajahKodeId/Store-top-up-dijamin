@@ -5,8 +5,8 @@ namespace App\Providers;
 use App\Models\Order;
 use App\Observers\OrderObserver;
 
+use App\Services\Payment\GenspayService;
 use App\Services\Payment\PaymentGatewayInterface;
-use App\Services\Payment\TripayService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,14 +21,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(PaymentGatewayInterface::class, function ($app) {
-            $driver = strtolower((string) config('services.payment.driver', 'tripay'));
+        $this->app->singleton(PaymentGatewayInterface::class, function ($app) {
+            $driver = strtolower((string) config('services.payment.driver', 'genspay'));
 
-            if ($driver === 'mock') {
-                return new MockPaymentService;
+            if ($driver === 'genspay') {
+                return new GenspayService;
             }
 
-            return new TripayService;
+            return new GenspayService;
         });
     }
 

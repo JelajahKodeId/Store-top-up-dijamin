@@ -215,20 +215,7 @@ class LandingController extends Controller
         $order->loadMissing(['items.orderKeys', 'items.product', 'payment']);
 
         $payment = $order->payment;
-        $midtransSnapToken = null;
-        $midtransClientKey = null;
-        $midtransSnapJs = null;
-
-        if ($order->status === OrderStatus::UNPAID && $payment && $payment->gateway === 'midtrans') {
-            $payload = $payment->payload ?? [];
-            $midtransSnapToken = $payload['snap_token'] ?? $payload['token'] ?? null;
-            $midtransClientKey = config('services.midtrans.client_key') ?: null;
-            $midtransSnapJs = filter_var(config('services.midtrans.is_production'), FILTER_VALIDATE_BOOLEAN)
-                ? 'https://app.midtrans.com/snap/snap.js'
-                : 'https://app.sandbox.midtrans.com/snap/snap.js';
-        }
-
-        // Direct Payment Payload (Pak Kasir / Tripay)
+        // Direct Payment Payload (Pak Kasir / Genspay)
         $directPaymentDetails = null;
         if ($order->status === OrderStatus::UNPAID && $payment) {
             $p = $payment->payload['payment'] ?? $payment->payload ?? [];
@@ -240,28 +227,33 @@ class LandingController extends Controller
                     'is_qris' => str_contains(strtolower($p['payment_method'] ?? ''), 'qris'),
                     'qr_url' => null,
                 ];
-            } elseif ($payment->gateway === 'tripay' && (isset($p['pay_code']) || isset($p['qr_url']))) {
-                $directPaymentDetails = [
-                    'number' => $p['pay_code'] ?? null,
-                    'total_payment' => $p['total_amount'] ?? $p['amount'] ?? $order->total_price,
-                    'method' => $p['payment_name'] ?? $order->payment_method,
-                    'is_qris' => isset($p['qr_url']) && $p['qr_url'] !== null,
-                    'qr_url' => $p['qr_url'] ?? null,
-                ];
+            } elseif ($payment->gateway === 'genspay') {
+                if (isset($p['qr_string'])) {
+                    $directPaymentDetails = [
+                        'number' => $p['qr_string'],
+                        'total_payment' => $p['amount'] ?? $order->total_price,
+                        'method' => 'QRIS',
+                        'is_qris' => true,
+                        'qr_url' => null, // We'll generate QR client-side from qr_string
+                    ];
+                } elseif (isset($p['pay_address'])) {
+                    $directPaymentDetails = [
+                        'number' => $p['pay_address'],
+                        'total_payment' => $p['pay_amount'],
+                        'method' => 'USDT (BSC)',
+                        'is_qris' => false,
+                        'qr_url' => null,
+                    ];
+                }
             }
         }
 
         $canOpenPayment = false;
         if ($order->status === OrderStatus::UNPAID) {
-            if ($payment && $payment->gateway === 'midtrans') {
-                $canOpenPayment = (bool) (($midtransSnapToken && $midtransClientKey) || $order->payment_url);
-            } elseif ($payment) {
+            if ($payment) {
                 $canOpenPayment = (bool) $order->payment_url;
             }
         }
-
-        $midtransSandbox = $payment && $payment->gateway === 'midtrans'
-            && ! filter_var(config('services.midtrans.is_production'), FILTER_VALIDATE_BOOLEAN);
 
         $manualPaymentDetails = null;
         if ($order->status === OrderStatus::UNPAID && $payment && $payment->gateway === 'manual') {
@@ -283,10 +275,6 @@ class LandingController extends Controller
             'payment_method_label' => PaymentLabels::methodLabel($order->payment_method, $payment?->gateway),
             'payment_gateway' => $payment?->gateway,
             'payment_url' => $order->payment_url,
-            'midtrans_snap_token' => $midtransSnapToken,
-            'midtrans_client_key' => $midtransClientKey,
-            'midtrans_snap_js' => $midtransSnapJs,
-            'midtrans_is_sandbox' => $midtransSandbox,
             'direct_payment_details' => $directPaymentDetails,
             'manual_payment_details' => $manualPaymentDetails,
             'needs_payment_help' => $order->status === OrderStatus::UNPAID && ! $canOpenPayment && ! $directPaymentDetails && ! $manualPaymentDetails,

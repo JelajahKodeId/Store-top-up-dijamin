@@ -19,10 +19,11 @@ function fieldIcon(field) {
     return 'pencil';
 }
 
-// Fallback jika backend tidak mengembalikan channels (dev / mock)
 const FALLBACK_BY_GATEWAY = {
-    midtrans: [{ code: 'midtrans_snap', label: 'Midtrans (QRIS, VA, E-Wallet)', fee: 0, fee_pct: 0 }],
-    tripay: [{ code: 'QRIS', label: 'QRIS (fallback)', fee: 0, fee_pct: 0.7 }],
+    genspay: [
+        { code: 'qris', label: 'QRIS', fee: 250, fee_pct: 0.7 },
+        { code: 'usdt_bsc', label: 'USDT (BSC/BEP20)', fee: 450, fee_pct: 0.5 },
+    ],
     mock: [
         { code: 'MOCK_QRIS', label: 'QRIS (Mock)', fee: 0, fee_pct: 0 },
         { code: 'MOCK_BANK', label: 'Bank (Mock)', fee: 0, fee_pct: 0 },
@@ -461,7 +462,6 @@ export default function ProductDetail({
     related = [],
     paymentChannels = [],
     checkoutGateway = 'mock',
-    midtransSandboxMode = false,
     reviewInvoice = null,
     testimonials = [],
 }) {
@@ -875,16 +875,6 @@ export default function ProductDetail({
             />
 
             <div className="section-container overflow-x-hidden pb-12 sm:pb-16">
-                {midtransSandboxMode && (
-                    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3">
-                        <p className="text-xs font-bold uppercase tracking-wide text-amber-900 sm:text-sm">
-                            Mode sandbox Midtrans
-                        </p>
-                        <p className="mt-1 text-sm font-medium leading-normal text-guest-muted sm:text-[15px]">
-                            Pembayaran uji saja; gunakan kartu dan skenario dari dokumentasi Midtrans sandbox. Bukan uang sungguhan.
-                        </p>
-                    </div>
-                )}
 
                 {/* ═══ MAIN LAYOUT ══════════════════════════════════════════ */}
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-10">

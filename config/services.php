@@ -57,20 +57,17 @@ return [
         ],
     ],
 
-    'tripay' => [
-        'api_key' => env('TRIPAY_API_KEY'),
-        'private_key' => env('TRIPAY_PRIVATE_KEY'),
-        'merchant_code' => env('TRIPAY_MERCHANT_CODE'),
-        'mode' => env('TRIPAY_MODE', 'sandbox'),
+    'genspay' => [
+        'api_key' => env('GENSPAY_API_KEY'),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Payment — driver: tripay
+    | Payment — driver: genspay
     |--------------------------------------------------------------------------
     */
     'payment' => [
-        'driver' => env('PAYMENT_GATEWAY', 'tripay'),
+        'driver' => env('PAYMENT_GATEWAY', 'genspay'),
     ],
 
 

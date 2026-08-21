@@ -1,23 +1,6 @@
 <?php
-require __DIR__.'/vendor/autoload.php';
-$app = require_once __DIR__.'/bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
-$kernel->bootstrap();
+use Illuminate\Support\Facades\Schema;
 
-$amount = 15000;
-$orderId = 'TEST-'.time();
-$slug = config('services.pak_kasir.slug');
-$apiKey = config('services.pak_kasir.api_key');
-
-$baseUrl = 'https://app.pakasir.com/api';
-$method = 'qris';
-
-$payload = [
-    'project' => $slug,
-    'order_id' => $orderId,
-    'amount' => $amount,
-    'api_key' => $apiKey,
-];
-
-$response = \Illuminate\Support\Facades\Http::asJson()->timeout(30)->post("{$baseUrl}/transactioncreate/{$method}", $payload);
-echo json_encode($response->json(), JSON_PRETTY_PRINT);
+echo "orders.payment_url: " . Schema::getColumnType('orders', 'payment_url') . "\n";
+echo "wallet_topups.payment_url: " . Schema::getColumnType('wallet_topups', 'payment_url') . "\n";
+echo "member_tier_upgrades.payment_url: " . Schema::getColumnType('member_tier_upgrades', 'payment_url') . "\n";

@@ -280,11 +280,6 @@ export default function OrderStatus({ order, flash, app_env }) {
                                     <span className={`text-[10px] font-bold uppercase tracking-wide ${cfg.color}`}>
                                         {cfg.title}
                                     </span>
-                                    {order.midtrans_is_sandbox && (
-                                        <span className="rounded-md border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-amber-900">
-                                            Sandbox
-                                        </span>
-                                    )}
                                 </div>
                                 <p className="text-[11px] font-medium leading-normal text-guest-muted">
                                     {cfg.desc}
@@ -495,55 +490,6 @@ export default function OrderStatus({ order, flash, app_env }) {
                         </div>
                     </div>
 
-                    {/* Midtrans Snap (prioritas) */}
-                    {order.status === 'unpaid' && !isExpired && order.midtrans_snap_token && order.midtrans_client_key && order.midtrans_snap_js && (
-                        <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-6 shadow-soft">
-                            <p className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-amber-900">
-                                <AppIcons.wallet size={11} strokeWidth={2.5} />
-                                Lanjutkan Pembayaran (Midtrans)
-                            </p>
-                            <p className="text-[10px] font-medium leading-normal text-guest-muted">
-                                QRIS, transfer VA, kartu, dan e-wallet dipilih di jendela pembayaran Midtrans.
-                            </p>
-                            <Button
-                                type="button"
-                                variant="accent"
-                                className="w-full py-4 rounded-xl text-xs font-bold uppercase tracking-[0.15em]"
-                                onClick={async () => {
-                                    try {
-                                        await new Promise((resolve, reject) => {
-                                            if (typeof window !== 'undefined' && window.snap) {
-                                                resolve();
-                                                return;
-                                            }
-                                            const existing = document.querySelector('script[data-midtrans-snap]');
-                                            if (existing) {
-                                                existing.addEventListener('load', () => resolve());
-                                                existing.addEventListener('error', reject);
-                                                return;
-                                            }
-                                            const s = document.createElement('script');
-                                            s.src = order.midtrans_snap_js;
-                                            s.setAttribute('data-client-key', order.midtrans_client_key);
-                                            s.setAttribute('data-midtrans-snap', '1');
-                                            s.onload = () => resolve();
-                                            s.onerror = () => reject(new Error('Gagal memuat Snap'));
-                                            document.body.appendChild(s);
-                                        });
-                                        window.snap.pay(order.midtrans_snap_token, {
-                                            onSuccess: () => router.reload({ only: ['order'] }),
-                                            onPending: () => router.reload({ only: ['order'] }),
-                                            onClose: () => { },
-                                        });
-                                    } catch {
-                                        alert('Gagal memuat pembayaran Midtrans. Coba refresh halaman.');
-                                    }
-                                }}
-                            >
-                                Bayar dengan Midtrans
-                            </Button>
-                        </div>
-                    )}
 
                     {/* Direct Details (VA / QRIS from Tripay or Pak Kasir) */}
                     {order.status === 'unpaid' && !isExpired && order.direct_payment_details && (
@@ -688,8 +634,8 @@ export default function OrderStatus({ order, flash, app_env }) {
                         </div>
                     )}
 
-                    {/* Payment URL (Tripay / redirect lain, jika tidak pakai Snap) */}
-                    {order.payment_url && order.status === 'unpaid' && !isExpired && !order.midtrans_snap_token && !order.direct_payment_details && !order.manual_payment_details && (
+                    {/* Payment URL (redirect lain) */}
+                    {order.payment_url && order.status === 'unpaid' && !isExpired && !order.direct_payment_details && !order.manual_payment_details && (
                         <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-6 shadow-soft">
                             <p className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-amber-900">
                                 <AppIcons.wallet size={11} strokeWidth={2.5} />
