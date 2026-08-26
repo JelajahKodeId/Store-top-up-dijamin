@@ -1,15 +1,7 @@
-import pty, os, sys, time
-
+import pty, os, sys
 pid, fd = pty.fork()
 if pid == 0:
-    os.execlp("ssh", "ssh", "-o", "StrictHostKeyChecking=no", "root@103.160.212.12", """cd /var/www/store && \
-git pull origin main && \
-npm install && npm run build && \
-sed -i '/TRIPAY/d' .env && \
-sed -i '/MIDTRANS/d' .env && \
-if ! grep -q 'GENSPAY_API_KEY' .env; then echo 'GENSPAY_API_KEY=cGF5X0RtSktaaDlaY2Q1MjAyNA' >> .env; fi && \
-php artisan config:clear
-""")
+    os.execlp("ssh", "ssh", "-o", "StrictHostKeyChecking=no", "root@103.160.212.12", "tail -n 100 /var/www/store/storage/logs/laravel.log")
 else:
     output = b""
     try:
@@ -23,4 +15,3 @@ else:
             sys.stdout.flush()
     except OSError:
         pass
-

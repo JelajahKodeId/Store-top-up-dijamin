@@ -98,15 +98,15 @@ class GenspayService implements PaymentGatewayInterface
                 'code' => 'qris',
                 'label' => 'QRIS',
                 'icon_url' => null,
-                'fee' => 250,
-                'fee_pct' => 0.7,
+                'fee' => 0,
+                'fee_pct' => 0,
             ],
             [
                 'code' => 'usdt_bsc',
                 'label' => 'USDT (BSC/BEP20)',
                 'icon_url' => null,
-                'fee' => 450,
-                'fee_pct' => 0.5,
+                'fee' => 0,
+                'fee_pct' => 0,
             ],
         ];
     }

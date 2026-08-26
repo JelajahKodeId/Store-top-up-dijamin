@@ -21,8 +21,8 @@ function fieldIcon(field) {
 
 const FALLBACK_BY_GATEWAY = {
     genspay: [
-        { code: 'qris', label: 'QRIS', fee: 250, fee_pct: 0.7 },
-        { code: 'usdt_bsc', label: 'USDT (BSC/BEP20)', fee: 450, fee_pct: 0.5 },
+        { code: 'qris', label: 'QRIS', fee: 0, fee_pct: 0 },
+        { code: 'usdt_bsc', label: 'USDT (BSC/BEP20)', fee: 0, fee_pct: 0 },
     ],
     mock: [
         { code: 'MOCK_QRIS', label: 'QRIS (Mock)', fee: 0, fee_pct: 0 },
