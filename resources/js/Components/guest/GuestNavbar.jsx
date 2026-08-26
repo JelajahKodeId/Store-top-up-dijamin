@@ -26,7 +26,7 @@ export default function GuestNavbar({ memberArea = false }) {
     const CloseIcon = AppIcons.close;
 
     const navLinkClass =
-        'group flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-guest-muted transition-colors hover:bg-guest-elevated hover:text-store-accent-dark lg:px-3.5';
+        'group flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-green-50/80 transition-colors hover:bg-black/20 hover:text-white lg:px-3.5';
 
     useEffect(() => {
         if (!mobileOpen) return undefined;
@@ -57,14 +57,14 @@ export default function GuestNavbar({ memberArea = false }) {
     }, [mobileOpen]);
 
     return (
-        <nav className="fixed left-0 right-0 top-0 z-50 border-b border-guest-border bg-white/95 shadow-sm backdrop-blur-xl">
+        <nav className="fixed left-0 right-0 top-0 z-50 border-b border-green-800 bg-[#1b5d20] shadow-sm backdrop-blur-xl">
             <div className="section-container relative" ref={menuRef}>
                 <div className="flex min-h-[4.25rem] items-center justify-between gap-3 py-3 sm:min-h-[4.5rem] sm:py-3.5">
                     <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4 lg:gap-8">
                         <AppLogo
                             href={inMemberArea && isMember ? route('member.home') : '/'}
                             size="lg"
-                            theme="dark"
+                            theme="light"
                             subtitle="Layanan Voucher Game, Media Sosial"
                         />
 
@@ -112,7 +112,7 @@ export default function GuestNavbar({ memberArea = false }) {
                                 <>
                                     <Link
                                         href={route('login')}
-                                        className="rounded-xl px-4 py-2.5 text-sm font-semibold text-guest-muted transition-colors hover:bg-guest-elevated hover:text-guest-text"
+                                        className="rounded-xl px-4 py-2.5 text-sm font-semibold text-green-50/80 transition-colors hover:bg-black/20 hover:text-white"
                                     >
                                         Masuk
                                     </Link>
@@ -127,7 +127,7 @@ export default function GuestNavbar({ memberArea = false }) {
                             {isAdmin && (
                                 <Link
                                     href={route('admin.dashboard')}
-                                    className="rounded-xl border border-guest-border px-4 py-2.5 text-sm font-semibold text-guest-text hover:bg-guest-elevated"
+                                    className="rounded-xl border border-green-700/50 bg-black/20 px-4 py-2.5 text-sm font-semibold text-green-50 transition-colors hover:border-white"
                                 >
                                     Panel admin
                                 </Link>
@@ -147,7 +147,7 @@ export default function GuestNavbar({ memberArea = false }) {
                         <button
                             type="button"
                             onClick={() => setMobileOpen((o) => !o)}
-                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-guest-border bg-guest-elevated text-guest-text transition-colors hover:bg-white sm:h-12 sm:w-12 lg:hidden"
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-green-700/50 bg-black/20 text-green-50 transition-colors hover:border-white sm:h-12 sm:w-12 lg:hidden"
                             aria-expanded={mobileOpen}
                             aria-haspopup="true"
                             aria-label={mobileOpen ? 'Tutup menu' : 'Buka menu'}
@@ -159,14 +159,14 @@ export default function GuestNavbar({ memberArea = false }) {
 
                 {/* Mobile: dropdown biasa di bawah bar (bukan panel full layar) */}
                 <div
-                    className={`absolute left-0 right-0 top-full z-[60] overflow-hidden border-guest-border bg-white shadow-lg transition-[max-height,opacity] duration-200 ease-out lg:hidden ${
+                    className={`absolute left-0 right-0 top-full z-[60] overflow-hidden border-green-800 bg-[#1b5d20] shadow-lg transition-[max-height,opacity] duration-200 ease-out lg:hidden ${
                         mobileOpen
                             ? 'max-h-[min(75vh,22rem)] border-b border-x opacity-100'
                             : 'pointer-events-none max-h-0 border-0 opacity-0'
                     } rounded-b-2xl border-t-0`}
                 >
                     <div className="max-h-[min(75vh,22rem)] overflow-y-auto py-1">
-                        <ul className="divide-y divide-guest-border">
+                        <ul className="divide-y divide-green-800">
                             {storeLinks.map((link) => {
                                 const Icon = AppIcons[link.icon] || AppIcons.globe;
                                 return (
@@ -174,9 +174,9 @@ export default function GuestNavbar({ memberArea = false }) {
                                         <Link
                                             href={link.href}
                                             onClick={() => setMobileOpen(false)}
-                                            className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-guest-text hover:bg-guest-elevated"
+                                            className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-green-50 hover:bg-black/20"
                                         >
-                                            <Icon size={18} className="shrink-0 text-guest-subtle" />
+                                            <Icon size={18} className="shrink-0 text-green-50/60" />
                                             {link.label}
                                         </Link>
                                     </li>
@@ -184,10 +184,10 @@ export default function GuestNavbar({ memberArea = false }) {
                             })}
                             {!inMemberArea && isMember && (
                                 <li>
-                                    <Link
+                                        <Link
                                         href={route('member.home')}
                                         onClick={() => setMobileOpen(false)}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-store-accent-dark hover:bg-store-accent/10"
+                                        className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-store-accent hover:bg-black/20"
                                     >
                                         <AppIcons.profile size={18} className="shrink-0 opacity-80" />
                                         Area member
@@ -196,13 +196,13 @@ export default function GuestNavbar({ memberArea = false }) {
                             )}
                         </ul>
 
-                        <div className="border-t border-guest-border bg-guest-bg/40 px-2 py-2">
+                        <div className="border-t border-green-800 bg-black/10 px-2 py-2">
                             {!user && (
                                 <div className="grid grid-cols-2 gap-2">
                                     <Link
                                         href={route('login')}
                                         onClick={() => setMobileOpen(false)}
-                                        className="rounded-xl border border-guest-border bg-white py-2.5 text-center text-sm font-semibold text-guest-text hover:bg-guest-elevated"
+                                        className="rounded-xl border border-green-700/50 bg-black/20 py-2.5 text-center text-sm font-semibold text-green-50 transition-colors hover:border-white"
                                     >
                                         Masuk
                                     </Link>
@@ -219,7 +219,7 @@ export default function GuestNavbar({ memberArea = false }) {
                                 <Link
                                     href={route('admin.dashboard')}
                                     onClick={() => setMobileOpen(false)}
-                                    className="mt-1 block rounded-xl border border-guest-border bg-white py-2.5 text-center text-sm font-semibold text-guest-text hover:bg-guest-elevated"
+                                    className="mt-1 block rounded-xl border border-green-700/50 bg-black/20 py-2.5 text-center text-sm font-semibold text-green-50 transition-colors hover:border-white"
                                 >
                                     Panel admin
                                 </Link>
