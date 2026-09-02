@@ -24,6 +24,16 @@ class ProductDuration extends Model
         'is_active' => 'boolean',
     ];
 
+    public function getResellerPriceAttribute($value)
+    {
+        if (request()->routeIs('admin.*')) return $value;
+
+        $user = auth()->user();
+        $isReseller = $user && $user->tier && (int) $user->tier->level >= 2;
+
+        return $isReseller ? $value : null;
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

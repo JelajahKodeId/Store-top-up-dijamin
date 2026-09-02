@@ -11,6 +11,34 @@ use Illuminate\Database\Eloquent\Collection;
 class CatalogService
 {
     /**
+     * Sembunyikan jumlah stok asli dari guest.
+     * Mengubah count stok (available_keys_count) menjadi maksimal 1 (boolean like).
+     */
+    protected function obfuscateStock($products)
+    {
+        if (request()->routeIs('admin.*')) return $products;
+
+        $isCollection = $products instanceof Collection;
+        $items = $isCollection ? $products : [$products];
+
+        foreach ($items as $product) {
+            if (!$product) continue;
+            
+            if (isset($product->total_available_count)) {
+                $product->total_available_count = $product->total_available_count > 0 ? 1 : 0;
+            }
+            if ($product->relationLoaded('durations')) {
+                foreach ($product->durations as $duration) {
+                    if (isset($duration->available_keys_count)) {
+                        $duration->available_keys_count = $duration->available_keys_count > 0 ? 1 : 0;
+                    }
+                }
+            }
+        }
+
+        return $products;
+    }
+    /**
      * Get all active products for landing / katalog.
      * Includes available_keys_count per duration agar ProductCard bisa cek stok.
      *
@@ -24,7 +52,7 @@ class CatalogService
             $query->where('game_category', $gameCategory);
         }
 
-        return $query
+        $products = $query
             ->with(['durations' => fn ($q) => $q->where('is_active', true)
                 ->withCount(['keys as available_keys_count' => fn ($q) => $q->where('status', 'available')])])
             ->withSum([
@@ -32,6 +60,8 @@ class CatalogService
             ], 'quantity')
             ->latest()
             ->get();
+
+        return $this->obfuscateStock($products);
     }
 
     /**
@@ -68,7 +98,7 @@ class CatalogService
      */
     public function getProductDetails(string $slug): ?Product
     {
-        return Product::where('slug', $slug)
+        $product = Product::where('slug', $slug)
             ->where('status', 'active')
             ->withCount(['keys as total_available_count' => fn ($q) => $q->where('status', 'available')])
             ->withSum([
@@ -81,6 +111,8 @@ class CatalogService
                 'reviews' => fn ($q) => $q->where('is_published', true)->orderByDesc('created_at')->limit(50),
             ])
             ->first();
+
+        return $this->obfuscateStock($product);
     }
 
     /**
@@ -102,14 +134,14 @@ class CatalogService
         if (is_string($gc) && $gc !== '') {
             $same = (clone $base)->where('game_category', $gc)->latest()->limit($limit)->get();
             if ($same->count() >= $limit) {
-                return $same;
+                return $this->obfuscateStock($same);
             }
             $restIds = $same->pluck('id')->all();
             $more = (clone $base)->whereNotIn('id', $restIds)->latest()->limit($limit - $same->count())->get();
 
-            return $same->concat($more);
+            return $this->obfuscateStock($same->concat($more));
         }
 
-        return $base->latest()->limit($limit)->get();
+        return $this->obfuscateStock($base->latest()->limit($limit)->get());
     }
 }

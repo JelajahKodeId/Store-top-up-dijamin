@@ -47,18 +47,36 @@ class KeyDeliveryService
 
         try {
             DB::transaction(function () use ($order) {
-                foreach ($order->items as $index => $item) {
-                    Log::debug("KeyDelivery: Memproses item indices[{$index}] - Product: {$item->product_name}, Duration: {$item->duration_name}, Qty: {$item->quantity}");
-                    $this->assignKeysForItem($order, $item);
+                // Lock order untuk mencegah race condition pengiriman ganda
+                $lockedOrder = Order::where('id', $order->id)->lockForUpdate()->first();
+                if ($lockedOrder->is_sent) {
+                    Log::info("KeyDelivery: Order #{$lockedOrder->invoice_code} sudah pernah dikirim sebelumnya (saat di-lock).");
+                    return;
                 }
 
-                $order->update([
+                // Load relasi pada instance yang ter-lock
+                $lockedOrder->load(['items.duration', 'items.product']);
+
+                foreach ($lockedOrder->items as $index => $item) {
+                    Log::debug("KeyDelivery: Memproses item indices[{$index}] - Product: {$item->product_name}, Duration: {$item->duration_name}, Qty: {$item->quantity}");
+                    $this->assignKeysForItem($lockedOrder, $item);
+                }
+
+                $lockedOrder->update([
                     'status' => OrderStatus::SUCCESS,
                     'is_sent' => true,
                 ]);
-                
-                Log::debug("KeyDelivery: Transaksi DB berhasil — Order #{$order->invoice_code} ditandai SUCCESS.");
+
+                // Sync instance luar agar field terbaru terbaca
+                $order->status = OrderStatus::SUCCESS;
+                $order->is_sent = true;
+
+                Log::debug("KeyDelivery: Transaksi DB berhasil — Order #{$lockedOrder->invoice_code} ditandai SUCCESS.");
             });
+
+            if (!$order->is_sent) {
+                return;
+            }
 
             // Kirim email + WA dengan key setelah transaksi berhasil
             $freshOrder = $order->fresh(['items.orderKeys', 'fieldValues']);

@@ -50,7 +50,7 @@ Route::get('/kebijakan-refund', fn() => inertia('Guest/Static/Refund'))->name('p
 Route::get('/kontak', fn() => inertia('Guest/Static/Contact'))->name('pages.contact');
 
 Route::post('/checkout', [CheckoutController::class, 'store'])
-    ->middleware('throttle:checkout')
+    ->middleware(['auth', 'throttle:checkout'])
     ->name('checkout.store');
 
 // Cek validitas voucher + preview diskon (tanpa checkout)

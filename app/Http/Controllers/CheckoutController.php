@@ -58,6 +58,21 @@ class CheckoutController extends Controller
         };
         $paymentMethod = $request->payment_method ?? $defaultMethod;
 
+        // Rate Limiting: Maksimal 3 transaksi belum dibayar (UNPAID) untuk mencegah spam QRIS
+        $unpaidOrdersCount = Order::where(function($q) use ($request) {
+                if (Auth::check()) {
+                    $q->where('user_id', Auth::id());
+                } else {
+                    $q->where('ip_address', $request->ip());
+                }
+            })
+            ->where('status', \App\Enums\OrderStatus::UNPAID)
+            ->count();
+
+        if ($unpaidOrdersCount >= 3) {
+            return back()->with('error', 'Anda memiliki 3 tagihan yang belum dibayar. Harap selesaikan atau batalkan tagihan sebelumnya terlebih dahulu.');
+        }
+
         // Validasi voucher awal (tanpa lock) — validasi definitif ada di dalam transaksi
         $voucherCode = $request->filled('voucher_code')
             ? strtoupper(trim($request->voucher_code))

@@ -370,19 +370,32 @@ class WebhookController extends Controller
     protected function handlePaidWebhook(Order $order, Payment $payment, array $payload): void
     {
         try {
-            DB::transaction(function () use ($order, $payment, $payload) {
-                $payment->update([
+            $alreadyProcessed = false;
+            DB::transaction(function () use ($order, $payment, $payload, &$alreadyProcessed) {
+                $lockedPayment = Payment::where('id', $payment->id)->lockForUpdate()->first();
+                
+                if ($lockedPayment->status !== 'pending') {
+                    $alreadyProcessed = true;
+                    return;
+                }
+
+                $lockedOrder = Order::where('id', $order->id)->lockForUpdate()->first();
+
+                $lockedPayment->update([
                     'status' => 'success',
                     'paid_at' => now(),
                     'payload' => $payload,
                 ]);
 
-                $order->update(['status' => OrderStatus::PAID]);
+                $lockedOrder->update(['status' => OrderStatus::PAID]);
             });
 
-            DeliverOrderKeysJob::dispatch($order->fresh());
-
-            Log::info("WebhookController: Order #{$order->invoice_code} berhasil diproses (PAID → SUCCESS).");
+            if (!$alreadyProcessed) {
+                DeliverOrderKeysJob::dispatch($order->fresh());
+                Log::info("WebhookController: Order #{$order->invoice_code} berhasil diproses (PAID → SUCCESS).");
+            } else {
+                Log::info("WebhookController: Order #{$order->invoice_code} sudah diproses sebelumnya (Idempotency).");
+            }
         } catch (\Throwable $e) {
             Log::error("WebhookController: Gagal proses paid webhook untuk #{$order->invoice_code} — {$e->getMessage()}");
         }
