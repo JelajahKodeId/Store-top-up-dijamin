@@ -154,12 +154,16 @@ class CheckoutController extends Controller
                     if (!$authUser || !$authUser->hasRole('member')) {
                         throw new \Exception('Metode pembayaran saldo hanya untuk member.');
                     }
-                    if ((float) $authUser->balance < (float) $totalPriceWithFee) {
+                    
+                    // Lock data user untuk mencegah race condition (misal request berbarengan)
+                    $lockedUser = \App\Models\User::where('id', $authUser->id)->lockForUpdate()->first();
+
+                    if ((float) $lockedUser->balance < (float) $totalPriceWithFee) {
                         throw new \Exception('Saldo Anda tidak cukup untuk melakukan pembelian ini.');
                     }
 
                     // Potong saldo
-                    $authUser->decrement('balance', $totalPriceWithFee);
+                    $lockedUser->decrement('balance', $totalPriceWithFee);
                 }
 
                 $order = Order::create([
