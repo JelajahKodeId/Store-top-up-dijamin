@@ -31,6 +31,13 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Dinamis: Sembunyikan rute admin dari non-admin di Ziggy @routes
+        if (!$request->user() || !$request->user()->hasRole('super-admin')) {
+            config(['ziggy.except' => ['admin.*', 'horizon.*', 'ignition.*']]);
+        } else {
+            config(['ziggy.except' => []]);
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
