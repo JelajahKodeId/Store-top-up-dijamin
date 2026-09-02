@@ -27,6 +27,11 @@ class CatalogService
             if (isset($product->total_available_count)) {
                 $product->total_available_count = $product->total_available_count > 0 ? 1 : 0;
             }
+
+            // Gabungkan fake_sold_count ke sold_count lalu sembunyikan aslinya
+            $product->sold_count = (int) ($product->sold_count ?? 0) + (int) ($product->fake_sold_count ?? 0);
+            $product->makeHidden('fake_sold_count');
+
             if ($product->relationLoaded('durations')) {
                 foreach ($product->durations as $duration) {
                     if (isset($duration->available_keys_count)) {

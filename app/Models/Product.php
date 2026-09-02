@@ -22,7 +22,7 @@ class Product extends Model
         'fake_sold_count',
     ];
 
-    protected $hidden = ['fake_sold_count'];
+    protected $hidden = [];
 
     protected $appends = ['image_url', 'banner_image_url', 'game_category_label'];
 
